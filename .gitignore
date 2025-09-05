@@ -221,3 +221,6 @@ credentials.json
 # H5 storage
 output
 old
+
+# Sphinx
+docs/source/reference/_autosummary

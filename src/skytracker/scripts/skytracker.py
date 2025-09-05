@@ -9,11 +9,8 @@ from skytracker.scripts.opensky import OpenskyAPI
 
 
 def main() -> None:
+    """Main entrypoint for SkyTracker CLI"""
 
-    # TEMP
-    import sys
-    print(sys.argv)
-    
     # Create command-line argument parser
     parser = argparse.ArgumentParser(
         prog='SkyTracker',
@@ -39,11 +36,12 @@ def main() -> None:
     args = parser.parse_args()
     if 0 < args.repeat < 15:
         raise ValueError('Repeat value must be at least 15 seconds, or 0 for one call...')
-    
+
     api = OpenskyAPI(credentials_file=args.credentials)
-    while True:
+    running = True
+    while running:
+        start_time = time.time()
         try:
-            start_time = time.time()
 
             # Get states from API
             if args.repeat != 0:
@@ -68,7 +66,8 @@ def main() -> None:
         # Repeat or stop
         finally:
             if args.repeat == 0:
-                break
+                running = False
+                continue
             elapsed_time = time.time() - start_time
             sleep_time = max(0, args.repeat - elapsed_time)
             time.sleep(sleep_time)

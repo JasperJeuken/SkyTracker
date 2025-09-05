@@ -17,5 +17,15 @@ package = true
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[dependency-groups]
+dev = [
+    "pydata-sphinx-theme>=0.16.1",
+    "pylint>=3.3.8",
+    "pytest>=8.4.2",
+    "sphinx>=8.2.3",
+    "sphinx-design>=0.6.1",
+    "sphinx-toolbox>=4.0.0",
+]
+
 [project.scripts]
 skytracker = "skytracker.scripts.skytracker:main"

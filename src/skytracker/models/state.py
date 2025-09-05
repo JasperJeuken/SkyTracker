@@ -42,20 +42,22 @@ class StateCategory(Enum):
     LINE_OBSTACLE: int = 20
 
 
-FIELD_NAMES = Literal['time', 'icao24', 'callsign', 'origin_country', 'time_position',
+FieldNames = Literal['time', 'icao24', 'callsign', 'origin_country', 'time_position',
                       'last_contact', 'longitude', 'latitude', 'baro_altitude', 'on_ground',
                       'velocity', 'true_track', 'vertical_rate', 'sensors', 'geo_altitude',
                       'squawk', 'spi', 'position_source', 'category']
 
-OPERATORS = Literal['==', '!=', '<', '<=', '>', '>=', 'contains', 'startswith', 'endswith']
+Operators = Literal['==', '!=', '<', '<=', '>', '>=', 'contains', 'startswith', 'endswith']
 
 
 class FieldInfo(NamedTuple):
+    """Field info metadata"""
     optional: bool
     data_type: str
 
 
 class State:
+    """Aircraft state data"""
 
     def __init__(self, data: np.ndarray) -> None:
         """Store state data
@@ -72,13 +74,13 @@ class State:
             str: state string representation
         """
         return f'State<t={self["time"]}, callsign={self["callsign"]}>'
-    
-    def __getitem__(self, field_name: FIELD_NAMES) -> Union[int, float, str, bool,
+
+    def __getitem__(self, field_name: FieldNames) -> Union[int, float, str, bool,
                                                             StateCategory, StatePositionSource]:
         """Get an item by field name
 
         Args:
-            field_name (FIELD_NAMES): name of field to get
+            field_name (FieldNames): name of field to get
 
         Returns:
             Union[int, float, str, bool, StateCategory, StatePositionSource]: field value
@@ -93,26 +95,27 @@ class State:
                     return [int(x) for x in sensors_str.split(',')]
                 return None
             return value.decode('utf-8').strip()
-        
+
         # Integers
         if isinstance(value, np.integer):
             return int(value)
-        
+
         # Bools
         if isinstance(value, np.bool_):
             return bool(value)
-        
+
         # NaNs
         if np.isnan(value):
             return None
-        
+
         # Floats
         return float(value)
 
 
 class States:
+    """Collection of aircraft states"""
 
-    FIELDS: dict[FIELD_NAMES, FieldInfo] = {
+    FIELDS: dict[FieldNames, FieldInfo] = {
         'time': FieldInfo(False, 'u8'),
         'icao24': FieldInfo(False, 'S6'),
         'callsign': FieldInfo(True, 'S8'),
@@ -139,11 +142,11 @@ class States:
     _hdf5_dataset_name: str = 'states'
 
     def __init__(self,
-                 data: Optional[list[dict[FIELD_NAMES, Union[str, float, int]]]] = None) -> None:
+                 data: Optional[list[dict[FieldNames, Union[str, float, int]]]] = None) -> None:
         """Initialize this state from the OpenSky API data
 
         Args:
-            data (Optional[list[dict[FIELD_NAMES, Union[str, float, int]]]]): OpenSky API data
+            data (Optional[list[dict[FieldNames, Union[str, float, int]]]]): OpenSky API data
         """
         # Parse data if provided
         self._data = np.empty(0, dtype=self.DTYPE)
@@ -184,7 +187,7 @@ class States:
             str: states string representation
         """
         return f'States<n={len(self)}>'
-    
+
     def __len__(self) -> int:
         """Get number of stored states
 
@@ -192,7 +195,7 @@ class States:
             int: number of stored states
         """
         return len(self._data)
-    
+
     def set_data(self, new_data: np.ndarray) -> None:
         """Set the data in the states list
 
@@ -200,7 +203,7 @@ class States:
             new_data (np.ndarray): new data
         """
         self._data = new_data
-    
+
     @overload
     def __getitem__(self, index: int) -> State:
         """Get a row from the states list
@@ -221,21 +224,21 @@ class States:
             States: selected states
         """
     @overload
-    def __getitem__(self, index: FIELD_NAMES) -> np.ndarray:
+    def __getitem__(self, index: FieldNames) -> np.ndarray:
         """Get a column from the states list
 
         Args:
-            index (FIELD_NAMES): name of column to get
+            index (FieldNames): name of column to get
 
         Returns:
             np.ndarray: selected column
         """
-    def __getitem__(self, index: Union[int, slice, np.ndarray, FIELD_NAMES]) \
+    def __getitem__(self, index: Union[int, slice, np.ndarray, FieldNames]) \
         -> Union[State, 'States', np.ndarray]:
         """Get a section of the states data
 
         Args:
-            index (Union[int, slice, np.ndarray, FIELD_NAMES]): row index/indices, or field name
+            index (Union[int, slice, np.ndarray, FieldNames]): row index/indices, or field name
 
         Returns:
             Union[State, States, np.ndarray]: selected row, selected rows, or selected column
@@ -244,29 +247,28 @@ class States:
         if isinstance(index, (int, np.integer)):
             row = self._data[index]
             return State(row)
-        
+
         # Select multiple states (return as States)
         if isinstance(index, (slice, np.ndarray)):
             rows = self._data[index]
             new_states = States()
             new_states.set_data(rows)
             return new_states
-        
+
         # Select field column (return as array)
         if isinstance(index, str):
-            if index not in [field for field in self.FIELDS.keys()]:
+            if index not in self.FIELDS:
                 raise TypeError(f'Unknown field name "{index}"')
             return self._data[index]
-        
+
         raise TypeError(f'Index must be field name, integer or slice index, got {type(index)}')
-        
+
     def to_hdf5(self, filename: str) -> None:
         """Save the states to an HDF5 file
 
         Args:
             filename (str): file to write to (if exists, append)
         """
-
         # Create new file
         if not os.path.exists(filename):
             with h5py.File(filename, 'w') as file:
@@ -300,7 +302,7 @@ class States:
         # Ensure file exists
         if not os.path.exists(filename):
             raise FileNotFoundError(f'File "{filename}" not found')
-        
+
         # Read in file data
         states = States()
         with h5py.File(filename, 'r') as file:
@@ -308,7 +310,7 @@ class States:
                 raise KeyError(f'"states" dataset not found in "{filename}"')
             states.set_data(file[states._hdf5_dataset_name][:])
         return states
-    
+
     def __iter__(self) -> 'States':
         """Start iterator
 
@@ -317,7 +319,7 @@ class States:
         """
         self._current_iter = 0
         return self
-    
+
     def __next__(self) -> State:
         """Get next iteration
 
@@ -329,12 +331,12 @@ class States:
         state = self[self._current_iter]
         self._current_iter += 1
         return state
-    
-    def select(self, *conditions: tuple[tuple[FIELD_NAMES, OPERATORS, object]]) -> 'States':
+
+    def select(self, *conditions: tuple[tuple[FieldNames, Operators, object]]) -> 'States':
         """Select states from the list based on one or more conditions
 
         Args:
-            conditions (tuple[str, OPERATORS, object]): condition with field name, operator, value
+            conditions (tuple[str, Operators, object]): condition with field name, operator, value
 
         Returns:
             States: matching states
@@ -342,9 +344,9 @@ class States:
         # No conditions: return all states
         if not conditions:
             return self
-        
+
         # Map string operators to callable operators
-        operators: dict[OPERATORS, Callable] = {
+        operators: dict[Operators, Callable] = {
             '==': operator.eq,
             '!=': operator.ne,
             '<': operator.lt,
@@ -355,12 +357,12 @@ class States:
             'startswith': lambda a, b: a.startswith(b) if a is not None else False,
             'endswith': lambda a, b: a.endswith(b) if a is not None else False
         }
-        mapped_conditions: list[tuple[FIELD_NAMES, Callable, object]] = []
+        mapped_conditions: list[tuple[FieldNames, Callable, object]] = []
         for field, operator_str, value in conditions:
             if operator_str not in operators:
                 raise ValueError(f'Unsupported operator "{operator_str}"')
             mapped_conditions.append((field, operators[operator_str], value))
-        
+
         # Find matching rows
         mask = np.ones(len(self._data), dtype=bool)
         for i, row in enumerate(self._data):
@@ -378,21 +380,21 @@ class States:
                     match = False
                     break
             mask[i] = match
-        
+
         # Select matched rows
         new_states = States()
         new_states.set_data(self._data[mask])
         return new_states
-    
-    def not_nan(self, *fields: FIELD_NAMES) -> 'States':
+
+    def not_nan(self, *fields: FieldNames) -> 'States':
         """Get subset of states where specified fields are not NaN
 
         Returns:
             States: states where specified fields are not NaN
         """
-        if not fields:
+        if fields is None or len(fields) == 0:
             return self
-        
+
         # Create mask using NaN condition
         mask = np.ones(len(self._data), dtype=bool)
         for field in fields:
@@ -401,7 +403,7 @@ class States:
             elif np.issubdtype(self._data[field].dtype, np.bytes_):
                 mask &= np.logical_and(self._data[field] != b'', self._data[field] != b'        ')
             else:
-                mask &= self._data[field] != None
+                mask &= self._data[field] is not None
 
         # Select masked rows
         new_states = States()

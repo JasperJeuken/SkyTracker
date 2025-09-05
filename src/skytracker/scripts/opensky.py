@@ -1,3 +1,4 @@
+"""OpenSky API interface"""
 import json
 from typing import Optional, Union
 from datetime import datetime
@@ -8,12 +9,14 @@ from skytracker.models.state import States
 
 
 class OpenskyAPI:
+    """OpenSky API object"""
 
     def __init__(self, credentials_file: str = 'credentials.json') -> None:
         """Initialize API by getting access token
 
         Args:
-            credentials_file (str, optional): file with API credentials. Defaults to 'credentials.json'.
+            credentials_file (str, optional): file with API credentials.
+                Defaults to 'credentials.json'.
         """
         self._credentials_file: str = credentials_file
         self._access_token: str = self._get_access_token(self._credentials_file)
@@ -35,13 +38,14 @@ class OpenskyAPI:
             str: received access token
         """
         # Read credentials
-        with open(credentials_file, 'r') as file:
+        with open(credentials_file, 'r', encoding='utf-8') as file:
             credentials = json.load(file)
         client_id = credentials['clientId']
         client_secret = credentials['clientSecret']
 
         # Generate post request
-        token_url = 'https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token'
+        token_url = 'https://auth.opensky-network.org/auth/realms/' + \
+            'opensky-network/protocol/openid-connect/token'
         data = {
             'grant_type': 'client_credentials',
             'client_id': client_id,
@@ -61,11 +65,11 @@ class OpenskyAPI:
             raise RuntimeError(f'Could not get access token (error {response.status_code})')
         access_token = response.json()['access_token']
         return access_token
-    
+
     def _update_access_token(self) -> None:
         """Update the internal API access token"""
         self._access_token = self._get_access_token(self._credentials_file)
-    
+
     def _get_json(self, endpoint: str) -> dict:
         """Get JSON data from an API endpoint
 
@@ -81,8 +85,8 @@ class OpenskyAPI:
         """
         # Check rate limiting
         if (datetime.now() - self._last_request).seconds < 10:
-            raise ValueError(f'Request too quickly after last request (wait at least 10 seconds)')
-        
+            raise ValueError('Request too quickly after last request (wait at least 10 seconds)')
+
         # Check if access token should be updated
         if (datetime.now() - self._last_access_token).seconds > 20 * 60:
             self._update_access_token()
@@ -107,15 +111,18 @@ class OpenskyAPI:
             raise RuntimeError(f'Could not get data (error {response.status_code})')
         self._last_request = datetime.now()
         return response.json()
-    
-    def get_states(self, time: Optional[datetime] = None, icao24: Optional[Union[str, list[str]]] = None,
+
+    def get_states(self, time: Optional[datetime] = None,
+                   icao24: Optional[Union[str, list[str]]] = None,
                    bbox: Optional[tuple[float, float, float, float]] = None) -> States:
         """Get aircraft states
 
         Args:
             time (Optional[datetime], optional): time to receive states from. Defaults to None.
-            icao24 (Optional[Union[str, list[str]]], optional): one or more ICAO24 codes of aircraft to retrieve. Defaults to None.
-            bbox (Optional[tuple[float, float, float, float]], optional): area to receive flights in (WGS-84: lat0, lon0, lat1, lon1). Defaults to None.
+            icao24 (Optional[Union[str, list[str]]], optional): one or more ICAO24 codes of
+                aircraft to retrieve. Defaults to None.
+            bbox (Optional[tuple[float, float, float, float]], optional): area to receive flights
+                in (WGS-84: lat0, lon0, lat1, lon1). Defaults to None.
 
         Returns:
             States: list of states received
@@ -139,10 +146,11 @@ class OpenskyAPI:
                 if not isinstance(code, str):
                     raise TypeError('Specified ICAO24 code must be string or list of strings')
                 arguments.append(f'icao24={code}')
-        
+
         # Add bounding box
         if bbox is not None:
-            if not isinstance(bbox, tuple) or len(bbox) != 4 or any([not isinstance(v, (int, float)) for v in bbox]):
+            if not isinstance(bbox, tuple) or len(bbox) != 4 or \
+                any(not isinstance(v, (int, float)) for v in bbox):
                 raise TypeError('Bounding box must be tuple of 4 numbers')
             arguments.append(f'lamin={bbox[0]}')
             arguments.append(f'lomin={bbox[1]}')
@@ -156,7 +164,8 @@ class OpenskyAPI:
         data = self._get_json(endpoint)
         if 'states' not in data or 'time' not in data:
             raise ValueError('Expected keys not present')
-        
+
         # Parse to state list
-        state_dicts = [dict(zip(States.FIELDS.keys(), [data['time']] + state + [0])) for state in data['states']]
+        state_dicts = [dict(zip(States.FIELDS.keys(), [data['time']] + state + [0])) \
+                       for state in data['states']]
         return States(state_dicts)

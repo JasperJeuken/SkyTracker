@@ -17,5 +17,11 @@ package = true
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[dependency-groups]
+dev = [
+    "pylint>=3.3.8",
+    "pytest>=8.4.2",
+]
+
 [project.scripts]
 skytracker = "skytracker.scripts.skytracker:main"

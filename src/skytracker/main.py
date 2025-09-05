@@ -19,4 +19,5 @@ app.include_router(search.router, prefix='/api/v1')
 
 @app.get('/')
 async def root():
+    """Root message"""
     return {'message': 'welcome'}

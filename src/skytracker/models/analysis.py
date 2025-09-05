@@ -1,0 +1,1 @@
+"""Analysis endpoint models"""

@@ -1,0 +1,21 @@
+[project]
+name = "skytracker"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi[standard]>=0.116.1",
+    "h5py>=3.14.0",
+    "numpy>=2.3.2",
+    "requests>=2.32.5",
+]
+
+[tool.uv]
+package = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+skytracker = "skytracker.scripts.skytracker:main"

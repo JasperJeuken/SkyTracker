@@ -3,6 +3,17 @@
 ==========
 SkyTracker
 ==========
+|badge_github| |badge_documentation| |badge_readthedocs|
+
+.. |badge_github| image:: https://img.shields.io/badge/github--blue?logo=github
+   :target: https://github.com/JasperJeuken/SkyTracker
+   :alt: Github badge
+.. |badge_documentation| image:: https://img.shields.io/badge/documentation--blue?logo=readthedocs
+   :target: https://skytracker.readthedocs.io/en/latest/
+   :alt: documentation badge
+.. |badge_readthedocs| image:: https://readthedocs.org/projects/skytracker/badge/
+   :target: https://skytracker.readthedocs.io/en/latest/
+   :alt: readthedocs badge
 
 This is the documentation for the SkyTracker package.
 

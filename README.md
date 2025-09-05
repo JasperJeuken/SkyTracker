@@ -1,4 +1,9 @@
 # SkyTracker
+
+[<img src="https://img.shields.io/badge/github--blue?logo=github" alt="Github badge">](https://github.com/JasperJeuken/SkyTracker)
+[<img src="https://img.shields.io/badge/documentation--blue?logo=readthedocs" alt="readthedocs badge">](https://skytracker.readthedocs.io/en/latest/)
+[<img src="https://readthedocs.org/projects/skytracker/badge/" alt="readthedocs badge 2">](https://skytracker.readthedocs.io/en/latest/)
+
 Tool for tracking and visualizing aircraft
 
 ## Installation

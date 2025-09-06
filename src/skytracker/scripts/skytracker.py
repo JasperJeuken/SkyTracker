@@ -69,7 +69,7 @@ def main() -> None:
                 running = False
                 continue
             elapsed_time = time.time() - start_time
-            sleep_time = max(0, args.repeat - elapsed_time)
+            sleep_time = min(max(0, args.repeat - elapsed_time), args.repeat)
             time.sleep(sleep_time)
 
 

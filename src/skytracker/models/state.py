@@ -271,19 +271,23 @@ class States:
         """
         # Create new file
         if not os.path.exists(filename):
-            with h5py.File(filename, 'w') as file:
+            with h5py.File(filename, 'w', libver='latest') as file:
                 max_shape = (None,)  # unlimited
-                file.create_dataset(self._hdf5_dataset_name, data=self._data,
+                dataset = file.create_dataset(self._hdf5_dataset_name, data=self._data,
                                     maxshape=max_shape, chunks=True)
+                dataset.flush()
+                file.swmr_mode = True  # single writer-multiple reader mode
 
         # Append to existing file
         else:
-            with h5py.File(filename, 'a') as file:
+            with h5py.File(filename, 'a', libver='latest') as file:
+                file.swmr_mode = True
                 n_new = self._data.shape[0]
                 dataset = file[self._hdf5_dataset_name]
                 old_size = dataset.shape[0]
                 dataset.resize(old_size + n_new, axis=0)
                 dataset[old_size:] = self._data
+                dataset.flush()
 
     @classmethod
     def from_hdf5(cls, filename: str) -> 'States':
@@ -305,7 +309,7 @@ class States:
 
         # Read in file data
         states = States()
-        with h5py.File(filename, 'r') as file:
+        with h5py.File(filename, 'r', libver='latest', swmr=True) as file:
             if states._hdf5_dataset_name not in file:
                 raise KeyError(f'"states" dataset not found in "{filename}"')
             states.set_data(file[states._hdf5_dataset_name][:])

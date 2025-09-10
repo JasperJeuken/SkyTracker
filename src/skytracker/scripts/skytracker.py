@@ -1,15 +1,17 @@
 """SkyTracker command line script"""
-from datetime import datetime
 import argparse
 import pathlib
-import os
+import json
 import time
+import asyncio
+from datetime import datetime
 
-from skytracker.scripts.opensky import OpenskyAPI
+from skytracker.storage import Storage
+from skytracker.services.opensky import OpenskyAPI
 
 
-def main() -> None:
-    """Main entrypoint for SkyTracker CLI"""
+async def main() -> None:
+    """Main async entrypoint for SkyTracker CLI"""
 
     # Create command-line argument parser
     parser = argparse.ArgumentParser(
@@ -36,8 +38,18 @@ def main() -> None:
     args = parser.parse_args()
     if 0 < args.repeat < 15:
         raise ValueError('Repeat value must be at least 15 seconds, or 0 for one call...')
+    
+    # Start data manager
+    with open(args.credentials, 'r', encoding='utf-8') as file:
+        credentials = json.load(file)
+    username, password = credentials['clickhouseUser'], credentials['clickhouseSecret']
+    storage: Storage = Storage(username, password)
+    await storage.connect()
 
+    # Start Opensky API
     api = OpenskyAPI(credentials_file=args.credentials)
+
+    # Start acquisition
     running = True
     while running:
         start_time = time.time()
@@ -48,15 +60,9 @@ def main() -> None:
                 args.time = None  # use current time when repeating
             states = api.get_states(args.time, args.icao24, args.bbox)
 
-            # Write to output
-            filename = f'{datetime.now().strftime(args.filename)}.h5'
-            out_file = args.outdir / pathlib.Path(filename)
-            os.makedirs(args.outdir, exist_ok=True)
-            states.to_hdf5(out_file)
-
-            # Print outcome
-            print(f'[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] ' + \
-                f'wrote {len(states)} states to "{out_file}".')
+            # Write states to data storage
+            await storage['state'].insert_states(states)
+            print(f'[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] inserted {len(states)} states')
 
         # Catch exception
         except Exception as exc:
@@ -72,6 +78,14 @@ def main() -> None:
             sleep_time = min(max(0, args.repeat - elapsed_time), args.repeat)
             time.sleep(sleep_time)
 
+    # Close manager
+    await storage.close()
+
+
+def cli() -> None:
+    """Sync entrypoint for command-line script"""
+    asyncio.run(main())
+
 
 if __name__ == '__main__':
-    main()
+    cli()

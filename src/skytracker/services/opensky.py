@@ -5,7 +5,7 @@ from datetime import datetime
 
 import requests
 
-from skytracker.models.state import States
+from skytracker.models.state import State
 
 
 class OpenskyAPI:
@@ -114,7 +114,7 @@ class OpenskyAPI:
 
     def get_states(self, time: Optional[datetime] = None,
                    icao24: Optional[Union[str, list[str]]] = None,
-                   bbox: Optional[tuple[float, float, float, float]] = None) -> States:
+                   bbox: Optional[tuple[float, float, float, float]] = None) -> list[State]:
         """Get aircraft states
 
         Args:
@@ -125,7 +125,7 @@ class OpenskyAPI:
                 in (WGS-84: lat0, lon0, lat1, lon1). Defaults to None.
 
         Returns:
-            States: list of states received
+            list[State]: list of states received
         """
         arguments = []
 
@@ -166,6 +166,4 @@ class OpenskyAPI:
             raise ValueError('Expected keys not present')
 
         # Parse to state list
-        state_dicts = [dict(zip(States.FIELDS.keys(), [data['time']] + state + [0])) \
-                       for state in data['states']]
-        return States(state_dicts)
+        return [State.from_raw([data['time']] + state + [0]) for state in data['states']]

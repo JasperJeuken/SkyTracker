@@ -30,4 +30,4 @@ dev = [
 ]
 
 [project.scripts]
-skytracker = "skytracker.scripts.skytracker:main"
+skytracker = "skytracker.scripts.skytracker:cli"

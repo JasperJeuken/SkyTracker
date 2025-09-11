@@ -3,6 +3,7 @@ from typing import Optional
 
 from skytracker.storage.database_manager import DatabaseManager
 from skytracker.storage.tables.table_manager import TableManager
+from skytracker.storage.cache import Cache
 from skytracker.models.state import State
 
 
@@ -18,7 +19,8 @@ class StateTableManager(TableManager):
         Args:
             database (DatabaseManager): ClickHouse database manager
         """
-        self.database: DatabaseManager = database
+        self._database: DatabaseManager = database
+        self._cache: Cache[State] = Cache[State]()
 
     async def ensure_exists(self) -> None:
         """Ensure aircraft state table exists"""
@@ -50,10 +52,10 @@ class StateTableManager(TableManager):
         ]
 
         # Create table
-        await self._create_table(self.STATE_TABLE_NAME, fields,
-                                 'ENGINE MergeTree',
-                                 'ORDER BY (icao24, time)',
-                                 'SETTINGS index_granularity=8192')
+        await self._database.create_table(self.STATE_TABLE_NAME, fields,
+                                          'ENGINE MergeTree',
+                                          'ORDER BY (icao24, time)',
+                                          'SETTINGS index_granularity=8192')
     
     async def exists(self) -> bool:
         """Check if the aircraft state table exists
@@ -61,7 +63,7 @@ class StateTableManager(TableManager):
         Returns:
             bool: whether the aircraft state table exists
         """
-        return await self.database.table_exists(self.TABLE_NAME)
+        return await self._database.table_exists(self.TABLE_NAME)
 
     async def insert_states(self, states: list[State]) -> None:
         """Insert a list of states in the table
@@ -69,9 +71,10 @@ class StateTableManager(TableManager):
         Args:
             states (list[State]): list of states to insert
         """
+        await self._cache.set(states)
         rows = [list(state.to_json().values()) for state in states]
         columns = State.FIELDS
-        await self.database.insert(self.TABLE_NAME, rows, columns)
+        await self._database.insert(self.TABLE_NAME, rows, columns)
 
     async def insert_state(self, state: State) -> None:
         """Insert a state in the table
@@ -94,7 +97,7 @@ class StateTableManager(TableManager):
             raise ValueError(f'Invalid SQL query: "{sql_query}"')
         if not sql_query.endswith(';'):
             sql_query += ';'
-        rows = await self.database.query(sql_query)
+        rows = await self._database.query(sql_query)
         return [State.from_raw(row) for row in rows]
 
     async def get_aircraft_history(self, icao24: str, limit: int = 0) -> list[State]:
@@ -146,6 +149,10 @@ class StateTableManager(TableManager):
         # Catch incorrect argument
         if not isinstance(limit, int) or limit < 0:
             raise ValueError(f'Query limit must be an integer larger than 0, got "{limit}"')
+        
+        # Use cached data if available
+        if not await self._cache.empty():
+            return await self._cache.get(limit)
 
         # Run select query
         query = f'SELECT * FROM {self.TABLE_NAME} WHERE time=(SELECT MAX(time) ' + \

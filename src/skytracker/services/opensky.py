@@ -1,11 +1,14 @@
 """OpenSky API interface"""
 import json
+import time
+import asyncio
 from typing import Optional, Union
 from datetime import datetime
 
 import requests
 
 from skytracker.models.state import State
+from skytracker.storage import Storage
 
 
 class OpenskyAPI:
@@ -167,3 +170,39 @@ class OpenskyAPI:
 
         # Parse to state list
         return [State.from_raw([data['time']] + state + [0]) for state in data['states']]
+
+
+async def collect_service(storage: Storage, repeat: int = 90,
+                          credentials_file: str = 'credentials.json') -> None:
+    """Service which periodically collects aircraft states and writes it to the state table
+
+    Args:
+        storage (Storage): database storage instance
+        repeat (int, optional): period with which to collect states [sec]. Defaults to 90 sec.
+        credentials_file (str, optional): path to credentials file for OpenSky API.
+            Defaults to 'credentials.json'
+    """
+    # Start OpenSky API
+    api = OpenskyAPI(credentials_file)
+
+    # Start acquisition loop
+    running = True
+    while running:
+        start_time = time.time()
+        time_str = f'[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}]'
+
+        # Try to collect states and write to database
+        try:
+            states = api.get_states()
+            await storage['state'].insert_states(states)
+            print(f'{time_str} inserted {len(states)} states into database...')
+        
+        # Catch any exceptions
+        except Exception as exc:
+            print(f'{time_str} exception occured:')
+            print(exc)
+        
+        # Repeat
+        finally:
+            elapsed_time = time.time() - start_time
+            await asyncio.sleep(max(0, repeat - elapsed_time))

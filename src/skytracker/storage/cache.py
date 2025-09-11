@@ -1,5 +1,4 @@
 """Data cache module"""
-from copy import deepcopy
 from typing import Generic, TypeVar, List, Optional
 
 from asyncio import Lock
@@ -8,7 +7,7 @@ from asyncio import Lock
 T = TypeVar('T')
 
 
-class Cache(Generic(T)):
+class Cache(Generic[T]):
     """Generic async-safe cache for storing batch of items"""
 
     def __init__(self):
@@ -24,21 +23,22 @@ class Cache(Generic(T)):
         """
         async with self._lock:
             self._data = items
+            print(f'set {len(items)} items in cache')
     
-    async def get(self, limit: Optional[int] = None) -> List[T]:
+    async def get(self, limit: int = 0) -> List[T]:
         """Get the cached items
 
         Args:
-            limit (int, optional): maximum number of states to get (None = all)
+            limit (int, optional): maximum number of states to get (0 = all)
         
         Returns:
             List[T]: copy of cached items
         """
         async with self._lock:
-            if limit is not None:
-                return deepcopy(self._data[:min(limit, len(self._data))])
-            return deepcopy(self._data)
-    
+            if limit > 0:
+                return list(self._data[:min(limit, len(self._data))])
+            return list(self._data)
+
     async def clear(self) -> None:
         """Clear the cache"""
         async with self._lock:

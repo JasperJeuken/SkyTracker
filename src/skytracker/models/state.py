@@ -27,11 +27,11 @@ class StateCategory(Enum):
     SMALL: int = 3
     """Small (15500 to 75000 lbs)."""
     LARGE: int = 4
-    """Larger (75000 to 300000 lbs)."""
+    """Large (75000 to 300000 lbs)."""
     HIGH_VORTEX_LARGE: int = 5
     """High vortex large (such as B-757)."""
     HEAVY: int = 6
-    """Heavey (> 300000 lbs)."""
+    """Heavy (> 300000 lbs)."""
     HIGH_PERFORMANCE: int = 7
     """High performance (> 5g acceleration and 400 kts)."""
     ROTORCRAFT: int = 8

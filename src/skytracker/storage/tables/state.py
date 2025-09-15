@@ -1,5 +1,6 @@
 """Aircraft state table manager"""
 from typing import Optional
+from math import radians
 
 from skytracker.storage.database_manager import DatabaseManager
 from skytracker.storage.tables.table_manager import TableManager
@@ -136,8 +137,17 @@ class StateTableManager(TableManager):
         if len(result) == 0:
             return None
         return result[0]
+
+    def _get_default_batch_query(self) -> str:
+        """Get the default SQL query which selects the latest batch from the table
+
+        Returns:
+            str: default SQL query which selects latest batch
+        """
+        return f'SELECT * FROM {self.TABLE_NAME} WHERE time=(SELECT MAX(time) ' + \
+               f'FROM {self.TABLE_NAME})'
     
-    async def _get_latest_cache_batch(self, limit: int = 0,
+    async def _get_latest_batch_cache(self, limit: int = 0,
                                       min_lat: Optional[float] = None, 
                                       max_lat: Optional[float] = None,
                                       min_lon: Optional[float] = None, 
@@ -169,7 +179,7 @@ class StateTableManager(TableManager):
             return states[:limit]
         return states
     
-    async def _get_latest_cache_server(self, limit: int = 0,
+    async def _get_latest_batch_server(self, limit: int = 0,
                                        min_lat: Optional[float] = None, 
                                        max_lat: Optional[float] = None,
                                        min_lon: Optional[float] = None, 
@@ -187,8 +197,7 @@ class StateTableManager(TableManager):
             list[State]: filtered list of aircraft states from server
         """
         # Create default query
-        query = f'SELECT * FROM {self.TABLE_NAME} WHERE time=(SELECT MAX(time) ' + \
-                f'FROM {self.TABLE_NAME})'
+        query = self._get_default_batch_query()
         
         # Add bounding box condition if specified
         if all(val is not None for val in (min_lat, max_lat, min_lon, max_lon)):
@@ -209,7 +218,7 @@ class StateTableManager(TableManager):
         """Get the latest batch of states in the table
 
         Args:
-            limit (int):  maximum number of states to get (0=all)
+            limit (int, optional):  maximum number of states to get (0=all). Defaults to 0 (all).
             min_lat (float, optional): minimum latitude
             max_lat (float, optional): maximmum latitude
             min_lon (float, optional): minimum longitude
@@ -228,10 +237,81 @@ class StateTableManager(TableManager):
         
         # Use cached data if available
         if not await self._cache.empty():
-            return await self._get_latest_cache_batch(limit, min_lat, max_lat, min_lon, max_lon)
+            return await self._get_latest_batch_cache(limit, min_lat, max_lat, min_lon, max_lon)
         
         # Use server data otherwise
-        return await self._get_latest_cache_server(limit, min_lat, max_lat, min_lon, max_lon)
+        return await self._get_latest_batch_server(limit, min_lat, max_lat, min_lon, max_lon)
+    
+    async def _get_in_radius_cache(self, lat: float, lon: float,
+                                   radius: float = 50., limit: int = 0) -> list[State]:
+        """Get aircraft states in range of a specific point from local cache
+
+        Args:
+            lat (float): point latitude
+            lon (float): point longitude
+            radius (float, optional): radius around point [km]. Defaults to 50.0 [km].
+            limit (int, optional): maximum number of states to get (0=all). Defaults to 0 (all).
+
+        Returns:
+            list[State]: list of aircraft states near point from cache
+        """
+        # TODO: implement
+    
+    async def _get_in_radius_server(self, lat: float, lon: float,
+                                    radius: float = 50., limit: int = 0) -> list[State]:
+        """Get aircraft states in range of a specific point from ClickHouse server
+
+        Args:
+            lat (float): point latitude
+            lon (float): point longitude
+            radius (float, optional): radius around point [km]. Defaults to 50.0 [km].
+            limit (int, optional): maximum number of states to get (0=all). Defaults to 0 (all).
+
+        Returns:
+            list[State]: list of aircraft states near point from server
+        """
+        # Create default query
+        query = self._get_default_batch_query()
+        
+        # Add radius search
+        lat_rad, lon_rad = radians(lat), radians(lon)
+        earth_radius = 6371.
+        query += f' AND {earth_radius} * ACOS(SIN(RADIANS(latitude)) * SIN({lat_rad}) + ' + \
+                 f'COS(RADIANS(latitude)) * COS({lat_rad}) * COS(RADIANS(longitude) - ' + \
+                 f'{lon_rad})) <= {radius}'
+        
+        # Add limit if specified
+        if limit:
+            query += f' LIMIT {limit}'
+        
+        # Run query and return results
+        return await self.query(query)
+
+    async def get_in_radius(self, lat: float, lon: float,
+                            radius: float = 50., limit: int = 0) -> list[State]:
+        """Get aircraft states in range of a specific point
+
+        Args:
+            lat (float): point latitude
+            lon (float): point longitude
+            radius (float, optional): radius around point [km]. Defaults to 50.0 km.
+            limit (int, optional): maximum number of states to get (0=all). Defaults to 0 (all).
+
+        Returns:
+            list[State]: list of aircraft states near point
+        """
+        # Catch incorrect arguments
+        if not isinstance(limit, int) or limit < 0:
+            raise ValueError(f'Query limit must be an integer larger than 0, got "{limit}"')
+        if not isinstance(radius, (int, float)) or radius <= 0:
+            raise ValueError(f'Radius must be a float (or integer) larger than 0, got {radius}')
+
+        # Use cached data if available
+        if not await self._cache.empty():
+            return await self._get_in_radius_cache(lat, lon, radius, limit)
+        
+        # Use server data otherwise
+        return await self._get_in_radius_server(lat, lon, radius, limit)
 
     async def count(self) -> int:
         """Get the number of states stored in the table

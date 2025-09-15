@@ -23,7 +23,6 @@ class Cache(Generic[T]):
         """
         async with self._lock:
             self._data = items
-            print(f'set {len(items)} items in cache')
     
     async def get(self, limit: int = 0) -> List[T]:
         """Get the cached items

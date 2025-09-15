@@ -52,7 +52,7 @@ class StateTableManager(TableManager):
         ]
 
         # Create table
-        await self._database.create_table(self.STATE_TABLE_NAME, fields,
+        await self._database.create_table(self.TABLE_NAME, fields,
                                           'ENGINE MergeTree',
                                           'ORDER BY (icao24, time)',
                                           'SETTINGS index_granularity=8192')
@@ -137,31 +137,102 @@ class StateTableManager(TableManager):
             return None
         return result[0]
     
-    async def get_latest_batch(self, limit: int = 0) -> list[State]:
+    async def _get_latest_cache_batch(self, limit: int = 0,
+                                      min_lat: Optional[float] = None, 
+                                      max_lat: Optional[float] = None,
+                                      min_lon: Optional[float] = None, 
+                                      max_lon: Optional[float] = None) -> list[State]:
+        """Get the latest batch of states from the local cache
+
+        Args:
+            limit (int, optional): maximum number of states to get (0=all). Defaults to 0 (all).
+            min_lat (float, optional): minimum latitude. Defaults to None.
+            max_lat (float, optional): maximum latitude. Defaults to None.
+            min_lon (float, optional): minimum longitude. Defaults to None.
+            max_lon (float, optional): maximum longitude. Defaults to None.
+
+        Returns:
+            list[State]: filtered list of aircraft states from cache
+        """
+        # Get states from cache
+        states = await self._cache.get()
+        
+        # Filter bounding box
+        if all(val is not None for val in (min_lat, max_lat, min_lon, max_lon)):
+            states = [state for state in states if state.latitude is not None and \
+                                                   state.longitude is not None and \
+                                                   min_lat <= state.latitude <= max_lat and \
+                                                   min_lon <= state.longitude <= max_lon]
+        
+        # Return states (limit if specified)
+        if limit > 0:
+            return states[:limit]
+        return states
+    
+    async def _get_latest_cache_server(self, limit: int = 0,
+                                       min_lat: Optional[float] = None, 
+                                       max_lat: Optional[float] = None,
+                                       min_lon: Optional[float] = None, 
+                                       max_lon: Optional[float] = None) -> list[State]:
+        """Get the latest batch of states from the ClickHouse server
+
+        Args:
+            limit (int, optional): maximum number of states to get (0=all). Defaults to 0 (all).
+            min_lat (float, optional): minimum latitude. Defaults to None.
+            max_lat (float, optional): maximum latitude. Defaults to None.
+            min_lon (float, optional): minimum longitude. Defaults to None.
+            max_lon (float, optional): maximum longitude. Defaults to None.
+
+        Returns:
+            list[State]: filtered list of aircraft states from server
+        """
+        # Create default query
+        query = f'SELECT * FROM {self.TABLE_NAME} WHERE time=(SELECT MAX(time) ' + \
+                f'FROM {self.TABLE_NAME})'
+        
+        # Add bounding box condition if specified
+        if all(val is not None for val in (min_lat, max_lat, min_lon, max_lon)):
+            query += f' AND latitude BETWEEN {min_lat} AND {max_lat}' + \
+                     f' AND longitude BETWEEN {min_lon} AND {max_lon}'
+        
+        # Add limit if specified
+        if limit:
+            query += f' LIMIT {limit}'
+        
+        # Run query and return results
+        return await self.query(query)
+    
+    async def get_latest_batch(self, limit: int = 0,
+                               min_lat: Optional[float] = None, max_lat: Optional[float] = None,
+                               min_lon: Optional[float] = None, max_lon: Optional[float] = None) \
+                                -> list[State]:
         """Get the latest batch of states in the table
 
         Args:
             limit (int):  maximum number of states to get (0=all)
+            min_lat (float, optional): minimum latitude
+            max_lat (float, optional): maximmum latitude
+            min_lon (float, optional): minimum longitude
+            max_lon (float, optional): maximum longitude
 
         Returns:
             list[State]: list of aircraft states in last batch
         """
-        # Catch incorrect argument
+        # Catch incorrect arguments
         if not isinstance(limit, int) or limit < 0:
             raise ValueError(f'Query limit must be an integer larger than 0, got "{limit}"')
+        is_not_none = [val is not None for val in (min_lat, max_lat, min_lon, max_lon)]
+
+        if any(is_not_none) and not all(is_not_none):
+            raise ValueError('All bounding box values must be numeric')
         
         # Use cached data if available
         if not await self._cache.empty():
-            return await self._cache.get(limit)
+            return await self._get_latest_cache_batch(limit, min_lat, max_lat, min_lon, max_lon)
+        
+        # Use server data otherwise
+        return await self._get_latest_cache_server(limit, min_lat, max_lat, min_lon, max_lon)
 
-        # Run select query
-        query = f'SELECT * FROM {self.TABLE_NAME} WHERE time=(SELECT MAX(time) ' + \
-                f'FROM {self.TABLE_NAME})'
-        if limit:
-            query += f' LIMIT {limit}'
-        result = await self.query(query)
-        return result
-    
     async def count(self) -> int:
         """Get the number of states stored in the table
 

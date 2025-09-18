@@ -9,7 +9,7 @@ from skytracker.utils.analysis import filter_states
 from skytracker.utils.geographic import distance_between_points
 
 
-class LatestBatchQuery(TableQuery):
+class LatestBatchQuery(TableQuery[State]):
     """Query to select the latest aircraft states (with optional bounding box)"""
 
     def __init__(self, limit: int = 0,
@@ -46,7 +46,7 @@ class LatestBatchQuery(TableQuery):
         self.bbox: Optional[tuple[float, float, float, float]] = None
         if any(is_not_none):
             self.bbox = (lat_min, lat_max, lon_min, lon_max)
-        
+
     async def from_cache(self, states: list[State]) -> list[State]:
         """Filter a cached list of states using stored settings
 
@@ -64,7 +64,7 @@ class LatestBatchQuery(TableQuery):
             lat_min, lat_max, lon_min, lon_max = self.bbox
             states = [state for state in states if lat_min <= state.latitude <= lat_max and \
                                                    lon_min <= state.longitude <= lon_max]
-        
+
         # Return states (limit if specified)
         if self.limit > 0:
             return states[:self.limit]
@@ -88,16 +88,28 @@ class LatestBatchQuery(TableQuery):
             lat_min, lat_max, lon_min, lon_max = self.bbox
             query += f' AND latitude BETWEEN {lat_min} AND {lat_max}' + \
                      f' AND longitude BETWEEN {lon_min} AND {lon_max}'
-        
+
         # Add query limit (if specified)
         if self.limit > 0:
             query += f' LIMIT {self.limit}'
-        
+
         # Return query result
-        return await db.sql_query(query)
+        rows = await db.sql_query(query)
+        return [self.parse_table_row(row) for row in rows]
+
+    def parse_table_row(self, raw_entry: tuple) -> State:
+        """Parse raw table data into a State
+
+        Args:
+            raw_entry (tuple): raw table data
+
+        Returns:
+            State: corresponding State
+        """
+        return State.from_raw(raw_entry)
 
 
-class NearbyQuery(TableQuery):
+class NearbyQuery(TableQuery[State]):
     """Query to select aircraft within a radius from a specified point"""
 
     def __init__(self, lat: float, lon: float, radius: float = 50., limit: int = 0) -> None:
@@ -120,12 +132,12 @@ class NearbyQuery(TableQuery):
         if not isinstance(lon, (int, float)) or lon < -180 or lon > 180:
             raise ValueError('Longitude must be a float (or integer) between -180 and 180 ' + \
                              f'degrees, got "{lon}".')
-        
+
         # Store values
         self.limit: int = limit
         self.point: tuple[float, float] = (lat, lon)
         self.radius: float = radius
-    
+
     async def from_cache(self, states: list[State]) -> list[State]:
         """Filter a cached list of states using stored settings
 
@@ -142,12 +154,12 @@ class NearbyQuery(TableQuery):
         states = [state for state in states if distance_between_points(state.latitude,
                                                                        state.longitude,
                                                                        *self.point) <= self.radius]
-        
+
         # Returns states (limit if specified)
         if self.limit > 0:
             return states[:self.limit]
         return states
-    
+
     async def from_server(self, table: str, db: DatabaseManager) -> list[State]:
         """Query a list of states from server database
 
@@ -167,10 +179,22 @@ class NearbyQuery(TableQuery):
         query += f' AND {earth_radius} * ACOS(SIN(RADIANS(latitude)) * SIN({lat_rad}) ' + \
                  f'+ COS(RADIANS(latitude)) * COS({lat_rad}) * COS(RADIANS(longitude) ' + \
                  f'- {lon_rad})) <= {self.radius}'
-        
+
         # Add limit (if specified)
         if self.limit > 0:
             query += f' LIMIT {self.limit}'
-        
+
         # Return query result
-        return await db.sql_query(query)
+        rows = await db.sql_query(query)
+        return [self.parse_table_row(row) for row in rows]
+
+    def parse_table_row(self, raw_entry: tuple) -> State:
+        """Parse raw table data into a State
+
+        Args:
+            raw_entry (tuple): raw table data
+
+        Returns:
+            State: corresponding State
+        """
+        return State.from_raw(raw_entry)

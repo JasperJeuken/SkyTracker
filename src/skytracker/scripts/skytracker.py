@@ -38,7 +38,7 @@ async def main() -> None:
     args = parser.parse_args()
     if 0 < args.repeat < 15:
         raise ValueError('Repeat value must be at least 15 seconds, or 0 for one call...')
-    
+
     # Start data manager
     with open(args.credentials, 'r', encoding='utf-8') as file:
         credentials = json.load(file)

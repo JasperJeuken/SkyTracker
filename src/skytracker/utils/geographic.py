@@ -16,9 +16,9 @@ def distance_between_points(lat1: float, lon1: float, lat2: float, lon2: float) 
     Returns:
         float: distance between points [km]
     """
-    R = 6371  # [km] Earth radius
+    radius = 6371  # [km] Earth radius
     dlat = np.radians(lat2 - lat1)
     dlon = np.radians(lon2 - lon1)
-    return 2 * R * np.arcsin(
+    return 2 * radius * np.arcsin(
         np.sqrt((1 - np.cos(dlat) + \
                  np.cos(np.radians(lat1)) * np.cos(np.radians(lat2)) * (1 - np.cos(dlon))) / 2))

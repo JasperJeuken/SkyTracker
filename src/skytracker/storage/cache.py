@@ -14,7 +14,7 @@ class Cache(Generic[T]):
         """Initialize cache data storage and async lock"""
         self._data: List[T] = []
         self._lock: Lock = Lock()
-    
+
     async def set(self, items: List[T]) -> None:
         """Replace cache contents with new batch of items
 
@@ -23,7 +23,7 @@ class Cache(Generic[T]):
         """
         async with self._lock:
             self._data = items
-    
+
     async def get(self, limit: int = 0) -> List[T]:
         """Get the cached items
 
@@ -42,7 +42,7 @@ class Cache(Generic[T]):
         """Clear the cache"""
         async with self._lock:
             self._data = []
-    
+
     async def length(self) -> int:
         """Get the number of items stored in the cache
 

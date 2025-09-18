@@ -32,12 +32,12 @@ async def get_nearby_aircraft(storage: Storage = Depends(get_storage),
     # Get aircraft state matching specified settings
     try:
         states = await storage['state'].get_nearby(lat, lon, radius, limit)
-    except ValueError:
-        raise HTTPException('Invalid argument supplied')
-    
+    except ValueError as err:
+        raise HTTPException(status_code=400, detail=f'{err}') from err
+
     # Convert to map state model, only if latitude and longitude available
     return [AircraftMapState(icao24=state.icao24, latitude=state.latitude,
-                             longitude=state.longitude, heading=state.true_track) 
+                             longitude=state.longitude, heading=state.true_track)
             for state in states if state.longitude is not None and state.latitude is not None]
 
 
@@ -71,9 +71,9 @@ async def get_latest_batch(storage: Storage = Depends(get_storage),
     try:
         states = await storage['state'].get_latest_batch(limit, lat_min, lat_max, lon_min, lon_max)
     except ValueError as err:
-        raise HTTPException(status_code=400, detail=f'{err}')
-    
+        raise HTTPException(status_code=400, detail=f'{err}') from err
+
     # Convert to map state model, only if latitude and longitude available
     return [AircraftMapState(icao24=state.icao24, latitude=state.latitude,
-                                 longitude=state.longitude, heading=state.true_track) 
+                                 longitude=state.longitude, heading=state.true_track)
             for state in states if state.longitude is not None and state.latitude is not None]

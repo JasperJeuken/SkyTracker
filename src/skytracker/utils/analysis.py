@@ -11,5 +11,5 @@ def filter_states(states: list[State], *required_field: StateFields) -> list[Sta
     Returns:
         list[State]: filtered list of states
     """
-    return [state for state in states if 
+    return [state for state in states if
             all(getattr(state, field) is not None for field in required_field)]

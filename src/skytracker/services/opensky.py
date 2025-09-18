@@ -60,12 +60,12 @@ class OpenskyAPI:
         try:
             response = requests.post(token_url, data=data, headers=headers, timeout=10)
             response.raise_for_status()
-        except requests.Timeout:
-            raise TimeoutError('Could not get access token (timeout)')
-        except requests.ConnectionError:
-            raise RuntimeError('Could not get access token (connection error)')
-        except requests.HTTPError:
-            raise RuntimeError(f'Could not get access token (error {response.status_code})')
+        except requests.Timeout as exc:
+            raise TimeoutError('Could not get access token (timeout)') from exc
+        except requests.ConnectionError as exc:
+            raise RuntimeError('Could not get access token (connection error)') from exc
+        except requests.HTTPError as exc:
+            raise RuntimeError(f'Could not get access token (err. {response.status_code})') from exc
         access_token = response.json()['access_token']
         return access_token
 
@@ -103,15 +103,14 @@ class OpenskyAPI:
         try:
             response = requests.get(url, headers=headers, timeout=10)
             response.raise_for_status()
-        except requests.Timeout:
-            raise TimeoutError('Could not get data (timeout)')
-        except requests.ConnectionError:
-            raise RuntimeError('Could not get data (connection error)')
-        except requests.HTTPError:
-            print(response.text)
+        except requests.Timeout as exc:
+            raise TimeoutError('Could not get data (timeout)') from exc
+        except requests.ConnectionError as exc:
+            raise RuntimeError('Could not get data (connection error)') from exc
+        except requests.HTTPError as exc:
             if int(response.status_code) == 429:
-                raise RuntimeError(f'Daily limit exceeded (error {response.status_code})')
-            raise RuntimeError(f'Could not get data (error {response.status_code})')
+                raise RuntimeError(f'Daily limit exceeded (error {response.status_code})') from exc
+            raise RuntimeError(f'Could not get data (error {response.status_code})') from exc
         self._last_request = datetime.now()
         return response.json()
 
@@ -196,12 +195,12 @@ async def collect_service(storage: Storage, repeat: int = 90,
             states = api.get_states()
             await storage['state'].insert_states(states)
             print(f'{time_str} inserted {len(states)} states into database...')
-        
+
         # Catch any exceptions
         except Exception as exc:
             print(f'{time_str} exception occured:')
             print(exc)
-        
+
         # Repeat
         finally:
             elapsed_time = time.time() - start_time

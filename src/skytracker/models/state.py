@@ -141,7 +141,7 @@ class State:
             'position_source': self.position_source.value,
             'category': self.category.value
         }
-    
+
     @classmethod
     def from_raw(cls, raw: list[Any]) -> 'State':
         """Populate aircraft state object from raw data
@@ -154,10 +154,10 @@ class State:
         """
         # Decode strings where necessary
         raw = list(raw)
-        for i in range(len(raw)):
-            if isinstance(raw[i], bytes):
-                raw[i] = raw[i].decode('utf-8')
-        
+        for i, raw_entry in enumerate(raw):
+            if isinstance(raw_entry, bytes):
+                raw[i] = raw_entry.decode('utf-8')
+
         # Transform raw list into raw dictionary
         raw: dict[StateFields, Any] = dict(zip(cls.FIELDS, raw))
 

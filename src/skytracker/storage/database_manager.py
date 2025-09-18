@@ -119,7 +119,7 @@ class DatabaseManager:
         """
         async with self._lock:
             return self._connected
-    
+
     async def set_connected(self, new_connected: bool = True) -> None:
         """Set a new connection status for the database manager
 
@@ -128,7 +128,7 @@ class DatabaseManager:
         """
         async with self._lock:
             self._connected = new_connected
-    
+
     async def set_disconnected(self) -> None:
         """Set the database connection status to False"""
         await self.set_connected(False)
@@ -168,7 +168,7 @@ class DatabaseManager:
         """
         await self.connect()
         await self.client.command(f'DROP TABLE {name};')
-    
+
     async def insert(self, name: str, rows: Sequence[Sequence[Any]],
                      column_names: list[str]) -> None:
         """Insert new rows into a table
@@ -180,7 +180,7 @@ class DatabaseManager:
         """
         await self.connect()
         await self.client.insert(name, rows, column_names)
-    
+
     async def sql_query(self, sql_query: str) -> Sequence[Sequence[Any]]:
         """Perform an SQL query
 

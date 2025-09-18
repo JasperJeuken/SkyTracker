@@ -15,11 +15,11 @@ from skytracker.config import get_credentials
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     """Lifespan asynchronous context manager
 
     Args:
-        app (FastAPI): FastAPI application instance
+        _ (FastAPI): FastAPI application instance
 
     Returns:
         AsyncGenerator[None, None]: async generator (no data)
@@ -44,7 +44,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             await task
         except asyncio.CancelledError:
             pass
-    
+
     # Close database connection
     await dependencies.storage.close()
     dependencies.storage = None

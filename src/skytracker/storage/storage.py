@@ -35,7 +35,7 @@ class Storage:
         await self._database.connect()
         for manager in self._tables.values():
             await manager.ensure_exists()
-    
+
     async def close(self) -> None:
         """Close connection to the database"""
         await self._database.close()
@@ -92,7 +92,7 @@ if __name__ == '__main__':
 
         # Close manager
         await storage.close()
-    
+
     # Run main
     import asyncio
     loop = asyncio.new_event_loop()

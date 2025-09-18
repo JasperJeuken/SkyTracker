@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 
 class TableManager(ABC):
-    """Abstract table manager class"""
+    """Abstract table manager"""
 
     @abstractmethod
     async def ensure_exists(self) -> None:

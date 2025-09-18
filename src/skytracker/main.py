@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Start background services
     tasks: list[Task] = []
-    # tasks.append(asyncio.create_task(collect_service(dependencies.storage, repeat=90)))
+    tasks.append(asyncio.create_task(collect_service(dependencies.storage, repeat=90)))
 
     # Run FastAPI application
     yield

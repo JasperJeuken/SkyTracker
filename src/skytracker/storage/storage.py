@@ -2,7 +2,7 @@
 from typing import TypedDict, Literal, overload
 
 from skytracker.storage.database_manager import DatabaseManager
-from skytracker.storage.tables.table_manager import TableManager
+from skytracker.storage.table_manager import TableManager
 from skytracker.storage.tables.state import StateTableManager
 
 

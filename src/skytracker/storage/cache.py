@@ -1,5 +1,5 @@
 """Data cache module"""
-from typing import Generic, TypeVar, List, Optional
+from typing import Generic, TypeVar, List
 
 from asyncio import Lock
 

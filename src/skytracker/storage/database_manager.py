@@ -181,7 +181,7 @@ class DatabaseManager:
         await self.connect()
         await self.client.insert(name, rows, column_names)
     
-    async def query(self, sql_query: str) -> Sequence[Sequence[Any]]:
+    async def sql_query(self, sql_query: str) -> Sequence[Sequence[Any]]:
         """Perform an SQL query
 
         Args:
@@ -191,5 +191,9 @@ class DatabaseManager:
             Sequence[Sequence[Any]]: list of matching rows
         """
         await self.connect()
+        if not isinstance(sql_query, str) or len(sql_query) == 0:
+            raise ValueError(f'Invalid SQL query: "{sql_query}"')
+        if not sql_query.endswith(';'):
+            sql_query += ';'
         result = await self.client.query(sql_query)
         return result.result_rows

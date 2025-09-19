@@ -12,6 +12,7 @@ from skytracker.api.v1 import aircraft, analysis, flights, maps, search
 from skytracker.storage import Storage
 from skytracker.services.opensky import collect_service
 from skytracker.config import get_credentials
+from skytracker.utils import logger
 
 
 @asynccontextmanager
@@ -24,17 +25,22 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     Returns:
         AsyncGenerator[None, None]: async generator (no data)
     """
+    logger.debug('Starting application lifespan...')
+
     # Initialize database connection
     credentials = get_credentials()
     dependencies.storage = Storage(username=credentials['clickhouseUser'],
                                    password=credentials['clickhouseSecret'])
     await dependencies.storage.connect()
+    logger.debug('Connected to database.')
 
     # Start background services
     tasks: list[Task] = []
     tasks.append(asyncio.create_task(collect_service(dependencies.storage, repeat=90)))
+    logger.debug(f'Started {len(tasks)} services.')
 
     # Run FastAPI application
+    logger.debug('Starting FastAPI application...')
     yield
 
     # Shut down background services
@@ -44,10 +50,13 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
             await task
         except asyncio.CancelledError:
             pass
+    logger.debug('Cancelled all tasks.')
 
     # Close database connection
     await dependencies.storage.close()
     dependencies.storage = None
+    logger.debug('Closed database connection.')
+    logger.debug('Application lifespan ended.')
 
 
 app = FastAPI(
@@ -64,9 +73,3 @@ app.include_router(analysis.router, prefix='/api/v1')
 app.include_router(flights.router, prefix='/api/v1')
 app.include_router(maps.router, prefix='/api/v1')
 app.include_router(search.router, prefix='/api/v1')
-
-
-@app.get('/')
-async def root():
-    """Root message"""
-    return {'message': 'welcome'}

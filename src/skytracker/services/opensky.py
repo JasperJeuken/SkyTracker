@@ -9,6 +9,7 @@ import requests
 
 from skytracker.models.state import State
 from skytracker.storage import Storage
+from skytracker.utils import logger
 
 
 class OpenskyAPI:
@@ -61,12 +62,16 @@ class OpenskyAPI:
             response = requests.post(token_url, data=data, headers=headers, timeout=10)
             response.raise_for_status()
         except requests.Timeout as exc:
+            logger.error('Could not get access token (timeout)')
             raise TimeoutError('Could not get access token (timeout)') from exc
         except requests.ConnectionError as exc:
+            logger.error('Could not get access token (connection error)')
             raise RuntimeError('Could not get access token (connection error)') from exc
         except requests.HTTPError as exc:
+            logger.error(f'Could not get access token (HTML error {response.status_code})')
             raise RuntimeError(f'Could not get access token (err. {response.status_code})') from exc
         access_token = response.json()['access_token']
+        logger.debug(f'Received new access token ({len(access_token)} chars).')
         return access_token
 
     def _update_access_token(self) -> None:
@@ -104,12 +109,16 @@ class OpenskyAPI:
             response = requests.get(url, headers=headers, timeout=10)
             response.raise_for_status()
         except requests.Timeout as exc:
+            logger.error('Could not get data (timeout)')
             raise TimeoutError('Could not get data (timeout)') from exc
         except requests.ConnectionError as exc:
+            logger.error('Could not get data (connection error)')
             raise RuntimeError('Could not get data (connection error)') from exc
         except requests.HTTPError as exc:
             if int(response.status_code) == 429:
+                logger.error(f'Daily limit exceeded (error {response.status_code})')
                 raise RuntimeError(f'Daily limit exceeded (error {response.status_code})') from exc
+            logger.error(f'Could not get data (HTML error {response.status_code})')
             raise RuntimeError(f'Could not get data (error {response.status_code})') from exc
         self._last_request = datetime.now()
         return response.json()
@@ -134,6 +143,7 @@ class OpenskyAPI:
         # Add timestamp
         if time is not None:
             if not isinstance(time, datetime):
+                logger.error(f'Specified time not of correct type ({type(time)})')
                 raise TypeError('Specified time must be datetime object')
             unix_timestamp = int(time.timestamp())
             arguments.append(f'time={unix_timestamp}')
@@ -143,9 +153,11 @@ class OpenskyAPI:
             if isinstance(icao24, str):
                 icao24 = [icao24]
             elif not isinstance(icao24, list):
+                logger.error(f'Specified ICAO24 list not of correct type ({type(icao24)})')
                 raise TypeError('Specified ICAO24 code must be string or list of strings')
             for code in icao24:
                 if not isinstance(code, str):
+                    logger.error(f'Specified ICAO24 code not of correct type ({type(code)})')
                     raise TypeError('Specified ICAO24 code must be string or list of strings')
                 arguments.append(f'icao24={code}')
 
@@ -153,6 +165,7 @@ class OpenskyAPI:
         if bbox is not None:
             if not isinstance(bbox, tuple) or len(bbox) != 4 or \
                 any(not isinstance(v, (int, float)) for v in bbox):
+                logger.error(f'Bounding box not of correct type ({type(bbox)})')
                 raise TypeError('Bounding box must be tuple of 4 numbers')
             arguments.append(f'lamin={bbox[0]}')
             arguments.append(f'lomin={bbox[1]}')
@@ -163,11 +176,14 @@ class OpenskyAPI:
         endpoint = 'states/all'
         if len(arguments) > 0:
             endpoint += '?' + '&'.join(arguments)
+        logger.debug(f'Requesting states from "{endpoint}"...')
         data = self._get_json(endpoint)
         if 'states' not in data or 'time' not in data:
+            logger.error(f'Expected data not present ({data.keys()})')
             raise ValueError('Expected keys not present')
 
         # Parse to state list
+        logger.debug(f'Received {len(data['states'])} states (time={data['time']}).')
         return [State.from_raw([data['time']] + state + [0]) for state in data['states']]
 
 
@@ -181,6 +197,8 @@ async def collect_service(storage: Storage, repeat: int = 90,
         credentials_file (str, optional): path to credentials file for OpenSky API.
             Defaults to 'credentials.json'
     """
+    logger.debug('Starting collection service...')
+
     # Start OpenSky API
     api = OpenskyAPI(credentials_file)
 
@@ -194,12 +212,11 @@ async def collect_service(storage: Storage, repeat: int = 90,
         try:
             states = api.get_states()
             await storage['state'].insert_states(states)
-            print(f'{time_str} inserted {len(states)} states into database...')
+            logger.info(f'Inserted {len(states)} states into database.')
 
         # Catch any exceptions
         except Exception as exc:
-            print(f'{time_str} exception occured:')
-            print(exc)
+            logger.error(f'Collection error occurred: "{exc}"')
 
         # Repeat
         finally:

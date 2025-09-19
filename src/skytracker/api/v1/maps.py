@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from skytracker.dependencies import get_storage
 from skytracker.storage import Storage
 from skytracker.models.maps import AircraftMapState
+from skytracker.utils import logger
 
 
 router = APIRouter(prefix='/maps', tags=['maps'])
@@ -36,9 +37,11 @@ async def get_nearby_aircraft(storage: Storage = Depends(get_storage),
         raise HTTPException(status_code=400, detail=f'{err}') from err
 
     # Convert to map state model, only if latitude and longitude available
-    return [AircraftMapState(icao24=state.icao24, latitude=state.latitude,
-                             longitude=state.longitude, heading=state.true_track)
-            for state in states if state.longitude is not None and state.latitude is not None]
+    logger.info(f'Get nearby aircraft: {len(states)} states retrieved.')
+    return [AircraftMapState(icao24=state.icao24,
+                             latitude=state.latitude,
+                             longitude=state.longitude,
+                             heading=state.true_track) for state in states]
 
 
 @router.get('', response_model=List[AircraftMapState])
@@ -74,6 +77,8 @@ async def get_latest_batch(storage: Storage = Depends(get_storage),
         raise HTTPException(status_code=400, detail=f'{err}') from err
 
     # Convert to map state model, only if latitude and longitude available
-    return [AircraftMapState(icao24=state.icao24, latitude=state.latitude,
-                                 longitude=state.longitude, heading=state.true_track)
-            for state in states if state.longitude is not None and state.latitude is not None]
+    logger.info(f'Get latest batch: {len(states)} states retrieved.')
+    return [AircraftMapState(icao24=state.icao24,
+                             latitude=state.latitude,
+                             longitude=state.longitude,
+                             heading=state.true_track) for state in states]

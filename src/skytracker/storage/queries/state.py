@@ -7,6 +7,7 @@ from skytracker.models.state import State
 from skytracker.storage.database_manager import DatabaseManager
 from skytracker.utils.analysis import filter_states
 from skytracker.utils.geographic import distance_between_points
+from skytracker.utils import logger, log_and_raise
 
 
 class LatestBatchQuery(TableQuery[State]):
@@ -26,20 +27,20 @@ class LatestBatchQuery(TableQuery[State]):
         """
         # Parse arguments
         if not isinstance(limit, int) or limit < 0:
-            raise ValueError(f'Query limit must be an integer larger than 0, got "{limit}".')
+            log_and_raise(ValueError, f'Query limit not an integer >= 0 ({limit})')
         is_not_none = [val is not None for val in (lat_min, lat_max, lon_min, lon_max)]
         if any(is_not_none) and not all(is_not_none):
-            raise ValueError('All bounding box values must be specified')
+            log_and_raise(ValueError, 'Not all bounding box values are specified')
         if any(is_not_none):
             if not all(isinstance(val, (int, float)) for val in (lat_min, lat_max,
                                                                  lon_min, lon_max)):
-                raise ValueError('All bounding box values must be numeric')
+                log_and_raise(ValueError, 'Not all bounding box values are numeric')
             if not (-90 <= lat_min <= 90) or not (-90 <= lat_max <= 90) or lat_min >= lat_max:
-                raise ValueError('Latitude must be a float (or integer) between -90 and 90 ' + \
-                                 f'degrees, got "{lat_min}" and "{lat_max}".')
+                log_and_raise(ValueError, 'Latitude not a float between -90 and 90 ' + \
+                                          f'({lat_min}, {lat_max})')
             if not (-180 <= lon_min <= 180) or not (-180 <= lon_max <= 180) or lon_min >= lon_max:
-                raise ValueError('Longitude must be a float (or integer) between -180 and 180 ' + \
-                                 f'degrees, got "{lon_min}" and "{lon_max}".')
+                log_and_raise(ValueError, 'Longitude not a float between -180 and 180 ' + \
+                                          f'({lon_min}, {lon_max})')
 
         # Store values
         self.limit: int = limit
@@ -58,16 +59,21 @@ class LatestBatchQuery(TableQuery[State]):
         """
         # Require latitude and longitude fields
         states = filter_states(states, 'latitude', 'longitude')
+        logger.debug(f'Retrieved {len(states)} from cache')
 
         # Filter bounding box
         if self.bbox is not None:
             lat_min, lat_max, lon_min, lon_max = self.bbox
             states = [state for state in states if lat_min <= state.latitude <= lat_max and \
                                                    lon_min <= state.longitude <= lon_max]
+            logger.debug(f'Filtered to {len(states)} by bbox ({self.bbox})')
 
         # Return states (limit if specified)
         if self.limit > 0:
-            return states[:self.limit]
+            states = states[:self.limit]
+            logger.debug(f'Filtered to {len(states)} by limit ({self.limit})')
+        
+        logger.info(f'Retrieved {len(states)} matching states from cache')
         return states
 
     async def from_server(self, table: str, db: DatabaseManager) -> list[State]:
@@ -94,7 +100,9 @@ class LatestBatchQuery(TableQuery[State]):
             query += f' LIMIT {self.limit}'
 
         # Return query result
+        logger.debug(f'Querying server with "{query}"...')
         rows = await db.sql_query(query)
+        logger.info(f'Retrieved {len(rows)} matching states from server')
         return [self.parse_table_row(row) for row in rows]
 
     def parse_table_row(self, raw_entry: tuple) -> State:
@@ -123,15 +131,13 @@ class NearbyQuery(TableQuery[State]):
         """
         # Parse arguments
         if not isinstance(limit, int) or limit < 0:
-            raise ValueError(f'Query limit must be an integer larger than 0, got "{limit}".')
+            log_and_raise(ValueError, f'Query limit not an integer >= 0 ({limit})')
         if not isinstance(radius, (int, float)) or radius <= 0:
-            raise ValueError(f'Radius must be a float (or integer) larger than 0, got "{radius}".')
+            log_and_raise(ValueError, f'Radius not a float larger than 0 ({radius})')
         if not isinstance(lat, (int, float)) or lat < -90 or lat > 90:
-            raise ValueError('Latitude must be a float (or integer) between -90 and 90 ' + \
-                             f'degrees, got "{lat}".')
+            log_and_raise(ValueError, f'Latitude not a float between -90 and 90 ({lat})')
         if not isinstance(lon, (int, float)) or lon < -180 or lon > 180:
-            raise ValueError('Longitude must be a float (or integer) between -180 and 180 ' + \
-                             f'degrees, got "{lon}".')
+            log_and_raise(ValueError, f'Longitude not a float between -180 and 180 ({lon})')
 
         # Store values
         self.limit: int = limit
@@ -149,15 +155,20 @@ class NearbyQuery(TableQuery[State]):
         """
         # Require latitude and longitude fields
         states = filter_states(states, 'latitude', 'longitude')
+        logger.debug(f'Retrieved {len(states)} from cache')
 
         # Filter radius
         states = [state for state in states if distance_between_points(state.latitude,
                                                                        state.longitude,
                                                                        *self.point) <= self.radius]
+        logger.debug(f'Filtered to {len(states)} by radius ({self.radius} km)')
 
         # Returns states (limit if specified)
         if self.limit > 0:
-            return states[:self.limit]
+            states = states[:self.limit]
+            logger.debug(f'Filtered to {len(states)} by limit ({self.limit})')
+        
+        logger.info(f'Retrieved {len(states)} matching states from cache')
         return states
 
     async def from_server(self, table: str, db: DatabaseManager) -> list[State]:
@@ -185,7 +196,9 @@ class NearbyQuery(TableQuery[State]):
             query += f' LIMIT {self.limit}'
 
         # Return query result
+        logger.debug(f'Querying database with "{query}"...')
         rows = await db.sql_query(query)
+        logger.info(f'Retrieved {len(rows)} matching states from server')
         return [self.parse_table_row(row) for row in rows]
 
     def parse_table_row(self, raw_entry: tuple) -> State:

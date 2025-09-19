@@ -5,6 +5,8 @@ from asyncio import Lock
 import clickhouse_connect
 from clickhouse_connect.driver.asyncclient import AsyncClient
 
+from skytracker.utils import logger, log_and_raise
+
 
 class DatabaseManager:
     """Generic async database manager for ClickHouse
@@ -101,15 +103,20 @@ class DatabaseManager:
         """Connect to the ClickHouse server"""
         if await self.is_connected():
             return
+        logger.info('Connecting ClickHouse manager ' + \
+                    f'({self.client_settings["host"]}:{self.client_settings["port"]})...')
         self.client = await clickhouse_connect.get_async_client(**self.client_settings)
         await self.set_connected()
+        logger.info('Connected ClickHouse manager')
 
     async def close(self) -> None:
         """Close client connection"""
         if not await self.is_connected():
             return
+        logger.info('Disconnecting ClickHouse manager...')
         await self.client.close()
         await self.set_disconnected()
+        logger.info('Disconnected ClickHouse manager')
 
     async def is_connected(self) -> bool:
         """Check if the client is connected to the ClickHouse databse
@@ -158,6 +165,7 @@ class DatabaseManager:
         if args:
             command += ' ' + ' '.join(args)
         command += ';'
+        logger.debug(f'Creating table "{name}" with {len(columns)} columns...')
         await self.client.command(command)
 
     async def drop_table(self, name: str) -> None:
@@ -167,6 +175,7 @@ class DatabaseManager:
             name (str): name of table to drop
         """
         await self.connect()
+        logger.info(f'Dropping table {name}...')
         await self.client.command(f'DROP TABLE {name};')
 
     async def insert(self, name: str, rows: Sequence[Sequence[Any]],
@@ -179,6 +188,7 @@ class DatabaseManager:
             column_names (list[str]): names of columns corresponding to row values
         """
         await self.connect()
+        logger.info(f'Inserting {len(rows)} rows into "{name}"...')
         await self.client.insert(name, rows, column_names)
 
     async def sql_query(self, sql_query: str) -> Sequence[Sequence[Any]]:
@@ -192,8 +202,9 @@ class DatabaseManager:
         """
         await self.connect()
         if not isinstance(sql_query, str) or len(sql_query) == 0:
-            raise ValueError(f'Invalid SQL query: "{sql_query}"')
+            log_and_raise(ValueError, f'Invalid SQL query ({sql_query})')
         if not sql_query.endswith(';'):
             sql_query += ';'
+        logger.debug(f'Running SQL query ({sql_query})')
         result = await self.client.query(sql_query)
         return result.result_rows

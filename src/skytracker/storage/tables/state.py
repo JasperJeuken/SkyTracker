@@ -6,6 +6,7 @@ from skytracker.storage.table_manager import TableManager
 from skytracker.storage.cache import Cache
 from skytracker.models.state import State
 from skytracker.storage.queries.state import NearbyQuery, LatestBatchQuery
+from skytracker.utils import logger, log_and_raise
 
 
 class StateTableManager(TableManager[State]):
@@ -26,6 +27,7 @@ class StateTableManager(TableManager[State]):
         """Ensure aircraft state table exists"""
         # Skip if table already exists
         if await self.exists():
+            logger.debug(f'Table "{self.TABLE_NAME}" exists')
             return
 
         # Fields for state table
@@ -52,6 +54,7 @@ class StateTableManager(TableManager[State]):
         ]
 
         # Create table
+        logger.info(f'Table "{self.TABLE_NAME}" does not exist, creating...')
         await self._database.create_table(self.TABLE_NAME, fields,
                                           'ENGINE MergeTree',
                                           'ORDER BY (icao24, time)',
@@ -71,9 +74,11 @@ class StateTableManager(TableManager[State]):
         Args:
             states (list[State]): list of states to insert
         """
+        logger.debug(f'Setting cache with {len(states)}...')
         await self._cache.set(states)
         rows = [list(state.to_json().values()) for state in states]
         columns = State.FIELDS
+        logger.debug(f'Inserting {len(states)} into database...')
         await self._database.insert(self.TABLE_NAME, rows, columns)
 
     async def insert_state(self, state: State) -> None:
@@ -96,14 +101,15 @@ class StateTableManager(TableManager[State]):
         """
         # Catch incorrect arguments
         if not isinstance(icao24, str) or len(icao24) != 6:
-            raise ValueError(f'ICAO 24-bit address must be a 6-character string, got "{icao24}"')
+            log_and_raise(ValueError, f'ICAO24 code not a 6-character string ({icao24})')
         if not isinstance(limit, int) or limit < 0:
-            raise ValueError(f'Query limit must be an integer larger than 0, got "{limit}"')
+            log_and_raise(ValueError, f'Query limit not an integer >= 0 ({limit})')
 
         # Run select query
         query = f"SELECT * FROM {self.TABLE_NAME} WHERE icao24='{icao24}' ORDER BY time DESC"
         if limit > 0:
             query += f' LIMIT {limit}'
+        logger.debug(f'Requesting aircraft history with "{query}"')
         return await self._database.sql_query(query)
 
     async def get_last_aircraft_state(self, icao24: str) -> Optional[State]:
@@ -162,4 +168,5 @@ class StateTableManager(TableManager[State]):
             int: number of states stored in table
         """
         query = f'SELECT COUNT(*) FROM {self.TABLE_NAME}'
+        logger.debug(f'Requesting row count with "{query}"')
         return await self._database.sql_query(query)[0][0]

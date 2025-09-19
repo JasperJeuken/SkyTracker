@@ -31,9 +31,11 @@ async def get_nearby_aircraft(storage: Storage = Depends(get_storage),
         List[AircraftMapState]: list of aircraft states near specific point
     """
     # Get aircraft state matching specified settings
+    logger.info(f'Get nearby aircraft: lat={lat}, lon={lon}, radius={radius}, limit={limit}')
     try:
         states = await storage['state'].get_nearby(lat, lon, radius, limit)
     except ValueError as err:
+        logger.error(f'Request failed ({err})')
         raise HTTPException(status_code=400, detail=f'{err}') from err
 
     # Convert to map state model, only if latitude and longitude available
@@ -71,9 +73,12 @@ async def get_latest_batch(storage: Storage = Depends(get_storage),
         List[AircraftMapState]: list of aircraft map states (icao24, latitude, longitude, heading)
     """
     # Get aircraft state matching specified settings
+    logger.info(f'Get latest batch: bbox=({lat_min}, {lat_max}, {lon_min}, {lon_max}), ' + \
+                f'limit={limit}')
     try:
         states = await storage['state'].get_latest_batch(limit, lat_min, lat_max, lon_min, lon_max)
     except ValueError as err:
+        logger.error(f'Request failed ({err})')
         raise HTTPException(status_code=400, detail=f'{err}') from err
 
     # Convert to map state model, only if latitude and longitude available

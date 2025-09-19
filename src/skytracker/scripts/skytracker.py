@@ -10,6 +10,9 @@ from skytracker.storage import Storage
 from skytracker.services.opensky import OpenskyAPI
 
 
+# TODO: remove (obsolete)
+
+
 async def main() -> None:
     """Main async entrypoint for SkyTracker CLI"""
 

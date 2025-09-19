@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 
 
-LOG_FORMAT: str = '%(asctime)s [%(levelname)s] %(relativepath)s - %(message)s'
+LOG_FORMAT: str = '%(asctime)s [%(levelname)s] %(relativepath)s:%(funcName)s() - %(message)s'
 
 
 class PackagePathFilter(logging.Filter):
@@ -74,4 +74,21 @@ def setup_logger(name: Optional[str] = None, level: int = logging.INFO,
 
     return logger
 
+
 logger: logging.Logger = setup_logger('skytracker')
+
+
+def log_and_raise(exc_type: type[Exception], message: str,
+                  cause: Optional[Exception] = None) -> None:
+    """Log an exception message and raise the corresponding exception
+
+    Args:
+        exc_type (type[Exception]): type of exception to raise
+        message (str): message to raise exception with
+        cause (Exception, optional): exception which caused this exception. Defaults to None.
+
+    Raises:
+        exc_type: raised exception with specified message, from cause (if specified)
+    """
+    logger.error(message)
+    raise exc_type(message) from cause

@@ -10,7 +10,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from skytracker import dependencies
 from skytracker.api.v1 import aircraft, analysis, flights, maps, search
 from skytracker.storage import Storage
-from skytracker.services.opensky import collect_service
+from skytracker.services.opensky import opensky_service
 from skytracker.config import get_credentials
 from skytracker.utils import logger
 
@@ -36,7 +36,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
 
     # Start background services
     tasks: list[Task] = []
-    tasks.append(asyncio.create_task(collect_service(dependencies.storage, repeat=90)))
+    tasks.append(asyncio.create_task(opensky_service(dependencies.storage, repeat=90)))
     logger.debug(f'Started {len(tasks)} services.')
 
     # Run FastAPI application

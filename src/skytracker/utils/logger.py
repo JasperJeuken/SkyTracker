@@ -33,13 +33,13 @@ class PackagePathFilter(logging.Filter):
         return True
 
 
-def setup_logger(name: Optional[str] = None, level: int = logging.INFO,
+def setup_logger(name: Optional[str] = None, level: int = logging.DEBUG,
                  log_file: Optional[str] = None) -> logging.Logger:
     """Configure a logger for the application
 
     Args:
         name (str, optional): logger name (root if not specified). Defaults to None.
-        level (int, optional): logging level. Defaults to logging.INFO.
+        level (int, optional): logging level. Defaults to logging.DEBUG.
         log_file (str, optional): path to file to log in. Defaults to ".\\logs\\skytracker.log".
 
     Returns:
@@ -62,12 +62,14 @@ def setup_logger(name: Optional[str] = None, level: int = logging.INFO,
 
     # Add console handler
     console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(logging.Formatter(LOG_FORMAT))
     console_handler.addFilter(PackagePathFilter())
     logger.addHandler(console_handler)
 
     # Add file handler
     file_handler = logging.FileHandler(log_file, encoding='utf-8')
+    file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
     file_handler.addFilter(PackagePathFilter())
     logger.addHandler(file_handler)

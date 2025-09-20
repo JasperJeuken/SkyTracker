@@ -10,7 +10,7 @@ import requests
 from skytracker.models.state import State
 from skytracker.storage import Storage
 from skytracker.utils import logger, log_and_raise
-from skytracker.config import settings
+from skytracker.settings import settings
 
 
 class OpenskyAPI:

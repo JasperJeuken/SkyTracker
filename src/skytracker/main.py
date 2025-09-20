@@ -12,7 +12,7 @@ from skytracker.api.v1 import aircraft, analysis, flights, maps, search
 from skytracker.storage import Storage
 from skytracker.services.opensky import opensky_service
 from skytracker.utils import logger
-from skytracker.config import settings
+from skytracker.settings import settings
 
 
 @asynccontextmanager

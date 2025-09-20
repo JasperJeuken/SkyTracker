@@ -2,7 +2,7 @@
 import json
 import time
 import asyncio
-from typing import Optional, Union
+from typing import Optional, Union, Literal
 from datetime import datetime
 
 import requests
@@ -10,29 +10,30 @@ import requests
 from skytracker.models.state import State
 from skytracker.storage import Storage
 from skytracker.utils import logger, log_and_raise
+from skytracker.config import settings
 
 
 class OpenskyAPI:
     """OpenSky API object"""
 
-    def __init__(self, credentials_file: str = 'credentials.json') -> None:
+    def __init__(self, client_id: str, client_secret: str) -> None:
         """Initialize API by getting access token
-
+        
         Args:
-            credentials_file (str, optional): file with API credentials.
-                Defaults to 'credentials.json'.
+            client_id (str): OpenSky Network API client ID
+            client_secret (str): OpenSky Network API client secret
         """
-        self._credentials_file: str = credentials_file
-        self._access_token: str = self._get_access_token(self._credentials_file)
+        self._credentials: dict[Literal['client_id', 'client_secret'], str] = {
+            'client_id': client_id,
+            'client_secret': client_secret
+        }
+        self._access_token: str = self._get_access_token()
         self._last_access_token: datetime = datetime.now()
         self._last_request: datetime = datetime.fromtimestamp(0)
         self._base_url: str = 'https://opensky-network.org/api'
 
-    def _get_access_token(self, credentials_file: str) -> str:
+    def _get_access_token(self) -> str:
         """Request an API access token
-
-        Args:
-            credentials_file (str): file with API credentials
 
         Raises:
             TimeoutError: if request times out
@@ -41,19 +42,12 @@ class OpenskyAPI:
         Returns:
             str: received access token
         """
-        # Read credentials
-        with open(credentials_file, 'r', encoding='utf-8') as file:
-            credentials = json.load(file)
-        client_id = credentials['clientId']
-        client_secret = credentials['clientSecret']
-
         # Generate post request
         token_url = 'https://auth.opensky-network.org/auth/realms/' + \
             'opensky-network/protocol/openid-connect/token'
         data = {
             'grant_type': 'client_credentials',
-            'client_id': client_id,
-            'client_secret': client_secret
+            **self._credentials
         }
         headers = {'Content-Type': 'application/x-www-form-urlencoded'}
 
@@ -79,7 +73,7 @@ class OpenskyAPI:
 
     def _update_access_token(self) -> None:
         """Update the internal API access token"""
-        self._access_token = self._get_access_token(self._credentials_file)
+        self._access_token = self._get_access_token()
 
     def _get_json(self, endpoint: str) -> dict:
         """Get JSON data from an API endpoint
@@ -191,20 +185,17 @@ class OpenskyAPI:
         return [State.from_raw([data['time']] + state + [0]) for state in data['states']]
 
 
-async def opensky_service(storage: Storage, repeat: int = 90,
-                          credentials_file: str = 'credentials.json') -> None:
+async def opensky_service(storage: Storage, repeat: int = 90) -> None:
     """Service which periodically collects aircraft states and writes it to the state table
 
     Args:
         storage (Storage): database storage instance
         repeat (int, optional): period with which to collect states [sec]. Defaults to 90 sec.
-        credentials_file (str, optional): path to credentials file for OpenSky API.
-            Defaults to 'credentials.json'
     """
     logger.debug('Starting OpenSky service...')
 
     # Start OpenSky API
-    api = OpenskyAPI(credentials_file)
+    api = OpenskyAPI(settings.opensky_client_id, settings.opensky_client_secret)
 
     # Start acquisition loop
     running = True

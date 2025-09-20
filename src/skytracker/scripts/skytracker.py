@@ -23,10 +23,10 @@ async def main() -> None:
         usage='skytracker.py [options]'
     )
     parser.add_argument_group('File settings', 'Change credentials and output file')
-    parser.add_argument('-o', '--outdir', default='output', type=pathlib.Path,
-                        help='Path to output directory (default: "output")')
-    parser.add_argument('-f', '--filename', default='%Y%m%d', type=str,
-                        help='Output filename, supports time formatting (default: "%%Y%%m%%d")')
+    parser.add_argument('-h', '--host', default='localhost', type=str,
+                        help='Hostname for ClickHouse server (default: "localhost")')
+    parser.add_argument('-p', '--port', default=8123, type=int,
+                        help='Port for ClickHouse server (default: 8123)')
     parser.add_argument('-c', '--credentials', default='credentials.json', type=pathlib.Path,
                         help='Path to credentials file (default: "credentials.json")')
     parser.add_argument_group('State parameters', 'Settings for state request')

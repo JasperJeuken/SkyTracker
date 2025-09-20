@@ -11,8 +11,8 @@ from skytracker import dependencies
 from skytracker.api.v1 import aircraft, analysis, flights, maps, search
 from skytracker.storage import Storage
 from skytracker.services.opensky import opensky_service
-from skytracker.config import get_credentials
 from skytracker.utils import logger
+from skytracker.config import settings
 
 
 @asynccontextmanager
@@ -28,9 +28,11 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     logger.debug('Starting application lifespan...')
 
     # Initialize database connection
-    credentials = get_credentials()
-    dependencies.storage = Storage(username=credentials['clickhouseUser'],
-                                   password=credentials['clickhouseSecret'])
+    dependencies.storage = Storage(username=settings.clickhouse_user,
+                                   password=settings.clickhouse_password,
+                                   host=settings.clickhouse_host,
+                                   port=settings.clickhouse_port,
+                                   database=settings.clickhouse_database)
     await dependencies.storage.connect()
     logger.debug('Connected to database.')
 

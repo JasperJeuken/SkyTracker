@@ -12,15 +12,24 @@ EntryType = TypeVar('EntryType')
 class TableQuery(Generic[EntryType], metaclass=ABCMeta):
     """Abstract table query"""
 
+    @property
     @abstractmethod
-    async def from_cache(self, states: list[State]) -> list[EntryType]:
+    def allows_cache(self) -> bool:
+        """Whether this query can use cached data
+
+        Returns:
+            bool: whether this query can use cached data
+        """
+
+    @abstractmethod
+    async def from_cache(self, states: list[EntryType]) -> list[EntryType]:
         """Query a list of states from cache
         
         Args:
-            states (list[State]): unfiltered list of states
+            states (list[EntryType]): unfiltered list of states
 
         Returns:
-            list[State]: filtered list of states
+            list[EntryType]: filtered list of states
         """
 
     @abstractmethod
@@ -32,7 +41,7 @@ class TableQuery(Generic[EntryType], metaclass=ABCMeta):
             db (DatabaseManager): database manager instance
         
         Returns:
-            list[State]: selected list of states
+            list[EntryType]: selected list of states
         """
 
     @abstractmethod

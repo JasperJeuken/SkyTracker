@@ -6,12 +6,15 @@ from skytracker.storage.table_query import TableQuery
 from skytracker.models.state import State
 from skytracker.storage.database_manager import DatabaseManager
 from skytracker.utils.analysis import filter_states
+from skytracker.utils.conversions import datetime_ago_from_time_string
 from skytracker.utils.geographic import distance_between_points
 from skytracker.utils import logger, log_and_raise
 
 
 class LatestBatchQuery(TableQuery[State]):
     """Query to select the latest aircraft states (with optional bounding box)"""
+
+    allows_cache = True
 
     def __init__(self, limit: int = 0,
                  lat_min: Optional[float] = None, lat_max: Optional[float] = None,
@@ -103,7 +106,7 @@ class LatestBatchQuery(TableQuery[State]):
         logger.debug(f'Querying server with "{query}"...')
         rows = await db.sql_query(query)
         logger.info(f'Retrieved {len(rows)} matching states from server')
-        return [self.parse_table_row(row) for row in rows]
+        return filter_states([self.parse_table_row(row) for row in rows], 'latitude', 'longitude')
 
     def parse_table_row(self, raw_entry: tuple) -> State:
         """Parse raw table data into a State
@@ -119,6 +122,8 @@ class LatestBatchQuery(TableQuery[State]):
 
 class NearbyQuery(TableQuery[State]):
     """Query to select aircraft within a radius from a specified point"""
+
+    allows_cache = True
 
     def __init__(self, lat: float, lon: float, radius: float = 50., limit: int = 0) -> None:
         """Initialize query with parameters
@@ -199,7 +204,82 @@ class NearbyQuery(TableQuery[State]):
         logger.debug(f'Querying database with "{query}"...')
         rows = await db.sql_query(query)
         logger.info(f'Retrieved {len(rows)} matching states from server')
-        return [self.parse_table_row(row) for row in rows]
+        return filter_states([self.parse_table_row(row) for row in rows], 'latitude', 'longitude')
+
+    def parse_table_row(self, raw_entry: tuple) -> State:
+        """Parse raw table data into a State
+
+        Args:
+            raw_entry (tuple): raw table data
+
+        Returns:
+            State: corresponding State
+        """
+        return State.from_raw(raw_entry)
+
+
+class TrackQuery(TableQuery[State]):
+    """Query to select track history of an aircraft"""
+
+    allows_cache = False
+
+    def __init__(self, icao24: str, duration: str, limit: int = 0) -> None:
+        """Initialize query with parameters
+
+        Args:
+            icao24 (str): aircraft ICAO 24-bit address (hex code)
+            duration (str): track duration
+            limit (int, optional): maximum number of states to get (0=all). Defaults to 0 (all).
+        """
+        # Parse arguments
+        if not isinstance(limit, int) or limit < 0:
+            log_and_raise(ValueError, f'Query limit not an integer >= 0 ({limit})')
+        if not isinstance(icao24, str) or len(icao24) != 6:
+            log_and_raise(ValueError, f'ICAO code not a 6-character string ({icao24})')
+        if not isinstance(duration, str):
+            log_and_raise(ValueError, f'Duration not a string ({duration})')
+        
+        # Store values
+        self.icao24: str = icao24
+        self.start_timestamp: int = int(datetime_ago_from_time_string(duration).timestamp())
+        self.limit: int = limit
+    
+    async def from_cache(self, _) -> None:
+        """Filter a cached list of states
+
+        Raises:
+            ValueError: track query does not support cache
+        """
+        raise ValueError('Track query cannot use cache')
+    
+    async def from_server(self, table: str, db: DatabaseManager) -> list[State]:
+        """Query a list of states from server database
+
+        Args:
+            table (str): name of database table
+            db (DatabaseManager): database manager instance
+
+        Returns:
+            list[State]: selected list of states
+        """
+        # Create query to select specific aircraft history (time descending)
+        query = f"SELECT * FROM {table} WHERE icao24='{self.icao24}'"
+
+        # Filter by duration
+        query += f' AND time >= {self.start_timestamp}'
+
+        # Order by descending time
+        query += ' ORDER BY time DESC'
+
+        # Add limit (if specified)
+        if self.limit > 0:
+            query += f' LIMIT {self.limit}'
+
+        # Return query result
+        logger.debug(f'Querying server with "{query}"...')
+        rows = await db.sql_query(query)
+        logger.info(f'Retrieved {len(rows)} matching states from server')
+        return filter_states([self.parse_table_row(row) for row in rows], 'latitude', 'longitude')
 
     def parse_table_row(self, raw_entry: tuple) -> State:
         """Parse raw table data into a State

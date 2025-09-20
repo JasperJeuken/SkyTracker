@@ -37,6 +37,6 @@ class TableManager(Generic[EntryType], metaclass=ABCMeta):
         Returns:
             list[State]: queried list of states
         """
-        if not await self._cache.empty():
+        if query.allows_cache and not await self._cache.empty():
             return await query.from_cache(await self._cache.get())
         return await query.from_server(table, self._database)

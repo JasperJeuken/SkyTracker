@@ -5,7 +5,7 @@ from skytracker.storage.database_manager import DatabaseManager
 from skytracker.storage.table_manager import TableManager
 from skytracker.storage.cache import Cache
 from skytracker.models.state import State
-from skytracker.storage.queries.state import NearbyQuery, LatestBatchQuery
+from skytracker.storage.queries.state import NearbyQuery, LatestBatchQuery, TrackQuery
 from skytracker.utils import logger, log_and_raise
 
 
@@ -89,39 +89,31 @@ class StateTableManager(TableManager[State]):
         """
         await self.insert_states([state])
 
-    async def get_aircraft_history(self, icao24: str, limit: int = 0) -> list[State]:
+    async def get_track(self, icao24: str, duration: str, limit: int = 0) -> list[State]:
         """Get the state history of a specific aircraft
 
         Args:
             icao24 (str): aircraft ICAO 24-bit address (hex)
+            duration (str): duration of track (i.e. "5h20m" or "10m20s")
             limit (int): maximum number of states to get (latest first, 0=all)
 
         Returns:
             list[State]: list of aircraft states
         """
-        # Catch incorrect arguments
-        if not isinstance(icao24, str) or len(icao24) != 6:
-            log_and_raise(ValueError, f'ICAO24 code not a 6-character string ({icao24})')
-        if not isinstance(limit, int) or limit < 0:
-            log_and_raise(ValueError, f'Query limit not an integer >= 0 ({limit})')
+        query = TrackQuery(icao24, duration, limit)
+        return await self._run_query(query, self.TABLE_NAME)
 
-        # Run select query
-        query = f"SELECT * FROM {self.TABLE_NAME} WHERE icao24='{icao24}' ORDER BY time DESC"
-        if limit > 0:
-            query += f' LIMIT {limit}'
-        logger.debug(f'Requesting aircraft history with "{query}"')
-        return await self._database.sql_query(query)
-
-    async def get_last_aircraft_state(self, icao24: str) -> Optional[State]:
+    async def get_last_state(self, icao24: str, duration: str) -> Optional[State]:
         """Get the last known state of a specific aircraft
 
         Args:
             icao24 (str): aircraft ICAO 24-bit address (hex)
+            duration (str): duration of track (i.e. "5h20m" or "10m20s")
 
         Returns:
             Optional[State]: last known aircraft state, or None if not found
         """
-        result = await self.get_aircraft_history(icao24, limit=1)
+        result = await self.get_aircraft_history(icao24, duration, limit=1)
         if len(result) == 0:
             return None
         return result[0]

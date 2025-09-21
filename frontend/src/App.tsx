@@ -1,6 +1,4 @@
-import { useState } from 'react'
 import './App.css';
-import { AircraftMap } from './components/AircraftMap';
 import { Layout } from './components/layout/Layout';
 import { ThemeProvider } from './components/layout/ThemeProvider';
 

@@ -40,7 +40,6 @@ const TILE_ATTRIBUTIONS = {
 
 function AircraftTrackLayer({ icao24 }: { icao24: string | null }) {
     const [track, setTrack] = useState<Aircraft[]>([]);
-    const map = useMap();
 
     useEffect(() => {
         if (!icao24) {

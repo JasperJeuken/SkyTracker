@@ -12,6 +12,12 @@ type Aircraft = {
     heading: number;
 };
 
+declare module "leaflet" {
+    interface IconOptions {
+        rotationAngle?: number;
+    }
+}
+
 
 export function CanvasMarkersLayer({ aircraft }: { aircraft: Aircraft[] }) {
     // Get map instance and create reference for marker canvas

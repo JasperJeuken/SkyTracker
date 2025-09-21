@@ -57,10 +57,10 @@ Note that after a 30-day trial period, a plan needs to be selected
 3. Configure a service (select a provider and region).
 
 4. In the ClickHouse console, click :code:`Connect`, and copy the username and password (reset it 
-if you did not make one yet), as well as the host URL.
+   if you did not make one yet), as well as the host URL.
 
 5. Follow the instructions under `Environment variables <#environment-variables>`__ to set up the 
-environment variables.
+   environment variables.
 
 Local Docker container
 ----------------------
@@ -75,7 +75,7 @@ server locally:
         docker pull clickhouse/clickhouse-server
 
 2. Create an XML file to specify user priviliges. Any filename is acceptable. The path to the file 
-is needed later. Add the following file content:
+   is needed later. Add the following file content:
 
     .. code-block:: xml
         
@@ -91,7 +91,7 @@ is needed later. Add the following file content:
         </yandex>
 
 3. Run a new server with specific settings, including the XML file created in step 2. The name of 
-the server can be adjusted. Use the following command:
+   the server can be adjusted. Use the following command:
 
     .. code-block:: pwsh
 
@@ -122,7 +122,7 @@ the server can be adjusted. Use the following command:
         quit
 
 8. Follow the instructions under `Environment variables <#environment-variables>`__ to set up the 
-environment variables.
+   environment variables.
 
 -------------------------------
 OpenSky Network API credentials
@@ -136,7 +136,7 @@ This requires API credentials, which can be obtained from the website:
 2. On your account page, copy the :code:`client ID` and :code:`client secret`.
 
 3. Follow the instructions under `Environment variables <#environment-variables>`__ to set up the 
-environment variables.
+   environment variables.
 
 Please note that the API comes with several limitations, as outlined on the page
 `REST API <https://openskynetwork.github.io/opensky-api/rest.html#limitations>`_. Notably, users 

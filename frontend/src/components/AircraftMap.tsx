@@ -1,9 +1,10 @@
 import "leaflet/dist/leaflet.css";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState, useContext, useRef } from "react";
 import { MapContainer, TileLayer, useMapEvents } from "react-leaflet";
 import L from "leaflet";
-import MarkersCanvas from "../lib/leaflet-markers-canvas.js";
 import { getLatestBatch } from "../services/api";
+import { CanvasMarkersLayer } from "./CanvasMarkersLayer.js";
+import { ThemeContext } from "./layout/ThemeProvider.js";
 
 
 type Aircraft = {
@@ -13,99 +14,84 @@ type Aircraft = {
     heading: number;
 };
 
-function AircraftFetcher({ setAircraft }: { setAircraft: (a: Aircraft[]) => void }) {
-    const map = useMapEvents({
 
-        // Fetch visible states after map is moved
-        moveend: async () => {
-            const bounds = map.getBounds();
-            const ne = bounds.getNorthEast();
-            const sw = bounds.getSouthWest();
+const MAP_TILES = {
+    Default: {
+        light: "https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png",
+        dark: "https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png",
+    },
+    Satellite: {
+        light: "https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.jpg",
+        dark: "https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.jpg",
+    }
+}
 
-            try {
-                const data = await getLatestBatch({
-                    lat_min: sw.lat,
-                    lat_max: ne.lat,
-                    lon_min: sw.lng,
-                    lon_max: ne.lng
-                });
-                setAircraft(data);
-            } catch (err) {
-                console.error(err)
-            }
-        },
-    });
+const TILE_ATTRIBUTIONS = {
+    Default: {
+        light: '&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        dark: '&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    },
+    Satellite: {
+        light: '&copy; CNES, Distribution Airbus DS, © Airbus DS, © PlanetObserver (Contains Copernicus Data) | &copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        dark: '&copy; CNES, Distribution Airbus DS, © Airbus DS, © PlanetObserver (Contains Copernicus Data) | &copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }
+}
 
-    // Fetch initial data on component mount
-    useEffect(() => {
-        map.fire('moveend');
-    }, [map]);
-
-    return null;
+type AircraftMapProps = {
+    mapStyle: "Default" | "Satellite";
 }
 
 
-function CanvasMarkersLayer({ aircraft }: { aircraft: Aircraft[] }) {
-    // Get map instance and create reference for marker canvas
-    const map = useMapEvents({});
-    const markersCanvasRef = useRef<any>(null);
+export function AircraftMap({ mapStyle }: AircraftMapProps) {
+    const [aircraft, setAircraft] = useState<Aircraft[]>([]);
+    const { theme } = useContext(ThemeContext);
+    const tileLayerRef = useRef<L.TileLayer | null>(null);
 
-    // Initialize and cleanup of canvas layer
-    useEffect(() => {
+    // Aircraft state fetch helper
+    function AircraftFetcher({ setAircraft }: { setAircraft: (a: Aircraft[]) => void }) {
+        const map = useMapEvents({
 
-        // Initialize canvas marker layer
-        if (!map) return;
-        const canvasLayer = new MarkersCanvas();
-        canvasLayer.addTo(map);
-        markersCanvasRef.current = canvasLayer;
+            // Fetch visible states after map is moved
+            moveend: async () => {
+                const bounds = map.getBounds();
+                const ne = bounds.getNorthEast();
+                const sw = bounds.getSouthWest();
 
-        // Cleanup function
-        return () => {
-            if (map && canvasLayer) {
-                map.removeLayer(canvasLayer);
-            }
-        };
-    }, [map]);
-
-    // Update markers when aircraft data changes
-    useEffect(() => {
-        // Clear existing markers
-        const layer = markersCanvasRef.current;
-        if (!layer) return;
-        layer.clear();
-        if (!aircraft || aircraft.length === 0) return;
-
-        // Create marker for each aircraft (rotated with heading)
-        const markers = aircraft.map(a => {
-            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path fill="#1E90FF" d="M21 15.984l-8.016-4.5V3.516a1.5 1.5 0 0 0-3 0v7.969L2.016 15.984V18l8.016-2.484V21l-2.016 1.5V24l3.516-0.984L15 22.5v-1.5L13.031 21v-5.484L21 18v-2.016z"/></svg>`;
-            const iconUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-            const icon = L.icon({
-                iconUrl,
-                iconSize: [24, 24],
-                iconAnchor: [12, 12],
-                rotationAngle: a.heading,
-            });
-            return L.marker(
-                [a.latitude, a.longitude],
-                { icon }
-            ).bindPopup(`ICAO24: ${a.icao24}<br>Heading: ${a.heading.toFixed(0)}°`);
+                try {
+                    const data = await getLatestBatch({
+                        lat_min: sw.lat,
+                        lat_max: ne.lat,
+                        lon_min: sw.lng,
+                        lon_max: ne.lng
+                    });
+                    setAircraft(data);
+                } catch (err) {
+                    console.error(err)
+                }
+            },
         });
 
-        // Add markers to canvas layer
-        layer.addMarkers(markers);
-    }, [aircraft]);
+        // const initialFetchDone = useRef(false);
 
-    return null;
-}
-
-export function AircraftMap() {
-    const [aircraft, setAircraft] = useState<Aircraft[]>([]);
+        // Fetch initial data on component mount
+        useEffect(() => {
+            if (!map) return;
+            map.once('load', () => {
+                map.fire('moveend');
+            });
+        }, [map]);
+        return null;
+    }
 
     return (
-        <MapContainer style={{ height: "100vh", width: "100%"}} center={[52, 4]} zoom={6}>
+        <MapContainer className="h-full w-full z-0" center={[52, 4]} zoom={6}>
             <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                ref={tileLayerRef}
+                url={MAP_TILES[mapStyle][theme]}
+                attribution={TILE_ATTRIBUTIONS[mapStyle][theme]}
+                // url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                // attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                key={`${mapStyle}-${theme}`}
             />
             <AircraftFetcher setAircraft={setAircraft} />
             <CanvasMarkersLayer aircraft={aircraft} />

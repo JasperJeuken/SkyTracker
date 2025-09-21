@@ -16,7 +16,8 @@ class Storage:
     """Central access point for all tables"""
 
     def __init__(self, username: str, password: str,
-                 host: str = 'localhost', port: int = 8123, database: str = '__default__') -> None:
+                 host: str = 'localhost', port: int = 8123, database: str = '__default__',
+                 secure: bool = False) -> None:
         """Initialize storage by creating database and table managers
 
         Args:
@@ -25,8 +26,10 @@ class Storage:
             host (str, optional): server host. Defaults to 'localhost'.
             port (int, optional): server port. Defaults to 8123.
             database (str, optional): server database name. Defaults to '__default__'.
+            secure (bool, optional): whether to use secure connection. Defaults to False.
         """
-        self._database: DatabaseManager = DatabaseManager(username, password, host, port, database)
+        self._database: DatabaseManager = DatabaseManager(username, password, host, port,
+                                                          database, secure)
         self._tables: TableManagers = {
             'state': StateTableManager(self._database)
         }

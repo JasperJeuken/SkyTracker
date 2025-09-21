@@ -32,7 +32,8 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
                                    password=settings.clickhouse_password,
                                    host=settings.clickhouse_host,
                                    port=settings.clickhouse_port,
-                                   database=settings.clickhouse_database)
+                                   database=settings.clickhouse_database,
+                                   secure=settings.clickhouse_secure)
     await dependencies.storage.connect()
     logger.debug('Connected to database.')
 

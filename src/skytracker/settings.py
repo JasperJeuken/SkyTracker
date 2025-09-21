@@ -1,4 +1,5 @@
 """API configuration"""
+from pydantic.fields import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,20 +19,21 @@ class Settings(BaseSettings):
         debug (bool): whether to run in debug mode
     """
     # ClickHouse
-    clickhouse_host: str = 'localhost'
-    clickhouse_port: int = 8123
-    clickhouse_user: str
-    clickhouse_password: str
-    clickhouse_database: str = 'default'
+    clickhouse_host: str = Field('localhost')
+    clickhouse_port: int = Field(8123)
+    clickhouse_user: str = Field('default')
+    clickhouse_password: str = Field('')
+    clickhouse_database: str = Field('default')
+    clickhouse_secure: bool = Field(False)
 
     # OpenSky
-    opensky_client_id: str
-    opensky_client_secret: str
+    opensky_client_id: str = Field('')
+    opensky_client_secret: str = Field('')
 
     # FastAPI
-    app_name: str = 'SkyTracker'
-    environment: str = 'development'
-    debug: bool = True
+    app_name: str = Field('SkyTracker')
+    environment: str = Field('development')
+    debug: bool = Field(True)
 
     # Load environment variables
     model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8')

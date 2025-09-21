@@ -80,7 +80,8 @@ class DatabaseManager:
     """
 
     def __init__(self, username: str, password: str,
-                 host: str = 'localhost', port: int = 8123, database: str = '__default__') -> None:
+                 host: str = 'localhost', port: int = 8123, database: str = '__default__',
+                 secure: bool = False) -> None:
         """Initialize data manager by storing ClickHouse connection settings
 
         Args:
@@ -89,14 +90,16 @@ class DatabaseManager:
             host (str, optional): server host. Defaults to 'localhost'.
             port (int, optional): server port. Defaults to 8123.
             database (str, optional): server database name. Defaults to '__default__'.
+            secure (bool, optional): whether to use secure connection. Defaults to False.
         """
         self.client_settings: dict[Literal['username', 'password', 'host',
-                                           'port', 'database'], int | str] = {
+                                           'port', 'database', 'secure'], int | str] = {
             'username': username,
             'password': password,
             'host': host,
             'port': port,
-            'database': database
+            'database': database,
+            'secure': secure
         }
         self.client: AsyncClient = None
         self._connected: bool = False

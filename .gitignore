@@ -224,3 +224,6 @@ old
 
 # Sphinx
 docs/source/reference/_autosummary
+
+# ClickHouse
+clickhouse/

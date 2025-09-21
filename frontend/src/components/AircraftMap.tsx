@@ -1,10 +1,11 @@
 import "leaflet/dist/leaflet.css";
 import { useEffect, useState, useContext, useRef } from "react";
-import { MapContainer, TileLayer, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, useMap, Polyline } from "react-leaflet";
 import L from "leaflet";
-import { getLatestBatch } from "../services/api";
+import { getLatestBatch, getAircraftTrack } from "../services/api";
 import { CanvasMarkersLayer } from "./CanvasMarkersLayer.js";
 import { ThemeContext } from "./layout/ThemeProvider.js";
+import { useAircraftMap } from "./AircraftMapProvider.js";
 
 
 type Aircraft = {
@@ -13,7 +14,6 @@ type Aircraft = {
     longitude: number;
     heading: number;
 };
-
 
 const MAP_TILES = {
     Default: {
@@ -37,9 +37,29 @@ const TILE_ATTRIBUTIONS = {
     }
 }
 
-type AircraftMapProps = {
-    mapStyle: "Default" | "Satellite";
+
+function AircraftTrackLayer({ icao24 }: { icao24: string | null }) {
+    const [track, setTrack] = useState<Aircraft[]>([]);
+    const map = useMap();
+
+    useEffect(() => {
+        if (!icao24) {
+            setTrack([]);
+            return;
+        }
+        getAircraftTrack(icao24)
+            .then(setTrack)
+            .catch(() => setTrack([]));
+    }, [icao24]);
+
+    if (!track || track.length < 2) return null;
+
+    const positions = track.map(a => [a.latitude, a.longitude] as [number, number]);
+    return (
+        <Polyline positions={positions} pathOptions={{ color: "red", weight: 3}} />
+    );
 }
+
 
 // Aircraft state fetch helper
 function AircraftFetcher({ setAircraft }: { setAircraft: (a: Aircraft[]) => void }) {
@@ -82,7 +102,8 @@ function AircraftFetcher({ setAircraft }: { setAircraft: (a: Aircraft[]) => void
     return null;
 }
 
-export function AircraftMap({ mapStyle }: AircraftMapProps) {
+export function AircraftMap() {
+    const { mapStyle, selectedAircraft } = useAircraftMap();
     const [aircraft, setAircraft] = useState<Aircraft[]>([]);
     const { theme } = useContext(ThemeContext);
     const tileLayerRef = useRef<L.TileLayer | null>(null);
@@ -97,6 +118,7 @@ export function AircraftMap({ mapStyle }: AircraftMapProps) {
             />
             <AircraftFetcher setAircraft={setAircraft} />
             <CanvasMarkersLayer aircraft={aircraft} />
+            <AircraftTrackLayer icao24={selectedAircraft} />
         </MapContainer>
     );
 }

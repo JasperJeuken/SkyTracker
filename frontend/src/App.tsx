@@ -9,11 +9,7 @@ function App() {
 
   return (
     <ThemeProvider>
-      <Layout>
-        {(props: { mapStyle: "Default" | "Satellite"}) => (
-          <AircraftMap mapStyle={props.mapStyle} />
-        )}
-      </Layout>
+      <Layout />
     </ThemeProvider>
   );
 }

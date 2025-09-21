@@ -11,3 +11,10 @@ export async function getLatestBatch(bounds?: {
     if (!res.ok) throw new Error("Failed to fetch latest batch");
     return res.json();
 }
+
+
+export async function getAircraftTrack(icao24: string) {
+    const res = await fetch(`${API_BASE}/maps/track/${icao24}`);
+    if (!res.ok) throw new Error("Failed to fetch aircraft track");
+    return res.json();
+}

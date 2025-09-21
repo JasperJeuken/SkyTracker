@@ -1,19 +1,23 @@
 import { type ReactNode, useState } from "react";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
+import { AircraftMap } from "../AircraftMap";
+import { AircraftMapProvider } from "../AircraftMapProvider";
 
-export function Layout({ children }: { children: ReactNode | Function }) {
+
+export function Layout() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [mapStyle, setMapStyle ] = useState<"Default" | "Satellite">("Default");
+    // const [mapStyle, setMapStyle ] = useState<"Default" | "Satellite">("Default");
 
     return (
-        <div className="w-screen h-screen flex flex-col overflow-hidden">
-            <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-            <div className="flex-1 relative overflow-hidden">
-                {/* {sidebarOpen && (<Sidebar onClose={() => setSidebarOpen(false)} />)} */}
-                {children && typeof children === "function" ? children({ mapStyle }) : children}
-                <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} mapStyle={mapStyle} setMapStyle={setMapStyle} />
+        <AircraftMapProvider>
+            <div className="w-screen h-screen flex flex-col overflow-hidden">
+                <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+                <div className="flex-1 relative overflow-hidden">
+                    <AircraftMap />
+                    <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+                </div>
             </div>
-        </div>
+        </AircraftMapProvider>
     );
 }

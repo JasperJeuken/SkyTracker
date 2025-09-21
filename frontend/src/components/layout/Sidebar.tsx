@@ -2,17 +2,18 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion, AnimatePresence } from "motion/react";
+import { AircraftDetails } from "../AircraftDetails";
+import { useAircraftMap } from "../AircraftMapProvider";
 
 
 type SidebarProps = {
     open: boolean;
     onClose: () => void;
-    mapStyle: "Default" | "Satellite";
-    setMapStyle: (style: "Default" | "Satellite") => void;
 };
 
 
-export function Sidebar({ open, onClose, mapStyle, setMapStyle }: SidebarProps) {
+export function Sidebar({ open, onClose }: SidebarProps) {
+    const { mapStyle, setMapStyle, selectedAircraft } = useAircraftMap();
     return (
         <AnimatePresence>
             {open && (
@@ -41,6 +42,7 @@ export function Sidebar({ open, onClose, mapStyle, setMapStyle }: SidebarProps) 
                                 <SelectItem value="Satellite">Satellite</SelectItem>
                             </SelectContent>
                         </Select>
+                        {selectedAircraft && <AircraftDetails />}
                     </div>
                 </motion.aside>
             )}

@@ -21,7 +21,7 @@ declare module "leaflet" {
 
 export function CanvasMarkersLayer({ aircraft }: { aircraft: Aircraft[] }) {
     // Get map instance and create reference for marker canvas
-    const { setSelectedAircraft } = useAircraftMap();
+    const { setSelectedAircraft, sidebarOpen, setSidebarOpen } = useAircraftMap();
     const markerClickedRef = useRef(false);
     const map = useMapEvents({
         click: () => {
@@ -74,6 +74,9 @@ export function CanvasMarkersLayer({ aircraft }: { aircraft: Aircraft[] }) {
             ).on('click', (evt) => {
                 markerClickedRef.current = true;
                 setSelectedAircraft(evt.target.options.title);
+                if (!sidebarOpen) {
+                    setSidebarOpen(true);
+                }
             })
         });
 

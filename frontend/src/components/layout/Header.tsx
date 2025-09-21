@@ -3,10 +3,16 @@ import { Menu, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils"
 import { useContext } from "react";
 import { ThemeContext } from "./ThemeProvider";
+import { useAircraftMap } from "../AircraftMapProvider";
 
 
-export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
+export function Header() {
     const { theme, toggleTheme } = useContext(ThemeContext);
+    const { sidebarOpen, setSidebarOpen } = useAircraftMap();
+
+    const onToggleSidebar = () => {
+        setSidebarOpen(!sidebarOpen);
+    };
     
     return (
         <header className={cn(

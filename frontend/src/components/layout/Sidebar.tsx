@@ -6,17 +6,11 @@ import { AircraftDetails } from "../AircraftDetails";
 import { useAircraftMap } from "../AircraftMapProvider";
 
 
-type SidebarProps = {
-    open: boolean;
-    onClose: () => void;
-};
-
-
-export function Sidebar({ open, onClose }: SidebarProps) {
-    const { mapStyle, setMapStyle, selectedAircraft } = useAircraftMap();
+export function Sidebar() {
+    const { mapStyle, setMapStyle, selectedAircraft, sidebarOpen } = useAircraftMap();
     return (
         <AnimatePresence>
-            {open && (
+            {sidebarOpen && (
                 <motion.aside
                     initial={{ x: -260, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
@@ -24,13 +18,6 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                     transition={{ type: "tween", duration: 0.3 }}
                     className="absolute top-0 left-0 h-full w-64 border-r bg-white/70 backdrop-blur-md shadow-lg z-50 p-4 dark:bg-gray-800/80"
                 >
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-md font-semibold">Options</h2>
-                        <Button variant="ghost" size="icon" onClick={onClose}>
-                            <X className="h-4 w-4" />
-                        </Button>
-                    </div>
-
                     <div className="mb-4">
                         <label className="text-sm font-medium">Map theme</label>
                         <Select defaultValue={mapStyle} onValueChange={(val) => setMapStyle(val as "Default" | "Satellite")}>
@@ -42,6 +29,9 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                                 <SelectItem value="Satellite">Satellite</SelectItem>
                             </SelectContent>
                         </Select>
+                    </div>
+
+                    <div className="mb-4">
                         {selectedAircraft && <AircraftDetails />}
                     </div>
                 </motion.aside>

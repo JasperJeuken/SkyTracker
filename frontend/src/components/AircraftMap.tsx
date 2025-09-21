@@ -1,6 +1,6 @@
 import "leaflet/dist/leaflet.css";
 import { useEffect, useState, useContext, useRef } from "react";
-import { MapContainer, TileLayer, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 import { getLatestBatch } from "../services/api";
 import { CanvasMarkersLayer } from "./CanvasMarkersLayer.js";
@@ -41,47 +41,51 @@ type AircraftMapProps = {
     mapStyle: "Default" | "Satellite";
 }
 
+// Aircraft state fetch helper
+function AircraftFetcher({ setAircraft }: { setAircraft: (a: Aircraft[]) => void }) {
+    const map = useMap();
+    const initialFetchDone = useRef(false);
+
+    useEffect(() => {
+        if (!map) return;
+        
+        const fetchAircraft = async () => {
+            const bounds = map.getBounds();
+            const ne = bounds.getNorthEast();
+            const sw = bounds.getSouthWest();
+
+            try {
+                const data = await getLatestBatch({
+                    lat_min: sw.lat,
+                    lat_max: ne.lat,
+                    lon_min: sw.lng,
+                    lon_max: ne.lng
+                });
+                setAircraft(data);
+            } catch (err) {
+                console.error(err)
+            }
+        };
+
+        if (!initialFetchDone.current) {
+            initialFetchDone.current = true;
+            fetchAircraft();
+        }
+
+        map.on("moveend", fetchAircraft);
+        
+        return () => {
+            map.off("moveend", fetchAircraft)
+        };
+    }, [map, setAircraft]);
+
+    return null;
+}
 
 export function AircraftMap({ mapStyle }: AircraftMapProps) {
     const [aircraft, setAircraft] = useState<Aircraft[]>([]);
     const { theme } = useContext(ThemeContext);
     const tileLayerRef = useRef<L.TileLayer | null>(null);
-
-    // Aircraft state fetch helper
-    function AircraftFetcher({ setAircraft }: { setAircraft: (a: Aircraft[]) => void }) {
-        const map = useMapEvents({
-
-            // Fetch visible states after map is moved
-            moveend: async () => {
-                const bounds = map.getBounds();
-                const ne = bounds.getNorthEast();
-                const sw = bounds.getSouthWest();
-
-                try {
-                    const data = await getLatestBatch({
-                        lat_min: sw.lat,
-                        lat_max: ne.lat,
-                        lon_min: sw.lng,
-                        lon_max: ne.lng
-                    });
-                    setAircraft(data);
-                } catch (err) {
-                    console.error(err)
-                }
-            },
-        });
-
-        // const initialFetchDone = useRef(false);
-
-        // Fetch initial data on component mount
-        useEffect(() => {
-            if (!map) return;
-            map.once('load', () => {
-                map.fire('moveend');
-            });
-        }, [map]);
-        return null;
-    }
 
     return (
         <MapContainer className="h-full w-full z-0" center={[52, 4]} zoom={6}>
@@ -89,8 +93,6 @@ export function AircraftMap({ mapStyle }: AircraftMapProps) {
                 ref={tileLayerRef}
                 url={MAP_TILES[mapStyle][theme]}
                 attribution={TILE_ATTRIBUTIONS[mapStyle][theme]}
-                // url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                // attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 key={`${mapStyle}-${theme}`}
             />
             <AircraftFetcher setAircraft={setAircraft} />

@@ -5,6 +5,7 @@ from asyncio.tasks import Task
 from typing import AsyncGenerator
 
 from fastapi import FastAPI
+from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 
 from skytracker import dependencies
@@ -13,6 +14,12 @@ from skytracker.storage import Storage
 from skytracker.services.opensky import opensky_service
 from skytracker.utils import logger
 from skytracker.settings import settings
+
+
+origins = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173'
+]
 
 
 @asynccontextmanager
@@ -39,7 +46,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
 
     # Start background services
     tasks: list[Task] = []
-    tasks.append(asyncio.create_task(opensky_service(dependencies.storage, repeat=90)))
+    # tasks.append(asyncio.create_task(opensky_service(dependencies.storage, repeat=90)))
     logger.debug(f'Started {len(tasks)} services.')
 
     # Run FastAPI application
@@ -70,6 +77,8 @@ app = FastAPI(
 )
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True,
+                   allow_methods=['*'], allow_headers=['*'])
 
 app.include_router(aircraft.router, prefix='/api/v1')
 app.include_router(analysis.router, prefix='/api/v1')

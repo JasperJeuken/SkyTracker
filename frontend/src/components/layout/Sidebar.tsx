@@ -17,7 +17,7 @@ export function Sidebar() {
                     animate={{ x: 0, opacity: 1 }}
                     exit={{ x: -260, opacity: 0 }}
                     transition={{ type: "tween", duration: 0.3 }}
-                    className="absolute top-0 left-0 h-full w-64 border-r bg-white/70 backdrop-blur-md shadow-lg z-50 p-4 dark:bg-gray-800/80"
+                    className="absolute top-0 left-0 h-full w-100 border-r bg-white/70 backdrop-blur-md shadow-lg z-50 p-4 dark:bg-gray-800/80"
                 >
                     <div className="mb-4">
                         <label className="text-sm font-medium">Map theme</label>
@@ -32,7 +32,7 @@ export function Sidebar() {
                         </Select>
                     </div>
 
-                    <Separator />
+                    <Separator className="mb-4" />
 
                     <div className="mb-4">
                         {selectedAircraft && <AircraftDetails />}

@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "motion/react";
 import { AircraftDetails } from "../AircraftDetails";
 import { useAircraftMap } from "../AircraftMapProvider";
@@ -30,6 +31,8 @@ export function Sidebar() {
                             </SelectContent>
                         </Select>
                     </div>
+
+                    <Separator />
 
                     <div className="mb-4">
                         {selectedAircraft && <AircraftDetails />}

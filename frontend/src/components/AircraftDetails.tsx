@@ -2,6 +2,8 @@ import { X } from "lucide-react";
 import { useAircraftMap } from "./AircraftMapProvider";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getAircraftDetails } from "@/services/api";
 
 
 export function AircraftDetails() {

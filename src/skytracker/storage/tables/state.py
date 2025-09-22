@@ -103,17 +103,16 @@ class StateTableManager(TableManager[State]):
         query = TrackQuery(icao24, duration, limit)
         return await self._run_query(query, self.TABLE_NAME)
 
-    async def get_last_state(self, icao24: str, duration: str) -> Optional[State]:
+    async def get_last_state(self, icao24: str) -> Optional[State]:
         """Get the last known state of a specific aircraft
 
         Args:
             icao24 (str): aircraft ICAO 24-bit address (hex)
-            duration (str): duration of track (i.e. "5h20m" or "10m20s")
 
         Returns:
             Optional[State]: last known aircraft state, or None if not found
         """
-        result = await self.get_aircraft_history(icao24, duration, limit=1)
+        result = await self.get_track(icao24, '365d', limit=1)
         if len(result) == 0:
             return None
         return result[0]

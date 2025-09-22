@@ -38,7 +38,7 @@ class AircraftDetails(BaseModel):
     """Whether last position was a surface report"""
     last_spi: bool = Field(description='Special purpose indicator')
     """Special purpose indicator"""
-    last_squawk: str = Field(description='Last known squawk code')
+    last_squawk: Optional[str] = Field(description='Last known squawk code')
     """Last known squawk code"""
     last_position_source: str = Field(description='Last known position source')
     """Last known position source"""

@@ -2,6 +2,7 @@
 from datetime import datetime, timezone, timedelta
 
 from pytimeparse.timeparse import timeparse
+import pycountry
 
 from skytracker.utils import log_and_raise
 
@@ -33,3 +34,18 @@ def datetime_ago_from_time_string(time_string: str) -> datetime:
     now = datetime.now(timezone.utc)
     seconds = time_string_to_seconds(time_string)
     return now - timedelta(seconds=seconds)
+
+
+def country_name_to_country_code(country_name: str) -> str:
+    """Get the ISO 3166-1 A-2 country code from a country name
+
+    Args:
+        country_name (str): country name (i.e. "France", "Germany", etc.)
+
+    Returns:
+        str: corresponding ISO 3166-1 A-2 country code (i.e. "FR", "DE")
+    """
+    countries = pycountry.countries.search_fuzzy(country_name)
+    if not countries:
+        raise ValueError(f'Could not find country "{country_name}"')
+    return countries[0].alpha_2

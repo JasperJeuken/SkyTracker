@@ -1,12 +1,11 @@
 """Aircraft API endpoints"""
-from typing import Annotated
-
 from fastapi import APIRouter, Path, Depends, HTTPException
 
 from skytracker.models.aircraft import AircraftDetails
 from skytracker.dependencies import get_storage
 from skytracker.storage import Storage
 from skytracker.utils import logger, log_and_raise
+from skytracker.utils.conversions import country_name_to_country_code
 
 
 router = APIRouter(prefix='/aircraft', tags=['aircraft'])
@@ -38,11 +37,13 @@ async def get_details(storage: Storage = Depends(get_storage),
     
     # Convert to aircraft details model
     logger.info('Get aircraft details: 1 state retrieved.')  # TODO: use more history
-    return AircraftDetails(icao24=state.icao24, known_callsigns=[state.callsign.strip()],
-                           origin_country=state.origin_country, last_state=state.time,
-                           last_position=state.time_position, last_contact=state.last_contact,
-                           last_latitude=state.latitude, last_longitude=state.longitude,
-                           last_baro_altitude=state.baro_altitude,
+    return AircraftDetails(icao24=state.icao24,
+                           known_callsigns=[state.callsign.strip() 
+                                            if state.callsign is not None else "N/A"],
+                           origin_country=country_name_to_country_code(state.origin_country),
+                           last_state=state.time, last_position=state.time_position,
+                           last_contact=state.last_contact, last_latitude=state.latitude,
+                           last_longitude=state.longitude, last_baro_altitude=state.baro_altitude,
                            last_geo_altitude=state.geo_altitude, last_velocity=state.velocity,
                            last_heading=state.true_track, last_vertical_rate=state.vertical_rate,
                            last_on_ground=state.on_ground, last_spi=state.spi,

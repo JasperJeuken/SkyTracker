@@ -2,7 +2,7 @@ import React, { type ReactNode, useEffect, useState } from "react";
 
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-    const [theme, setTheme] = useState<"light" | "dark">("light");
+    const [theme, setTheme] = useState<"light" | "dark">("dark");
 
     useEffect(() => {
         const root = window.document.documentElement;

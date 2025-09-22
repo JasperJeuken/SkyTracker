@@ -68,7 +68,8 @@ export function CanvasMarkersLayer({ aircraft }: { aircraft: Aircraft[] }) {
                 iconAnchor: [12, 12],
                 rotationAngle: a.heading,
             });
-            return L.marker(
+
+            const marker = L.marker(
                 [a.latitude, a.longitude],
                 { icon: icon, title: a.icao24 },
             ).on('click', (evt) => {
@@ -77,7 +78,18 @@ export function CanvasMarkersLayer({ aircraft }: { aircraft: Aircraft[] }) {
                 if (!sidebarOpen) {
                     setSidebarOpen(true);
                 }
-            })
+            });
+
+            // Bind popup to hover
+            // marker.bindPopup(`ICAO24: ${a.icao24}`);
+            // marker.on('mouseover', function () {
+            //     marker.openPopup();
+            // });
+            // marker.on('mouseout', function () {
+            //     marker.closePopup();
+            // });
+
+            return marker;
         });
 
         // Add markers to canvas layer

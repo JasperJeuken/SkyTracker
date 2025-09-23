@@ -4,8 +4,8 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 type AircraftMapContextType = {
     selectedAircraft: string | null;
     setSelectedAircraft: (aircraft: string | null) => void;
-    mapStyle: "Default" | "Satellite";
-    setMapStyle: (style: "Default" | "Satellite") => void;
+    mapStyle: "Default" | "Satellite" | "OpenStreetMap";
+    setMapStyle: (style: "Default" | "Satellite" | "OpenStreetMap") => void;
     sidebarOpen: boolean
     setSidebarOpen: (sidebarOpen: boolean) => void;
 };
@@ -20,7 +20,7 @@ export function useAircraftMap() {
 
 export function AircraftMapProvider({ children }: { children: ReactNode }) {
     const [selectedAircraft, setSelectedAircraft] = useState<string | null>(null);
-    const [mapStyle, setMapStyle] = useState<"Default" | "Satellite">("Default");
+    const [mapStyle, setMapStyle] = useState<"Default" | "Satellite" | "OpenStreetMap">("OpenStreetMap");
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     return (

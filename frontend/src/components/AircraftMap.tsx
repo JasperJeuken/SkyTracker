@@ -16,6 +16,10 @@ type Aircraft = {
 };
 
 const MAP_TILES = {
+    OpenStreetMap: {
+        light: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        dark: "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+    },
     Default: {
         light: "https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png",
         dark: "https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png",
@@ -27,6 +31,10 @@ const MAP_TILES = {
 }
 
 const TILE_ATTRIBUTIONS = {
+    OpenStreetMap: {
+        light: '&copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        dark: '&copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    },
     Default: {
         light: '&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         dark: '&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -55,7 +63,7 @@ function AircraftTrackLayer({ icao24 }: { icao24: string | null }) {
 
     const positions = track.map(a => [a.latitude, a.longitude] as [number, number]);
     return (
-        <Polyline positions={positions} pathOptions={{ color: "red", weight: 3}} />
+        <Polyline positions={positions} pathOptions={{ color: "red", weight: 3 }} />
     );
 }
 
@@ -108,7 +116,7 @@ export function AircraftMap() {
     const tileLayerRef = useRef<L.TileLayer | null>(null);
 
     return (
-        <MapContainer className="h-full w-full z-0" center={[52, 4]} zoom={6}>
+        <MapContainer className="h-full w-full z-0" center={[52, 4]} zoom={6} zoomControl={false}>
             <TileLayer
                 ref={tileLayerRef}
                 url={MAP_TILES[mapStyle][theme]}

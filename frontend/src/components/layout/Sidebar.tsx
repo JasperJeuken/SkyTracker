@@ -1,5 +1,3 @@
-import { X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "motion/react";
@@ -21,13 +19,14 @@ export function Sidebar() {
                 >
                     <div className="mb-4">
                         <label className="text-sm font-medium">Map theme</label>
-                        <Select defaultValue={mapStyle} onValueChange={(val) => setMapStyle(val as "Default" | "Satellite")}>
+                        <Select defaultValue={mapStyle} onValueChange={(val) => setMapStyle(val as "Default" | "Satellite" | "OpenStreetMap")}>
                             <SelectTrigger className="w-full mt-1">
                                 <SelectValue placeholder="Choose theme" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="Default">Default</SelectItem>
                                 <SelectItem value="Satellite">Satellite</SelectItem>
+                                <SelectItem value="OpenStreetMap">OpenStreetmap</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

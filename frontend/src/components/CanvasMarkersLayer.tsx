@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useMapEvents } from "react-leaflet";
 import L from "leaflet";
-import MarkersCanvas from "../lib/leaflet-markers-canvas.js";
+import MarkersCanvas from "../lib/leaflet-markers-canvas";
 import { useAircraftMap } from "./AircraftMapProvider.js";
 
 
@@ -21,7 +21,7 @@ declare module "leaflet" {
 
 export function CanvasMarkersLayer({ aircraft }: { aircraft: Aircraft[] }) {
     // Get map instance and create reference for marker canvas
-    const { setSelectedAircraft, sidebarOpen, setSidebarOpen } = useAircraftMap();
+    const { setSelectedAircraft, setSidebarOpen } = useAircraftMap();
     const markerClickedRef = useRef(false);
     const map = useMapEvents({
         click: () => {
@@ -71,13 +71,11 @@ export function CanvasMarkersLayer({ aircraft }: { aircraft: Aircraft[] }) {
 
             const marker = L.marker(
                 [a.latitude, a.longitude],
-                { icon: icon, title: a.icao24 },
+                { icon: icon, title: a.icao24, zIndexOffset: 100 },
             ).on('click', (evt) => {
                 markerClickedRef.current = true;
                 setSelectedAircraft(evt.target.options.title);
-                if (!sidebarOpen) {
-                    setSidebarOpen(true);
-                }
+                setSidebarOpen(true);
             });
 
             // Bind popup to hover

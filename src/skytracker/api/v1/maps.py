@@ -14,8 +14,8 @@ router = APIRouter(prefix='/maps', tags=['maps'])
 
 @router.get('/nearby', response_model=List[AircraftMapState])
 async def get_nearby(storage: Storage = Depends(get_storage),
-                     lat: float = Query(ge=-90, le=90),
-                     lon: float = Query(ge=-180, le=180),
+                     lat: float = Query(),
+                     lon: float = Query(),
                      radius: Optional[float] = Query(50, ge=1, le=1000),
                      limit: Optional[int] = Query(0, ge=0)) -> List[AircraftMapState]:
     """Get list of aircraft states close to a specified location

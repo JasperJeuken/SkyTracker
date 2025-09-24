@@ -7,7 +7,8 @@ from skytracker.models.state import State
 from skytracker.storage.database_manager import DatabaseManager
 from skytracker.utils.analysis import filter_states
 from skytracker.utils.conversions import datetime_ago_from_time_string
-from skytracker.utils.geographic import distance_between_points
+from skytracker.utils.geographic import (distance_between_points, normalize_longitude_bbox,
+                                         shift_longitude_into_range)
 from skytracker.utils import logger, log_and_raise
 
 
@@ -38,12 +39,6 @@ class LatestBatchQuery(TableQuery[State]):
             if not all(isinstance(val, (int, float)) for val in (lat_min, lat_max,
                                                                  lon_min, lon_max)):
                 log_and_raise(ValueError, 'Not all bounding box values are numeric')
-            if not (-90 <= lat_min <= 90) or not (-90 <= lat_max <= 90) or lat_min >= lat_max:
-                log_and_raise(ValueError, 'Latitude not a float between -90 and 90 ' + \
-                                          f'({lat_min}, {lat_max})')
-            if not (-180 <= lon_min <= 180) or not (-180 <= lon_max <= 180) or lon_min >= lon_max:
-                log_and_raise(ValueError, 'Longitude not a float between -180 and 180 ' + \
-                                          f'({lon_min}, {lon_max})')
 
         # Store values
         self.limit: int = limit
@@ -67,15 +62,23 @@ class LatestBatchQuery(TableQuery[State]):
         # Filter bounding box
         if self.bbox is not None:
             lat_min, lat_max, lon_min, lon_max = self.bbox
-            states = [state for state in states if lat_min <= state.latitude <= lat_max and \
-                                                   lon_min <= state.longitude <= lon_max]
+            wrapped_boxes = normalize_longitude_bbox(lon_min, lon_max)
+            filtered = []
+            for box_min, box_max in wrapped_boxes:
+                filtered.extend(state for state in states if lat_min <= state.latitude <= lat_max 
+                                and box_min <= state.longitude <= box_max)
+            states = filtered
             logger.debug(f'Filtered to {len(states)} by bbox ({self.bbox})')
 
         # Return states (limit if specified)
         if self.limit > 0:
             states = states[:self.limit]
             logger.debug(f'Filtered to {len(states)} by limit ({self.limit})')
-        
+    
+        # Map states to longitude range
+        for state in states:
+            state.longitude = shift_longitude_into_range(state.longitude,
+                                                         self.bbox[2], self.bbox[3])
         logger.info(f'Retrieved {len(states)} matching states from cache')
         return states
 
@@ -92,21 +95,32 @@ class LatestBatchQuery(TableQuery[State]):
         # Create query to select latest batch from table
         query = f'SELECT * FROM {table} WHERE time=(SELECT MAX(time) FROM {table})'
 
-        # Filter bounding box
+        # Filter bounding box (normalize longitude to allow for map wrapping)
         if self.bbox is not None:
             lat_min, lat_max, lon_min, lon_max = self.bbox
-            query += f' AND latitude BETWEEN {lat_min} AND {lat_max}' + \
-                     f' AND longitude BETWEEN {lon_min} AND {lon_max}'
+            wrapped_boxes = normalize_longitude_bbox(lon_min, lon_max)
+            conditions = []
+            for box_min, box_max in wrapped_boxes:
+                conditions.append(f'(latitude BETWEEN {lat_min} AND {lat_max}' + \
+                                  f' AND longitude BETWEEN {box_min} AND {box_max})')
+            query += f" AND ({' OR '.join(conditions)})"
 
         # Add query limit (if specified)
         if self.limit > 0:
             query += f' LIMIT {self.limit}'
 
-        # Return query result
+        # Get states with query
         logger.debug(f'Querying server with "{query}"...')
         rows = await db.sql_query(query)
         logger.info(f'Retrieved {len(rows)} matching states from server')
-        return filter_states([self.parse_table_row(row) for row in rows], 'latitude', 'longitude')
+        states = filter_states([self.parse_table_row(row) for row in rows], 'latitude', 'longitude')
+
+        # Map states to longitude range
+        for state in states:
+            state.longitude = shift_longitude_into_range(state.longitude,
+                                                         self.bbox[2], self.bbox[3])
+        return states
+
 
     def parse_table_row(self, raw_entry: tuple) -> State:
         """Parse raw table data into a State

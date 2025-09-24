@@ -116,7 +116,7 @@ export function AircraftMap() {
     const tileLayerRef = useRef<L.TileLayer | null>(null);
 
     return (
-        <MapContainer className="h-full w-full z-0" center={[52, 4]} zoom={6} zoomControl={false}>
+        <MapContainer className="h-full w-full z-0" center={[52, 4]} zoom={6} minZoom={3} zoomControl={false}>
             <TileLayer
                 ref={tileLayerRef}
                 url={MAP_TILES[mapStyle][theme]}

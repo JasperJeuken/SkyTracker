@@ -30,5 +30,5 @@ async def get_aircraft_photos(storage: Storage, browser: WebBrowser,
     
     # Search for images
     search_url = f'https://www.bing.com/images/search?q=aircraft+{quote(callsign)}'
-    urls = await browser.get_images_from_page(search_url, limit=limit)
+    urls = await browser.get_images_from_page(search_url, limit=limit, timeout=5000)
     return [AircraftPhoto(image_url=url['image'], detail_url=url['detail']) for url in urls]

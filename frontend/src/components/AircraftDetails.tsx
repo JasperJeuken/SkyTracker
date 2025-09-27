@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import ReactCountryFlag from "react-country-flag";
 import { AircraftDetailItem } from "./AircraftDetailItem";
 import { AircraftDetailBadge } from "./AircraftDetailBadge";
+import { AircraftDetailImages } from "./AircraftDetailImages";
 
 
 type AircraftDetails = {
@@ -34,7 +35,7 @@ type AircraftDetails = {
     last_category: string,
 };
 
-type AircraftImage = {
+export type AircraftImage = {
     image_url: string,
     detail_url: string
 };
@@ -43,8 +44,9 @@ type AircraftImage = {
 export function AircraftDetails() {
     const { selectedAircraft, setSelectedAircraft } = useAircraftMap();
     const [details, setDetails] = useState<AircraftDetails | null>(null);
-    // const [aircraftImages, setAircraftImages] = useState<AircraftImage[] | null>(null);
     const [loadingDetails, setLoadingDetails] = useState(false);
+    const [images, setImages] = useState<AircraftImage[] | null>(null);
+    const [loadingImages, setLoadingImages] = useState(false);
 
     const onDeselect = () => {
         setSelectedAircraft(null);
@@ -53,10 +55,14 @@ export function AircraftDetails() {
     useEffect(() => {
         if (!selectedAircraft) {
             setDetails(null);
+            setImages(null);
             return;
         }
+
         setLoadingDetails(true);
-        console.log(selectedAircraft);
+        setLoadingImages(true);
+        
+        // Load aircraft details
         getAircraftDetails(selectedAircraft)
             .then(data => setDetails(data))
             .catch((err) => {
@@ -64,6 +70,15 @@ export function AircraftDetails() {
                 setDetails(null);
             })
             .finally(() => setLoadingDetails(false));
+        
+        // Load aircraft images
+        getAircraftImages(selectedAircraft)
+            .then((data) => setImages(data))
+            .catch((err) => {
+                console.error(err);
+                setImages(null);
+            })
+            .finally(() => setLoadingImages(false));
     }, [selectedAircraft]);
 
     return (
@@ -86,6 +101,13 @@ export function AircraftDetails() {
                         <AircraftDetailBadge icon={<SatelliteDish className="h-4 w-4" />} text={details.last_position_source} />
                         {details.last_spi && <AircraftDetailBadge icon={<Star className="h-4 w-4" />} text="Special" />}
                         <AircraftDetailBadge icon={<ReactCountryFlag svg countryCode={details.origin_country} />} text={details.origin_country} />
+
+                        {loadingImages ? (
+                            <Skeleton className="w-full aspect-[16/9] rounded-2xl mt-4" />
+                        ) : (
+                            <AircraftDetailImages images={images ?? []} />
+                        )}
+
                         <div className="aircraft-details-grid mt-4">
                             <AircraftDetailItem full label="Callsign" icon={Tag} value={details.known_callsigns[0] || "N/A"} />
                             <Separator className="aircraft-details-full" />

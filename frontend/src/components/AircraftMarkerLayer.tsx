@@ -12,7 +12,7 @@ declare module "leaflet" {
 }
 
 
-export function AircraftMarkerLayer({ aircraft }: { aircraft: AircraftState[] }) {
+export function AircraftMarkerLayer({ aircraft, pane }: { aircraft: AircraftState[], pane: string }) {
     // Get map instance and create reference for marker canvas
     const { setSelectedAircraft, setSidebarOpen } = useAircraftMap();
     const markerClickedRef = useRef(false);
@@ -31,7 +31,7 @@ export function AircraftMarkerLayer({ aircraft }: { aircraft: AircraftState[] })
 
         // Initialize canvas marker layer
         if (!map) return;
-        const canvasLayer = new MarkersCanvas();
+        const canvasLayer = new MarkersCanvas({ pane: pane });
         canvasLayer.addTo(map);
         markersCanvasRef.current = canvasLayer;
 
@@ -60,11 +60,12 @@ export function AircraftMarkerLayer({ aircraft }: { aircraft: AircraftState[] })
                 iconSize: [24, 24],
                 iconAnchor: [12, 12],
                 rotationAngle: a.heading,
+                pane: pane
             });
 
             const marker = L.marker(
                 [a.latitude, a.longitude],
-                { icon: icon, title: a.icao24, zIndexOffset: 100 },
+                { icon: icon, title: a.icao24 },
             ).on('click', (evt) => {
                 markerClickedRef.current = true;
                 setSelectedAircraft(evt.target.options.title);

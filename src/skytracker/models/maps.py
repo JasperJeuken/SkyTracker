@@ -7,6 +7,8 @@ from pydantic import BaseModel, Field, constr
 class AircraftMapState(BaseModel):
     """Model for aircraft map state"""
 
+    time: int = Field(..., description='Map state timestamp (Unix)')
+    """Unix timestamp of map state"""
     icao24: Annotated[str, constr(min_length=1, max_length=1)] = \
         Field(..., description='Unique aircraft ICAO 24-bit address (hex string)')
     """Aircraft ICAO 24-bit address (hex)"""
@@ -16,3 +18,5 @@ class AircraftMapState(BaseModel):
     """Aircraft longitude in decimal degrees"""
     heading: Optional[float] = Field(..., description='Aircraft heading in degrees (0=360=north)')
     """Aircraft heading in degrees (0=360=north)"""
+    altitude: Optional[float] = Field(..., description='Aircraft altitude in meters (barometric)')
+    """Aircraft altitude in meters (barometric)"""

@@ -40,10 +40,12 @@ async def get_nearby(storage: Storage = Depends(get_storage),
 
     # Convert to map state model
     logger.info(f'Get nearby aircraft: {len(states)} states retrieved.')
-    return [AircraftMapState(icao24=state.icao24,
+    return [AircraftMapState(time=state.time_position,
+                             icao24=state.icao24,
                              latitude=state.latitude,
                              longitude=state.longitude,
-                             heading=state.true_track) for state in states]
+                             heading=state.true_track,
+                             altitude=state.baro_altitude) for state in states]
 
 
 @router.get('/track/{icao24}', response_model=List[AircraftMapState])
@@ -72,10 +74,12 @@ async def get_track(storage: Storage = Depends(get_storage),
 
     # Convert to map state model
     logger.info(f'Get track history: {len(states)} states retrieved.')
-    return [AircraftMapState(icao24=state.icao24,
+    return [AircraftMapState(time=state.time_position,
+                             icao24=state.icao24,
                              latitude=state.latitude,
                              longitude=state.longitude,
-                             heading=state.true_track) for state in states]
+                             heading=state.true_track,
+                             altitude=state.baro_altitude) for state in states]
 
 
 @router.get('', response_model=List[AircraftMapState])
@@ -115,7 +119,9 @@ async def get_all(storage: Storage = Depends(get_storage),
 
     # Convert to map state model
     logger.info(f'Get latest batch: {len(states)} states retrieved.')
-    return [AircraftMapState(icao24=state.icao24,
+    return [AircraftMapState(time=state.time_position,
+                             icao24=state.icao24,
                              latitude=state.latitude,
                              longitude=state.longitude,
-                             heading=state.true_track) for state in states]
+                             heading=state.true_track,
+                             altitude=state.baro_altitude) for state in states]

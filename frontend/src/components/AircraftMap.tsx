@@ -1,12 +1,13 @@
 import "leaflet/dist/leaflet.css";
 import { useEffect, useState, useContext, useRef } from "react";
-import { MapContainer, TileLayer, useMap, Polyline } from "react-leaflet";
+import { MapContainer, TileLayer, useMap, Pane } from "react-leaflet";
 import L, { type LatLngExpression } from "leaflet";
-import { getLatestBatch, getAircraftTrack } from "../services/api";
+import { getLatestBatch } from "../services/api";
 import { AircraftMarkerLayer } from "./AircraftMarkerLayer.js";
 import { ThemeContext } from "./layout/ThemeProvider.js";
 import { useAircraftMap } from "./AircraftMapProvider.js";
 import { type AircraftState } from "./AircraftMapProvider.js"
+import { AircraftTrackLayer } from "./AircraftTrackLayer.js"
 
 
 
@@ -39,29 +40,6 @@ const TILE_ATTRIBUTIONS = {
         dark: '&copy; CNES, Distribution Airbus DS, © Airbus DS, © PlanetObserver (Contains Copernicus Data) | &copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }
 }
-
-
-function AircraftTrackLayer({ icao24 }: { icao24: string | null }) {
-    const [track, setTrack] = useState<AircraftState[]>([]);
-
-    useEffect(() => {
-        if (!icao24) {
-            setTrack([]);
-            return;
-        }
-        getAircraftTrack(icao24)
-            .then(setTrack)
-            .catch(() => setTrack([]));
-    }, [icao24]);
-
-    if (!track || track.length < 2) return null;
-
-    const positions = track.map(a => [a.latitude, a.longitude] as [number, number]);
-    return (
-        <Polyline positions={positions} pathOptions={{ color: "red", weight: 3 }} />
-    );
-}
-
 
 // Aircraft state fetch helper
 function AircraftFetcher({ setAircraft }: { setAircraft: (a: AircraftState[]) => void }) {
@@ -157,9 +135,13 @@ export function AircraftMap() {
                 key={`${mapStyle}-${theme}`}
             />
             <AircraftFetcher setAircraft={setAircraft} />
-            <AircraftMarkerLayer aircraft={aircraft} />
-            <AircraftTrackLayer icao24={selectedAircraft} />
             <MapViewSaver />
+            <Pane name="aircraft-track" style={{ zIndex: 500 }}>
+                <AircraftTrackLayer icao24={selectedAircraft} pane="aircraft-track" />
+            </Pane>
+            <Pane name="aircraft-markers" style={{ zIndex: 900 }}>
+                <AircraftMarkerLayer aircraft={aircraft} pane="aircraft-markers" />
+            </Pane>
         </MapContainer>
     );
 }

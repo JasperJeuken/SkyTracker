@@ -10,6 +10,15 @@ type AircraftMapContextType = {
     setSidebarOpen: (sidebarOpen: boolean) => void;
 };
 
+export type AircraftState = {
+    time: number;
+    icao24: string;
+    latitude: number;
+    longitude: number;
+    heading: number | null;
+    altitude: number | null;
+};
+
 const AircraftMapContext = createContext<AircraftMapContextType | undefined>(undefined);
 
 export function useAircraftMap() {

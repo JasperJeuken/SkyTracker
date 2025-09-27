@@ -3,17 +3,12 @@ import { useEffect, useState, useContext, useRef } from "react";
 import { MapContainer, TileLayer, useMap, Polyline } from "react-leaflet";
 import L, { type LatLngExpression } from "leaflet";
 import { getLatestBatch, getAircraftTrack } from "../services/api";
-import { CanvasMarkersLayer } from "./CanvasMarkersLayer.js";
+import { AircraftMarkerLayer } from "./AircraftMarkerLayer.js";
 import { ThemeContext } from "./layout/ThemeProvider.js";
 import { useAircraftMap } from "./AircraftMapProvider.js";
+import { type AircraftState } from "./AircraftMapProvider.js"
 
 
-type Aircraft = {
-    icao24: string;
-    latitude: number;
-    longitude: number;
-    heading: number;
-};
 
 const MAP_TILES = {
     OpenStreetMap: {
@@ -47,7 +42,7 @@ const TILE_ATTRIBUTIONS = {
 
 
 function AircraftTrackLayer({ icao24 }: { icao24: string | null }) {
-    const [track, setTrack] = useState<Aircraft[]>([]);
+    const [track, setTrack] = useState<AircraftState[]>([]);
 
     useEffect(() => {
         if (!icao24) {
@@ -69,7 +64,7 @@ function AircraftTrackLayer({ icao24 }: { icao24: string | null }) {
 
 
 // Aircraft state fetch helper
-function AircraftFetcher({ setAircraft }: { setAircraft: (a: Aircraft[]) => void }) {
+function AircraftFetcher({ setAircraft }: { setAircraft: (a: AircraftState[]) => void }) {
     const map = useMap();
     const initialFetchDone = useRef(false);
 
@@ -133,7 +128,7 @@ function MapViewSaver() {
 
 export function AircraftMap() {
     const { mapStyle, selectedAircraft } = useAircraftMap();
-    const [aircraft, setAircraft] = useState<Aircraft[]>([]);
+    const [aircraft, setAircraft] = useState<AircraftState[]>([]);
     const { theme } = useContext(ThemeContext);
     const tileLayerRef = useRef<L.TileLayer | null>(null);
     
@@ -162,7 +157,7 @@ export function AircraftMap() {
                 key={`${mapStyle}-${theme}`}
             />
             <AircraftFetcher setAircraft={setAircraft} />
-            <CanvasMarkersLayer aircraft={aircraft} />
+            <AircraftMarkerLayer aircraft={aircraft} />
             <AircraftTrackLayer icao24={selectedAircraft} />
             <MapViewSaver />
         </MapContainer>

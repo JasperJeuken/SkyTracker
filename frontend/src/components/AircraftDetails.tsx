@@ -41,7 +41,7 @@ export type AircraftImage = {
 };
 
 
-export function AircraftDetails() {
+export function AircraftDetails({ showImages = false }: { showImages?: boolean }) {
     const { selectedAircraft, setSelectedAircraft } = useAircraftMap();
     const [details, setDetails] = useState<AircraftDetails | null>(null);
     const [loadingDetails, setLoadingDetails] = useState(false);
@@ -60,7 +60,7 @@ export function AircraftDetails() {
         }
 
         setLoadingDetails(true);
-        setLoadingImages(true);
+        if (showImages) setLoadingImages(true);
         
         // Load aircraft details
         getAircraftDetails(selectedAircraft)
@@ -72,7 +72,7 @@ export function AircraftDetails() {
             .finally(() => setLoadingDetails(false));
         
         // Load aircraft images
-        getAircraftImages(selectedAircraft)
+        if (showImages) getAircraftImages(selectedAircraft)
             .then((data) => setImages(data))
             .catch((err) => {
                 console.error(err);
@@ -104,11 +104,11 @@ export function AircraftDetails() {
                         <AircraftDetailBadge icon={<ReactCountryFlag svg countryCode={details.origin_country} />} text={details.origin_country} />
 
                         {/* Image carousel */}
-                        {loadingImages ? (
+                        {showImages && (loadingImages ? (
                             <Skeleton className="w-full aspect-[16/9] rounded-2xl mt-4" />
                         ) : (
                             <AircraftDetailImages images={images ?? []} />
-                        )}
+                        ))}
 
                         {/* Information cards */}
                         <div className="aircraft-details-grid mt-4">

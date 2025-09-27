@@ -2,7 +2,9 @@ import React, { type ReactNode, useEffect, useState } from "react";
 
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-    const [theme, setTheme] = useState<"light" | "dark">("dark");
+    const [theme, setTheme] = useState<"light" | "dark">(() => {
+        return (localStorage.getItem("theme") as "light" | "dark") || "dark";
+    });
 
     useEffect(() => {
         const root = window.document.documentElement;
@@ -11,6 +13,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         } else {
             root.classList.remove("dark");
         }
+        localStorage.setItem('theme', theme);
     }, [theme]);
 
     const toggleTheme = () => {

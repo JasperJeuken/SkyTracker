@@ -1,7 +1,7 @@
 import "leaflet/dist/leaflet.css";
 import { useEffect, useState, useContext, useRef } from "react";
 import { MapContainer, TileLayer, useMap, Polyline } from "react-leaflet";
-import L from "leaflet";
+import L, { type LatLngExpression } from "leaflet";
 import { getLatestBatch, getAircraftTrack } from "../services/api";
 import { CanvasMarkersLayer } from "./CanvasMarkersLayer.js";
 import { ThemeContext } from "./layout/ThemeProvider.js";
@@ -109,14 +109,52 @@ function AircraftFetcher({ setAircraft }: { setAircraft: (a: Aircraft[]) => void
     return null;
 }
 
+// Aircraft map state saver
+function MapViewSaver() {
+    const map = useMap();
+    useEffect(() => {
+        const saveView = () => {
+            const center = map.getCenter();
+            const zoom = map.getZoom();
+            localStorage.setItem('mapView', JSON.stringify({
+                center: [center.lat, center.lng],
+                zoom
+            }));
+        };
+        map.on('moveend', saveView);
+        map.on('zoomend', saveView);
+        return () => {
+            map.off('moveend', saveView);
+            map.off('zoomend', saveView);
+        };
+    }, [map]);
+    return null;
+}
+
 export function AircraftMap() {
     const { mapStyle, selectedAircraft } = useAircraftMap();
     const [aircraft, setAircraft] = useState<Aircraft[]>([]);
     const { theme } = useContext(ThemeContext);
     const tileLayerRef = useRef<L.TileLayer | null>(null);
+    
+    // Restore center/zoom from local storage
+    const defaultCenter = [52, 4];
+    const defaultZoom = 6;
+    const [initialView] = useState(() => {
+        const saved = localStorage.getItem('mapView');
+        if (saved) {
+            try {
+                const { center, zoom } = JSON.parse(saved);
+                if (Array.isArray(center) && typeof zoom === "number") {
+                    return { center, zoom };
+                }
+            } catch {}
+        }
+        return { center: defaultCenter, zoom: defaultZoom };
+    });
 
     return (
-        <MapContainer className="h-full w-full z-0" center={[52, 4]} zoom={6} minZoom={3} zoomControl={false}>
+        <MapContainer className="h-full w-full z-0" center={initialView.center as LatLngExpression} zoom={initialView.zoom} minZoom={3} zoomControl={false}>
             <TileLayer
                 ref={tileLayerRef}
                 url={MAP_TILES[mapStyle][theme]}
@@ -126,6 +164,7 @@ export function AircraftMap() {
             <AircraftFetcher setAircraft={setAircraft} />
             <CanvasMarkersLayer aircraft={aircraft} />
             <AircraftTrackLayer icao24={selectedAircraft} />
+            <MapViewSaver />
         </MapContainer>
     );
 }

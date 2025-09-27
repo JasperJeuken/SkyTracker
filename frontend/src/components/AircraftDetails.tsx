@@ -97,17 +97,20 @@ export function AircraftDetails() {
                     <Skeleton className="h-120 w-full" />
                 ) : details ? (
                     <>
+                        {/* Badges */}
                         <AircraftDetailBadge icon={details.last_on_ground ? <TowerControl className="h-4 w-4" /> : <Plane className="h-4 w-4" />} text={details.last_on_ground ? "On ground" : "In flight"} />
                         <AircraftDetailBadge icon={<SatelliteDish className="h-4 w-4" />} text={details.last_position_source} />
                         {details.last_spi && <AircraftDetailBadge icon={<Star className="h-4 w-4" />} text="Special" />}
                         <AircraftDetailBadge icon={<ReactCountryFlag svg countryCode={details.origin_country} />} text={details.origin_country} />
 
+                        {/* Image carousel */}
                         {loadingImages ? (
                             <Skeleton className="w-full aspect-[16/9] rounded-2xl mt-4" />
                         ) : (
                             <AircraftDetailImages images={images ?? []} />
                         )}
 
+                        {/* Information cards */}
                         <div className="aircraft-details-grid mt-4">
                             <AircraftDetailItem full label="Callsign" icon={Tag} value={details.known_callsigns[0] || "N/A"} />
                             <Separator className="aircraft-details-full" />

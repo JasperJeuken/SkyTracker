@@ -16,7 +16,7 @@ router = APIRouter(prefix='/aircraft', tags=['aircraft'])
 @router.get('/{icao24}/photos', response_model=list[AircraftPhoto])
 async def get_photos(storage: Storage = Depends(get_storage),
                      browser: WebBrowser = Depends(get_browser),
-                     icao24: str = Path(min_length=6, max_length=6, regex='^[0-9A-Fa-f]{6}$'),
+                     icao24: str = Path(),
                      limit: int = Query(5, le=5, ge=1)) -> list[AircraftPhoto]:
     """Get photos of a specific aircraft
 

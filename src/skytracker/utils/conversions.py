@@ -45,7 +45,15 @@ def country_name_to_country_code(country_name: str) -> str:
     Returns:
         str: corresponding ISO 3166-1 A-2 country code (i.e. "FR", "DE")
     """
-    countries = pycountry.countries.search_fuzzy(country_name)
+    try:
+        countries = pycountry.countries.search_fuzzy(country_name)
+    except LookupError as err:
+
+        # Catch known missing names in pycountry
+        if country_name.lower() == 'turkey':
+            return 'TR'
+        log_and_raise(ValueError, f'Could not find country "{country_name}"', cause=err)
+
     if not countries:
         raise ValueError(f'Could not find country "{country_name}"')
     return countries[0].alpha_2

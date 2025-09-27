@@ -52,5 +52,3 @@ class AircraftPhoto(BaseModel):
     """URL to image of aircraft"""
     detail_url: str = Field(description='URL to aircraft detail page')
     """URL to aircraft detail page"""
-    photographer: str = Field(description='Name of photographer')
-    """Name of photographer"""

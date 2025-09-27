@@ -60,7 +60,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
 
     # Start background services
     tasks: list[Task] = []
-    # tasks.append(asyncio.create_task(opensky_service(dependencies.storage, repeat=90)))
+    tasks.append(asyncio.create_task(opensky_service(dependencies.storage, repeat=90)))
     logger.debug(f'Started {len(tasks)} services.')
 
     # Run FastAPI application

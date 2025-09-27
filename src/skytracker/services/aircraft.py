@@ -7,8 +7,6 @@ from skytracker.storage import Storage
 from skytracker.utils import logger, log_and_raise
 
 
-
-
 async def get_aircraft_photos(storage: Storage, browser: WebBrowser,
                               icao24: str, limit: int = 5) -> list[AircraftPhoto]:
     """Fetch aircraft photos from planespotters.net for a given ICAO 24-bit address

@@ -24,3 +24,9 @@ export async function getAircraftDetails(icao24: string) {
     if (!res.ok) throw new Error("Failed to fetch aircraft details");
     return res.json();
 }
+
+export async function getAircraftImages(icao24: string) {
+    const res = await fetch(`${API_BASE}/aircraft/${icao24}/photos`);
+    if (!res.ok) throw new Error("Failed to fetch aircraft details");
+    return res.json();
+}

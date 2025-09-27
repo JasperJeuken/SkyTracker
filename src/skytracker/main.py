@@ -1,6 +1,7 @@
 """Main API (entrypoint)"""
 from contextlib import asynccontextmanager
 import asyncio
+import sys
 from asyncio.tasks import Task
 from typing import AsyncGenerator
 
@@ -11,9 +12,15 @@ from starlette.middleware.gzip import GZipMiddleware
 from skytracker import dependencies
 from skytracker.api.v1 import aircraft, analysis, flights, maps, search
 from skytracker.storage import Storage
+from skytracker.services.browser import WebBrowser
 from skytracker.services.opensky import opensky_service
 from skytracker.utils import logger
 from skytracker.settings import settings
+
+
+# Set asyncio to use Windows event loop policy
+if sys.platform.startswith('win'):
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 
 origins = [
@@ -46,6 +53,11 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     await dependencies.storage.connect()
     logger.debug('Connected to database.')
 
+    # Initialize web browser
+    dependencies.browser = WebBrowser()
+    await dependencies.browser.start()
+    logger.debug('Opened web browser.')
+
     # Start background services
     tasks: list[Task] = []
     # tasks.append(asyncio.create_task(opensky_service(dependencies.storage, repeat=90)))
@@ -68,6 +80,12 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     await dependencies.storage.close()
     dependencies.storage = None
     logger.debug('Closed database connection.')
+
+    # Close web browser
+    await dependencies.browser.stop()
+    dependencies.browser = None
+    logger.debug('Closed web browser')
+
     logger.debug('Application lifespan ended.')
 
 

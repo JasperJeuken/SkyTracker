@@ -1,14 +1,43 @@
 """Aircraft API endpoints"""
-from fastapi import APIRouter, Path, Depends, HTTPException
+from fastapi import APIRouter, Path, Query, Depends, HTTPException
 
-from skytracker.models.aircraft import AircraftDetails
-from skytracker.dependencies import get_storage
+from skytracker.models.aircraft import AircraftDetails, AircraftPhoto
+from skytracker.dependencies import get_storage, get_browser
 from skytracker.storage import Storage
+from skytracker.services.browser import WebBrowser
 from skytracker.utils import logger, log_and_raise
 from skytracker.utils.conversions import country_name_to_country_code
+from skytracker.services.aircraft import get_aircraft_photos
 
 
 router = APIRouter(prefix='/aircraft', tags=['aircraft'])
+
+
+@router.get('/{icao24}/photos', response_model=list[AircraftPhoto])
+async def get_photos(storage: Storage = Depends(get_storage),
+                     browser: WebBrowser = Depends(get_browser),
+                     icao24: str = Path(min_length=6, max_length=6, regex='^[0-9A-Fa-f]{6}$'),
+                     limit: int = Query(5, le=5, ge=1)) -> list[AircraftPhoto]:
+    """Get photos of a specific aircraft
+
+    Args:
+        storage (Storage): database storage instance
+        browser (WebBrowser): web browser instance
+        icao24 (str): aircraft ICAO 24-bit address.
+        limit (int, optional): maximum number of image, max. 5. Defaults to 5.
+
+    Returns:
+        list[AircraftPhoto]: list of aircraft photos
+    """
+    logger.info(f'Get aircraft photos: icao24={icao24}')
+    try:
+        photos = await get_aircraft_photos(storage, browser, icao24, limit)
+    except ValueError as err:
+        logger.error(f'Request failed ({err})')
+        raise HTTPException(status_code=400, detail=f'{err}') from err
+
+    logger.info(f'Get aircraft photos: {len(photos)} photos retrieved.')
+    return photos
 
 
 @router.get('/{icao24}', response_model=AircraftDetails)
@@ -18,6 +47,7 @@ async def get_details(storage: Storage = Depends(get_storage),
     """Get the details of a specific aircraft
 
     Args:
+        storage (Storage): database storage instance
         icao24 (str): aircraft ICAO 24-bit address.
 
     Returns:

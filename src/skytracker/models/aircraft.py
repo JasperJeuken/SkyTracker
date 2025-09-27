@@ -44,3 +44,13 @@ class AircraftDetails(BaseModel):
     """Last known position source"""
     last_category: str = Field(description='Last known category')
     """Last known category"""
+
+
+class AircraftPhoto(BaseModel):
+    """Aircraft photo information"""
+    image_url: str = Field(description='URL to image of aircraft')
+    """URL to image of aircraft"""
+    detail_url: str = Field(description='URL to aircraft detail page')
+    """URL to aircraft detail page"""
+    photographer: str = Field(description='Name of photographer')
+    """Name of photographer"""

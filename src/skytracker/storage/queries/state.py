@@ -116,9 +116,10 @@ class LatestBatchQuery(TableQuery[State]):
         states = filter_states([self.parse_table_row(row) for row in rows], 'latitude', 'longitude')
 
         # Map states to longitude range
-        for state in states:
-            state.longitude = shift_longitude_into_range(state.longitude,
-                                                         self.bbox[2], self.bbox[3])
+        if self.bbox is not None:
+            for state in states:
+                state.longitude = shift_longitude_into_range(state.longitude,
+                                                            self.bbox[2], self.bbox[3])
         return states
 
 

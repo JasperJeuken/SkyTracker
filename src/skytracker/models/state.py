@@ -104,5 +104,5 @@ class State(BaseModel):
     """StateStatus: aircraft status"""
     squawk: int | None
     """int | None: squawk code (can be None)"""
-    squawk_time: int
-    """int: squawk update time (Unix timestamp)"""
+    squawk_time: datetime | None
+    """datetime | None: squawk update time (Unix timestamp)"""

@@ -1,10 +1,11 @@
 """OpenSky Network API models"""
+from datetime import datetime, timezone
 from typing import List, Annotated, Any, Literal, get_args
 
 from pydantic import BaseModel, Field, model_validator
 
 from skytracker.models.api import APIResponse
-from skytracker.models.state import State
+from skytracker.models.state import State, StateDataSource, StateStatus
 
 
 StateFields = Literal['icao24', 'callsign', 'origin_country', 'time_position', 'last_contact',
@@ -69,6 +70,8 @@ class OpenSkyNetworkState(BaseModel):
         
         # Match values to names
         names = get_args(StateFields)
+        if len(values) == len(names) - 1:
+            values.append(0)  # temporary workaround: aircraft database offline
         if len(values) != len(names):
             raise ValueError('Values provided to OpenSky Network API state not valid ' + \
                                 f'(expected len={len(names)}, got len={len(values)})')
@@ -89,4 +92,29 @@ class OpenSkyNetworkResponse(BaseModel, APIResponse):
         Returns:
             list[State]: list of aircraft states
         """
-
+        return [State(
+            time=datetime.fromtimestamp(self.time, tz=timezone.utc),
+            data_source=StateDataSource.OPENSKY_NETWORK,
+            aircraft_iata='',
+            aircraft_icao='',
+            aircraft_icao24=entry.icao24,
+            aircraft_registration=entry.callsign if entry.callsign is not None else '',
+            airline_iata='',
+            airline_icao='',
+            arrival_iata='',
+            arrival_icao='',
+            departure_iata='',
+            departure_icao='',
+            position=(entry.latitude, entry.longitude) if entry.latitude is not None \
+                and entry.longitude is not None else None,
+            geo_altitude=entry.geo_altitude,
+            baro_altitude=entry.baro_altitude,
+            heading=entry.true_track,
+            speed_horizontal=entry.velocity,
+            speed_vertical=entry.vertical_rate,
+            is_on_ground=entry.on_ground,
+            status=StateStatus.EMPTY,
+            squawk=entry.squawk,
+            squawk_time=datetime.fromtimestamp(entry.last_contact, tz=timezone.utc) \
+                if entry.last_contact is not None else None
+        ) for entry in self.states]

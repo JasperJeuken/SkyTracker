@@ -13,7 +13,7 @@ from skytracker import dependencies
 from skytracker.api.v1 import aircraft, analysis, flights, maps, search
 from skytracker.storage import Storage
 from skytracker.services.browser import WebBrowser
-from skytracker.services.opensky import opensky_service
+from skytracker.services.api.opensky_network import opensky_service
 from skytracker.utils import logger
 from skytracker.settings import settings
 

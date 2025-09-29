@@ -170,5 +170,5 @@ class AviationEdgeResponse(RootModel[list[AviationEdgeState]], APIResponse):
             status=StateStatus.from_string(entry.status),
             squawk=entry.system.squawk if entry.system.squawk is not None and \
                 len(entry.system.squawk) else None,
-            squawk_time=entry.system.updated
+            squawk_time=datetime.fromtimestamp(entry.system.updated, tz=timezone.utc)
         ) for entry in self.root]

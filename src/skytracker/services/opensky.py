@@ -181,6 +181,7 @@ class OpenskyAPI:
             log_and_raise(ValueError, f'Expected OpenSky data not present ({data.keys()})')
 
         # Parse to state list
+        print(data['states'][0])
         logger.debug(f'Received {len(data['states'])} OpenSky states (time={data['time']}).')
         return [State.from_raw([data['time']] + state + [0]) for state in data['states']]
 

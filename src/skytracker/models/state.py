@@ -1,7 +1,97 @@
 """State models"""
-from typing import Optional, List, Literal, Any, ClassVar, get_args
+from datetime import datetime
+from typing import Optional, TypedDict, Literal, get_args, List, Any, ClassVar
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import IntEnum, Enum
+
+from pydantic import BaseModel
+
+from skytracker.models.aviation_edge import AviationEdgeResponse
+
+
+# class StateDataSource(IntEnum):
+#     """Source of state data"""
+
+#     OPENSKY_NETWORK: int = 1
+#     """int: OpenSky Network API"""
+#     AVIATION_EDGE: int = 2
+#     """int: Aviation Edge API"""
+
+
+# class StateStatus(IntEnum):
+#     """State status"""
+
+#     EMPTY: int = 1
+#     """int: no given state"""
+#     EN_ROUTE: int = 2
+#     """int: en-route"""
+#     LANDED: int = 3
+#     """int: landed"""
+#     STARTED: int = 4
+#     """int: started"""
+
+
+# @dataclass
+# class State:
+#     """Aircraft state data"""
+
+#     time: datetime
+#     """datetime: data timestamp"""
+#     data_source: StateDataSource
+#     """StateDataSource: source of state data"""
+
+#     aircraft_iata: str
+#     """str: aircraft IATA code (max. 4 characters)"""
+#     aircraft_icao: str
+#     """str: aircraft ICAO code (max. 4 characters)"""
+#     aircraft_icao24: str
+#     """str: aircraft ICAO 24-bit address (hex) (6 characters)"""
+#     aircraft_registration: str
+#     """str: aircraft registration (max. 8 characters)"""
+
+#     airline_iata: str
+#     """str: airline IATA code (2 characters)"""
+#     airline_icao: str
+#     """str: airline ICAO code (3 characters)"""
+
+#     arrival_iata: str
+#     """str: arrival airport IATA code (3 characters)"""
+#     arrival_icao: str
+#     """str: arrival airport ICAO code (4 characters)"""
+
+#     departure_iata: str
+#     """str: departure airport IATA code (3 characters)"""
+#     departure_icao: str
+#     """str: departure airport ICAO code (4 characters)"""
+
+#     position: tuple[float, float]
+#     """tuple[float, float]: latitude/longitude position [deg]"""
+#     altitude: float
+#     """float: altitude [m]"""
+#     heading: float
+#     """float: heading [deg]"""
+#     speed_horizontal: float
+#     """float: horizontal speed [m/s]"""
+#     speed_vertical: float
+#     """float: vertical speed [m/s]"""
+#     is_on_ground: bool
+#     """bool: whether aircraft is on ground"""
+
+#     status: StateStatus
+#     """StateStatus: aircraft status"""
+#     squawk: Optional[int]
+#     """Optional[int]: squawk code (can be None)"""
+#     squawk_time: int
+#     """int: squawk update time (Unix timestamp)"""
+
+#     @classmethod
+#     def from_opensky_network(self, opensky_network_data) -> 'State':
+#         pass
+
+#     @classmethod
+#     def from_aviation_edge(self, aviation_edge_data) -> 'State':
+#         pass
+
 
 
 class StatePositionSource(Enum):

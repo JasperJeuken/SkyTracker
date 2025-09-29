@@ -1,13 +1,14 @@
-"""OpenSky API interface"""
-import json
+"""OpenSky Network API interface"""
 import time
 import asyncio
 from typing import Optional, Union, Literal
 from datetime import datetime
 
 import requests
+from pydantic import ValidationError
 
 from skytracker.models.state import State
+from skytracker.models.api.opensky_network import OpenSkyNetworkResponse
 from skytracker.storage import Storage
 from skytracker.utils import logger, log_and_raise
 from skytracker.settings import settings
@@ -177,11 +178,13 @@ class OpenskyAPI:
             endpoint += '?' + '&'.join(arguments)
         logger.debug(f'Requesting OpenSky states from "{endpoint}"...')
         data = self._get_json(endpoint)
-        if 'states' not in data or 'time' not in data:
-            log_and_raise(ValueError, f'Expected OpenSky data not present ({data.keys()})')
+        try:
+            response = OpenSkyNetworkResponse.model_validate(data)
+        except ValidationError as err:
+            log_and_raise(ValueError,
+                          f'Expected OpenSky Network data not present ({data.keys()})',err)
 
         # Parse to state list
-        print(data['states'][0])
         logger.debug(f'Received {len(data['states'])} OpenSky states (time={data['time']}).')
         return [State.from_raw([data['time']] + state + [0]) for state in data['states']]
 

@@ -1,7 +1,11 @@
 """Aviation Edge API models"""
 from typing import Annotated, List, Iterator
+from datetime import datetime, timezone
 
 from pydantic import BaseModel, RootModel, Field
+
+from skytracker.models.api import APIResponse
+from skytracker.models.state import State, StateDataSource, StateStatus
 
 
 class AviationEdgeAircraft(BaseModel):
@@ -100,11 +104,15 @@ class AviationEdgeState(BaseModel):
     """AviationEdgeSystem: aircraft system data"""
 
 
-class AviationEdgeResponse(RootModel):
+class AviationEdgeResponse(RootModel[list[AviationEdgeState]], APIResponse):
     """Aviation Edge API response data"""
 
-    root: Annotated[List[AviationEdgeState], Field(description='Aircraft states')]
-    """List[AviationEdgeState]"""
+    _time: datetime | None = None
+
+    def model_post_init(self, _) -> None:
+        """Store the time of the response validation"""
+        if self._time is None:
+            self._time = datetime.now(tz=timezone.utc)
 
     def __iter__(self) -> Iterator:
         """Get state iterator
@@ -132,3 +140,35 @@ class AviationEdgeResponse(RootModel):
             AviationEdgeState: indexed state
         """
         return self.root[index]
+    
+    def to_states(self) -> list[State]:
+        """Convert Aviation Edge API response to list of aircraft states
+
+        Returns:
+            list[State]: list of aircraft states
+        """
+        return [State(
+            time=self._time,
+            data_source=StateDataSource.AVIATION_EDGE,
+            aircraft_iata=entry.aircraft.iataCode,
+            aircraft_icao=entry.aircraft.icaoCode,
+            aircraft_icao24=entry.aircraft.icao24,
+            aircraft_registration=entry.aircraft.regNumber,
+            airline_iata=entry.airline.iataCode,
+            airline_icao=entry.airline.icaoCode,
+            arrival_iata=entry.arrival.iataCode,
+            arrival_icao=entry.arrival.icaoCode,
+            departure_iata=entry.departure.iataCode,
+            departure_icao=entry.departure.icaoCode,
+            position=(entry.geography.latitude, entry.geography.longitude),
+            geo_altitude=None,
+            baro_altitude=entry.geography.altitude,
+            heading=entry.geography.direction,
+            speed_horizontal=entry.speed.horizontal / 3.6,
+            speed_vertical=entry.speed.vspeed / 3.6,
+            is_on_ground=bool(entry.speed.isGround),
+            status=StateStatus.from_string(entry.status),
+            squawk=entry.system.squawk if entry.system.squawk is not None and \
+                len(entry.system.squawk) else None,
+            squawk_time=entry.system.updated
+        ) for entry in self.root]

@@ -3,6 +3,9 @@ from typing import List, Annotated, Any, Literal, get_args
 
 from pydantic import BaseModel, Field, model_validator
 
+from skytracker.models.api import APIResponse
+from skytracker.models.state import State
+
 
 StateFields = Literal['icao24', 'callsign', 'origin_country', 'time_position', 'last_contact',
                       'longitude', 'latitude', 'baro_altitude', 'on_ground', 'velocity',
@@ -47,7 +50,7 @@ class OpenSkyNetworkState(BaseModel):
     """bool: special purpose indicator"""
     position_source: Annotated[int, Field(description='Origin of the state position')]
     """int: origin of the state position"""
-    category: Annotated[int, Field(description='Aircraft category')]
+    category: Annotated[int, Field(0, description='Aircraft category')]
     """int: aircraft category"""
 
     @model_validator(mode='before')
@@ -72,10 +75,18 @@ class OpenSkyNetworkState(BaseModel):
         return dict(zip(names, values))
 
 
-class OpenSkyNetworkResponse(BaseModel):
+class OpenSkyNetworkResponse(BaseModel, APIResponse):
     """OpenSky Network API response data"""
 
     time: Annotated[int, Field(description='response timestamp (Unix)')]
     """int: response timestamp (Unix)"""
     states: Annotated[List[OpenSkyNetworkState], Field(description='Aircraft states')]
     """List[OpenSkyNetworkState]: aircraft states"""
+
+    def to_states(self) -> list[State]:
+        """Convert Aviation Edge API response to list of aircraft states
+
+        Returns:
+            list[State]: list of aircraft states
+        """
+

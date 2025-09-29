@@ -37,7 +37,6 @@ async def collection_service(storage: Storage, api_type: APIType, repeat: int = 
         # Collect states and write to database
         try:
             states = api.get_states()
-            print(states[0].model_dump_json())
             await storage['state'].insert_states(states)
             logger.info(f'Collected {len(states)} aircraft states.')
         except Exception as exc:

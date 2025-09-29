@@ -37,8 +37,8 @@ class StateTableManager(TableManager[State]):
             'aircraft_iata FixedString(4)',
             'aircraft_icao FixedString(4)',
             'aircraft_icao24 FixedString(6)',
-            'aircraft_registration FixedString(8)',
-            'airline_iata FixedString(2)',
+            'aircraft_registration FixedString(10)',
+            'airline_iata FixedString(3)',
             'airline_icao FixedString(3)',
             'arrival_iata FixedString(3)',
             'arrival_icao FixedString(4)',
@@ -63,7 +63,7 @@ class StateTableManager(TableManager[State]):
         logger.info(f'Table "{self.TABLE_NAME}" does not exist, creating...')
         await self._database.create_table(self.TABLE_NAME, fields,
                                           'ENGINE MergeTree',
-                                          'ORDER BY (icao24, time)',
+                                          'ORDER BY (flight_icao, time)',
                                           'SETTINGS index_granularity=8192')
 
     async def exists(self) -> bool:

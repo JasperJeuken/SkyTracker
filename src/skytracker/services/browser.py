@@ -87,7 +87,6 @@ class WebBrowser:
                 if wait_for is not None:
                     await page.wait_for_selector(wait_for, timeout=timeout)
             except PlaywrightTimeoutError:
-                print(await page.content())
                 await context.close()
                 logger.error(f'Timeout while fetching URL "{url}" (wait_for="{wait_for}")')
                 raise HTTPException(status_code=504, detail='Timeout while fetching page')

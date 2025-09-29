@@ -1,8 +1,8 @@
 """Analysis utility functions"""
-from skytracker.models.state import State, StateFields
+from skytracker.models.state import State
 
 
-def filter_states(states: list[State], *required_field: StateFields) -> list[State]:
+def filter_states(states: list[State], *required_field) -> list[State]:
     """Filter a list of states to ensure specific required fields are not None
 
     Args:
@@ -11,5 +11,7 @@ def filter_states(states: list[State], *required_field: StateFields) -> list[Sta
     Returns:
         list[State]: filtered list of states
     """
-    return [state for state in states if
-            all(getattr(state, field) is not None for field in required_field)]
+    # TODO
+    return states
+    # return [state for state in states if
+    #         all(getattr(state, field) is not None for field in required_field)]

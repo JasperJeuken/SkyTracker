@@ -14,6 +14,7 @@ class Settings(BaseSettings):
         clickhouse_database (str): name of ClickHouse database to use
         opensky_client_id (str): client ID to access OpenSky Network API with
         opensky_client_secret (str): client secret to access OpenSky Network API with
+        aviation_edge_api_key (str): API key to access Aviation Edge API with
         app_name (str): name of FastAPI application
         environment (str): FastAPI environment (development, staging, or production)
         debug (bool): whether to run in debug mode
@@ -26,9 +27,12 @@ class Settings(BaseSettings):
     clickhouse_database: str = Field('default')
     clickhouse_secure: bool = Field(False)
 
-    # OpenSky
-    opensky_client_id: str = Field('')
-    opensky_client_secret: str = Field('')
+    # OpenSky Network
+    opensky_network_client_id: str = Field('')
+    opensky_network_client_secret: str = Field('')
+
+    # Aviation Edge
+    aviation_edge_api_key: str = Field('')
 
     # FastAPI
     app_name: str = Field('SkyTracker')

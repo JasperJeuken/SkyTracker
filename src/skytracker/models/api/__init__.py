@@ -1,2 +1,2 @@
 """External API models module"""
-from .api import APIResponse
+from .api import APIResponse, APIType, API

@@ -4,8 +4,8 @@ from typing import List, Annotated, Any, Literal, get_args
 
 from pydantic import BaseModel, Field, model_validator
 
-from skytracker.models.api import APIResponse
-from skytracker.models.state import State, StateDataSource, StateStatus
+from skytracker.models.api import APIResponse, APIType
+from skytracker.models.state import State, StateStatus
 
 
 StateFields = Literal['icao24', 'callsign', 'origin_country', 'time_position', 'last_contact',
@@ -94,7 +94,7 @@ class OpenSkyNetworkResponse(BaseModel, APIResponse):
         """
         return [State(
             time=datetime.fromtimestamp(self.time, tz=timezone.utc),
-            data_source=StateDataSource.OPENSKY_NETWORK,
+            data_source=APIType.OPENSKY_NETWORK,
             aircraft_iata='',
             aircraft_icao='',
             aircraft_icao24=entry.icao24,
@@ -105,8 +105,11 @@ class OpenSkyNetworkResponse(BaseModel, APIResponse):
             arrival_icao='',
             departure_iata='',
             departure_icao='',
+            flight_iata='',
+            flight_icao='',
+            flight_number='',
             position=(entry.latitude, entry.longitude) if entry.latitude is not None \
-                and entry.longitude is not None else None,
+                and entry.longitude is not None else (0.0, 0.0),
             geo_altitude=entry.geo_altitude,
             baro_altitude=entry.baro_altitude,
             heading=entry.true_track,

@@ -6,13 +6,13 @@ from skytracker.storage.table_manager import TableManager
 from skytracker.storage.cache import Cache
 from skytracker.models.state import State
 from skytracker.storage.queries.state import NearbyQuery, LatestBatchQuery, TrackQuery
-from skytracker.utils import logger, log_and_raise
+from skytracker.utils import logger
 
 
 class StateTableManager(TableManager[State]):
     """Async aircraft state table manager"""
 
-    TABLE_NAME = 'aircraft_states'
+    TABLE_NAME = 'aircraft_states2'
     """str: name of aircraft state table"""
 
     def __init__(self, database: DatabaseManager) -> None:
@@ -32,25 +32,31 @@ class StateTableManager(TableManager[State]):
 
         # Fields for state table
         fields = [
-            'time UInt32 NOT NULL',
-            'icao24 FixedString(6) NOT NULL',
-            'callsign Nullable(FixedString(8))',
-            'origin_country String NOT NULL',
-            'time_position Nullable(UInt32)',
-            'last_contact UInt32 NOT NULL',
-            'longitude Nullable(Float64)',
-            'latitude Nullable(Float64)',
-            'baro_altitude Nullable(Float64)',
-            'on_ground Bool NOT NULL',
-            'velocity Nullable(Float64)',
-            'true_track Nullable(Float64)',
-            'vertical_rate Nullable(Float64)',
-            'sensors Array(UInt32)',
-            'geo_altitude Nullable(Float64)',
-            'squawk Nullable(String)',
-            'spi Bool NOT NULL',
-            'position_source UInt8 NOT NULL',
-            'category UInt8 NOT NULL'
+            "time DateTime('UTC')",
+            "data_source Enum('opensky_network', 'aviation_edge')",
+            'aircraft_iata FixedString(4)',
+            'aircraft_icao FixedString(4)',
+            'aircraft_icao24 FixedString(6)',
+            'aircraft_registration FixedString(8)',
+            'airline_iata FixedString(2)',
+            'airline_icao FixedString(3)',
+            'arrival_iata FixedString(3)',
+            'arrival_icao FixedString(4)',
+            'departure_iata FixedString(3)',
+            'departure_icao FixedString(4)',
+            'flight_iata FixedString(7)',
+            'flight_icao FixedString(8)',
+            'flight_number FixedString(4)',
+            'position Point',
+            'geo_altitude Nullable(FLOAT)',
+            'baro_altitude Nullable(FLOAT)',
+            'heading Nullable(FLOAT)',
+            'speed_horizontal Nullable(FLOAT)',
+            'speed_vertical Nullable(FLOAT)',
+            'is_on_ground BOOLEAN',
+            "status Enum('', 'unknown', 'en-route', 'landed', 'started')",
+            'squawk Nullable(UInt16)',
+            "squawk_time Nullable(DateTime('UTC'))"
         ]
 
         # Create table
@@ -76,8 +82,8 @@ class StateTableManager(TableManager[State]):
         """
         logger.debug(f'Setting cache with {len(states)}...')
         await self._cache.set(states)
-        rows = [list(state.to_json().values()) for state in states]
-        columns = State.FIELDS
+        rows = [state.values() for state in states]
+        columns = list(states[0].model_dump().keys())
         logger.debug(f'Inserting {len(states)} into database...')
         await self._database.insert(self.TABLE_NAME, rows, columns)
 

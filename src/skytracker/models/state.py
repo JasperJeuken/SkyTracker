@@ -1,6 +1,7 @@
 """State models"""
 from datetime import datetime
 from enum import IntEnum
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -8,7 +9,7 @@ from skytracker.utils import log_and_raise
 
 
 class StateDataSource(IntEnum):
-    """Source of state data"""
+    """State data source"""
 
     OPENSKY_NETWORK: int = 1
     """int: OpenSky Network API"""
@@ -59,7 +60,7 @@ class State(BaseModel):
     time: datetime
     """datetime: data timestamp"""
     data_source: StateDataSource
-    """StateDataSource: source of state data"""
+    """APIType: source of state data"""
 
     aircraft_iata: str
     """str: aircraft IATA code (max. 4 characters)"""
@@ -85,8 +86,15 @@ class State(BaseModel):
     departure_icao: str
     """str: departure airport ICAO code (4 characters)"""
 
-    position: tuple[float, float] | None
-    """tuple[float, float] | None: latitude/longitude position [deg]"""
+    flight_iata: str
+    """str: flight IATA code"""
+    flight_icao: str
+    """str: flight ICAO code"""
+    flight_number: str
+    """str: flight number"""
+
+    position: tuple[float, float]
+    """tuple[float, float]: latitude/longitude position [deg]"""
     geo_altitude: float | None
     """float | None: geometric altitude [m]"""
     baro_altitude: float | None
@@ -106,3 +114,37 @@ class State(BaseModel):
     """int | None: squawk code (can be None)"""
     squawk_time: datetime | None
     """datetime | None: squawk update time (Unix timestamp)"""
+
+    def values(self) -> list[Any]:
+        """Get the values in the state as a list
+
+        Returns:
+            list[Any]: list of state values
+        """
+        return [
+            self.time,
+            self.data_source.value,
+            self.aircraft_iata,
+            self.aircraft_icao,
+            self.aircraft_icao24,
+            self.aircraft_registration,
+            self.airline_iata,
+            self.airline_icao,
+            self.arrival_iata,
+            self.arrival_icao,
+            self.departure_iata,
+            self.departure_icao,
+            self.flight_iata,
+            self.flight_icao,
+            self.flight_number,
+            self.position,
+            self.geo_altitude,
+            self.baro_altitude,
+            self.heading,
+            self.speed_horizontal,
+            self.speed_vertical,
+            self.is_on_ground,
+            self.status.value,
+            self.squawk,
+            self.squawk_time
+        ]

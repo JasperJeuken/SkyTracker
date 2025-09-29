@@ -1,11 +1,11 @@
 """Aviation Edge API models"""
-from typing import Annotated, List, Iterator
+from typing import Annotated, Iterator
 from datetime import datetime, timezone
 
 from pydantic import BaseModel, RootModel, Field
 
-from skytracker.models.api import APIResponse
-from skytracker.models.state import State, StateDataSource, StateStatus
+from skytracker.models.api import APIResponse, APIType
+from skytracker.models.state import State, StateStatus
 
 
 class AviationEdgeAircraft(BaseModel):
@@ -94,6 +94,8 @@ class AviationEdgeState(BaseModel):
     """AviationEdgeAirport: arrival airport data"""
     departure: Annotated[AviationEdgeAirport, Field(description='Departure airport data')]
     """AviationEdgeAirport: departure airport data"""
+    flight: Annotated[AviationEdgeFlight, Field(description='Flight data')]
+    """AviationEdgeFlight: flight data"""
     geography: Annotated[AviationEdgeGeography, Field(description='Aircraft geography data')]
     """AviationEdgeGeography: aircraft geography data"""
     speed: Annotated[AviationEdgeSpeed, Field(description='Aircraft speed data')]
@@ -149,7 +151,7 @@ class AviationEdgeResponse(RootModel[list[AviationEdgeState]], APIResponse):
         """
         return [State(
             time=self._time,
-            data_source=StateDataSource.AVIATION_EDGE,
+            data_source=APIType.AVIATION_EDGE,
             aircraft_iata=entry.aircraft.iataCode,
             aircraft_icao=entry.aircraft.icaoCode,
             aircraft_icao24=entry.aircraft.icao24,
@@ -160,6 +162,9 @@ class AviationEdgeResponse(RootModel[list[AviationEdgeState]], APIResponse):
             arrival_icao=entry.arrival.icaoCode,
             departure_iata=entry.departure.iataCode,
             departure_icao=entry.departure.icaoCode,
+            flight_iata=entry.flight.iataNumber,
+            flight_icao=entry.flight.icaoNumber,
+            flight_number=entry.flight.number,
             position=(entry.geography.latitude, entry.geography.longitude),
             geo_altitude=None,
             baro_altitude=entry.geography.altitude,

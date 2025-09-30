@@ -1,8 +1,7 @@
-import { X, TowerControl, Plane, Star, SatelliteDish, GitCommitHorizontal,
+import { X, TowerControl, Plane, GitCommitHorizontal,
     GitCommitVertical, ArrowUpFromLine, Gauge, MoveVertical, Tag, CircleArrowOutUpLeft, RadioTower } from "lucide-react";
 import { useAircraftMap } from "./AircraftMapProvider";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Carousel, CarouselItem } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
@@ -40,18 +39,16 @@ export function AircraftDetails({ showImages = false }: { showImages?: boolean }
         // Load aircraft details
         getAircraftDetails(selectedAircraft)
             .then(data => setDetails(data))
-            .catch((err) => {
+            .catch(() => {
                 setDetails(null);
-                console.error(err);
             })
             .finally(() => setLoadingDetails(false));
         
         // Load aircraft images
         if (showImages) getAircraftImages(selectedAircraft)
             .then((data) => setImages(data))
-            .catch((err) => {
+            .catch(() => {
                 setImages(null);
-                console.error(err);
             })
             .finally(() => setLoadingImages(false));
     }, [selectedAircraft]);

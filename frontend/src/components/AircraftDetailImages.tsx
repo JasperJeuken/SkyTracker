@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ImageOff } from "lucide-react";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
+import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { type AircraftImage } from "@/types/api";
 
 export function AircraftDetailImages({ images }: { images: AircraftImage[] }) {
@@ -21,8 +21,8 @@ export function AircraftDetailImages({ images }: { images: AircraftImage[] }) {
     }, [api])
 
     return (
-        <div className="w-full max-w-lg mx-auto mt-4 shadow-lg">
-            <Carousel setApi={setApi} opts={{ loop: true }}>
+        <div>
+            <Carousel setApi={setApi} opts={{ loop: true }} className="w-full max-w-lg mx-auto mt-4 shadow-lg rounded-2xl">
                 <CarouselContent>
                     { !has_images ? 
                         <CarouselItem key={0}>

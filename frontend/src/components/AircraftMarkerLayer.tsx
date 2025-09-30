@@ -75,13 +75,15 @@ export function AircraftMarkerLayer({ aircraft, pane, selectedAircraft }: { airc
             });
 
             // Bind popup to hover
-            // marker.bindPopup(`ICAO24: ${a.icao24}`);
-            // marker.on('mouseover', function () {
-            //     marker.openPopup();
-            // });
-            // marker.on('mouseout', function () {
-            //     marker.closePopup();
-            // });
+            marker.bindPopup(`<div class="px-3 py-2 rounded-lg shadow-md bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100">
+                    ${a.callsign}
+                </div>`);
+            marker.on('mouseover', function () {
+                marker.openPopup();
+            });
+            marker.on('mouseout', function () {
+                marker.closePopup();
+            });
 
             return marker;
         });

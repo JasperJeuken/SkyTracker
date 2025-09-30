@@ -32,6 +32,33 @@
   margin-left: 0.25rem;
 }
 
+.leaflet-popup {
+  translate: 0px -5px;
+  outline-color: transparent !important;
+}
+
 .leaflet-popup-close-button {
-    display: none !important;
+  display: none !important;
+  border: none;
+}
+
+.leaflet-popup-tip-container {
+  display: none !important;
+}
+
+.leaflet-popup-content-wrapper {
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.leaflet-popup-content {
+  width: auto !important;
+  margin: 0 !important;
+  border: none;
+}
+
+.leaflet-popup-pane {
+  z-index: 1000 !important;
 }

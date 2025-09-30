@@ -1,23 +1,23 @@
 """Maps API endpoints"""
-from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Query, Path, HTTPException
 
 from skytracker.dependencies import get_storage
 from skytracker.storage import Storage
-from skytracker.models.maps import AircraftMapState
+from skytracker.models.maps import SimpleMapState, DetailedMapState
+from skytracker.services.maps import get_nearby, get_track, get_all
 from skytracker.utils import logger
 
 
 router = APIRouter(prefix='/maps', tags=['maps'])
 
 
-@router.get('/nearby', response_model=List[AircraftMapState])
-async def get_nearby(storage: Storage = Depends(get_storage),
-                     lat: float = Query(),
-                     lon: float = Query(),
-                     radius: Optional[float] = Query(50, ge=1, le=1000),
-                     limit: Optional[int] = Query(0, ge=0)) -> List[AircraftMapState]:
+@router.get('/nearby', response_model=list[SimpleMapState])
+async def api_get_nearby(storage: Storage = Depends(get_storage),
+                         lat: float = Query(),
+                         lon: float = Query(),
+                         radius: float = Query(50, ge=1, le=1000),
+                         limit: int = Query(0, ge=0)) -> list[SimpleMapState]:
     """Get list of aircraft states close to a specified location
 
     Args:
@@ -28,69 +28,41 @@ async def get_nearby(storage: Storage = Depends(get_storage),
         limit (int, optional): maximum number of states to get (0=all). Defaults to 0 (all).
 
     Returns:
-        List[AircraftMapState]: list of aircraft states near specific point
+        list[SimpleMapState]: list of aircraft states near specific point
     """
-    # Get aircraft state matching specified settings
-    logger.info(f'Get nearby aircraft: lat={lat}, lon={lon}, radius={radius}, limit={limit}')
-    try:
-        states = await storage['state'].get_nearby(lat, lon, radius, limit)
-    except ValueError as err:
-        logger.error(f'Request failed ({err})')
-        raise HTTPException(status_code=400, detail=f'{err}') from err
-
-    # Convert to map state model
-    logger.info(f'Get nearby aircraft: {len(states)} states retrieved.')
-    return [AircraftMapState(time=state.time_position,
-                             icao24=state.icao24,
-                             latitude=state.latitude,
-                             longitude=state.longitude,
-                             heading=state.true_track,
-                             altitude=state.baro_altitude) for state in states]
+    logger.info(f'API (get_nearby): lat={lat} lon={lon} radius={radius} limit={limit}')
+    return await get_nearby(storage, lat, lon, radius, limit)
 
 
-@router.get('/track/{icao24}', response_model=List[AircraftMapState])
-async def get_track(storage: Storage = Depends(get_storage),
-                    icao24: str = Path(min_length=6, max_length=6, regex='^[0-9A-Fa-f]{6}$'),
-                    duration: str = Query('1d'),
-                    limit: int = Query(0, ge=0)) -> List[AircraftMapState]:
+@router.get('/track/{callsign}', response_model=list[DetailedMapState])
+async def api_get_track(storage: Storage = Depends(get_storage),
+                        callsign: str = Path(),
+                        duration: str = Query('1d'),
+                        limit: int = Query(0, ge=0)) -> list[DetailedMapState]:
     """Get the track history of a specific aircraft
 
     Args:
         storage (Storage, optional): backend storage manager. Defaults to Depends(get_storage).
-        icao24 (str): aircraft ICAO 24-bit address (must be 6-character hex code).
+        callsign (str): aircraft callsign (ICAO)
         duration (str, optional): duration of track (i.e. "5h20m" or "10m20s"). Defaults to 1 day.
         limit (int, optional): maximum number of states to get (0=all). Defaults to 0 (all).
 
     Returns:
-        List[AircraftMapState]: list of aircraft track states with specified duration
+        list[DetailedMapState]: list of aircraft track states with specified duration
     """
-    # Get aircraft states matching specified settings
-    logger.info(f'Get track history: icao24={icao24}, duration={duration}, limit={limit}')
-    try:
-        states = await storage['state'].get_track(icao24, duration, limit)
-    except ValueError as err:
-        logger.error(f'Request failed ({err})')
-        raise HTTPException(status_code=400, detail=f'{err}') from err
-
-    # Convert to map state model
-    logger.info(f'Get track history: {len(states)} states retrieved.')
-    return [AircraftMapState(time=state.time_position,
-                             icao24=state.icao24,
-                             latitude=state.latitude,
-                             longitude=state.longitude,
-                             heading=state.true_track,
-                             altitude=state.baro_altitude) for state in states]
+    logger.info(f'API (get_track): callsign={callsign} duration={duration} limit={limit}')
+    return await get_track(storage, callsign, duration, limit)
 
 
-@router.get('', response_model=List[AircraftMapState])
-async def get_all(storage: Storage = Depends(get_storage),
-                  lat_min: Optional[float] = Query(None, description='Minimum latitude'),
-                  lat_max: Optional[float] = Query(None, description='Maximum latitude'),
-                  lon_min: Optional[float] = Query(None, description='Minimum longitude'),
-                  lon_max: Optional[float] = Query(None, description='Maximum longitude'),
-                  limit: Optional[int] = Query(0, ge=0, description='Max. number ' + \
-                                              'of states to return (0=all)')) \
-                  -> List[AircraftMapState]:
+@router.get('', response_model=list[SimpleMapState])
+async def api_get_all(storage: Storage = Depends(get_storage),
+                      south: float | None = Query(None, description='Minimum latitude'),
+                      north: float | None = Query(None, description='Maximum latitude'),
+                      west: float | None = Query(None, description='Minimum longitude'),
+                      east: float | None = Query(None, description='Maximum longitude'),
+                      limit: int = Query(0, ge=0, description='Max. number ' + \
+                                                   'of states to return (0=all)')) \
+                  -> list[SimpleMapState]:
     """Get the latest batch of aircraft states
 
     The latest batch of aircraft states represent the most up-to-date states of aircraft around
@@ -99,29 +71,14 @@ async def get_all(storage: Storage = Depends(get_storage),
 
     Args:
         storage (Storage, optional): backend storage manager. Defaults to Depends(get_storage).
-        lat_min (float, optional): minimum latitude in decimal degrees
-        lat_max (float, optional): maximum latitude in decimal degrees
-        lon_min (float, optional): minimum longitude in decimal degrees
-        lon_max (float, optional): maximum longitude in decimal degrees
+        south (float, optional): minimum latitude in decimal degrees. Defaults to None.
+        north (float, optional): maximum latitude in decimal degrees. Defaults to None.
+        west (float, optional): minimum longitude in decimal degrees. Defaults to None.
+        east (float, optional): maximum longitude in decimal degrees. Defaults to None.
         limit (int, optional): maximum number of states to return (0=all). Defaults to 0 (all).
 
     Returns:
-        List[AircraftMapState]: list of aircraft map states (icao24, latitude, longitude, heading)
+        List[SimpleMapState]: list of aircraft map states (icao24, latitude, longitude, heading)
     """
-    # Get aircraft state matching specified settings
-    logger.info(f'Get latest batch: bbox=({lat_min}, {lat_max}, {lon_min}, {lon_max}), ' + \
-                f'limit={limit}')
-    try:
-        states = await storage['state'].get_latest_batch(limit, lat_min, lat_max, lon_min, lon_max)
-    except ValueError as err:
-        logger.error(f'Request failed ({err})')
-        raise HTTPException(status_code=400, detail=f'{err}') from err
-
-    # Convert to map state model
-    logger.info(f'Get latest batch: {len(states)} states retrieved.')
-    return [AircraftMapState(time=state.time_position,
-                             icao24=state.icao24,
-                             latitude=state.latitude,
-                             longitude=state.longitude,
-                             heading=state.true_track,
-                             altitude=state.baro_altitude) for state in states]
+    logger.info(f'API (get_all): south={south} north={north} west={west} east={east} limit={limit}')
+    return await get_all(storage, south, north, west, east, limit)

@@ -29,7 +29,7 @@ def datetime_ago_from_time_string(time_string: str) -> datetime:
         time_string (str): time string (i.e. "1d5h", "2h30m", or "5m20s")
 
     Returns:
-        datetime: datetime which is specified amount of time ago
+        datetime: datetime which is specified amount of time ago (UTC)
     """
     now = datetime.now(timezone.utc)
     seconds = time_string_to_seconds(time_string)

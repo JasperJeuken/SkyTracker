@@ -95,33 +95,34 @@ class StateTableManager(TableManager[State]):
         """
         await self.insert_states([state])
 
-    async def get_track(self, icao24: str, duration: str, limit: int = 0) -> list[State]:
+    async def get_track(self, callsign: str, duration: str, limit: int = 0) -> list[State]:
         """Get the state history of a specific aircraft
 
         Args:
-            icao24 (str): aircraft ICAO 24-bit address (hex)
+            callsign (str): aircraft callsign (ICAO)
             duration (str): duration of track (i.e. "5h20m" or "10m20s")
             limit (int): maximum number of states to get (latest first, 0=all)
 
         Returns:
             list[State]: list of aircraft states
         """
-        query = TrackQuery(icao24, duration, limit)
+        query = TrackQuery(callsign, duration, limit)
         return await self._run_query(query, self.TABLE_NAME)
 
-    async def get_last_state(self, icao24: str) -> Optional[State]:
+    async def get_last_state(self, callsign: str) -> Optional[State]:
         """Get the last known state of a specific aircraft
 
         Args:
-            icao24 (str): aircraft ICAO 24-bit address (hex)
+            callsign (str): aircraft callsign (ICAO)
 
         Returns:
             Optional[State]: last known aircraft state, or None if not found
         """
-        result = await self.get_track(icao24, '365d', limit=1)
-        if len(result) == 0:
-            return None
-        return result[0]
+        states = await self.get_latest_batch()
+        for state in states:
+            if state.flight_icao == callsign:
+                return state
+        return None
 
     async def get_latest_batch(self, limit: int = 0,
                                lat_min: Optional[float] = None, lat_max: Optional[float] = None,

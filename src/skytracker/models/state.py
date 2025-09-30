@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import IntEnum
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator, model_validator
 
 from skytracker.utils import log_and_raise
 
@@ -15,6 +15,22 @@ class StateDataSource(IntEnum):
     """int: OpenSky Network API"""
     AVIATION_EDGE: int = 2
     """int: Aviation Edge API"""
+
+    @classmethod
+    def from_string(cls, value: str) -> int:
+        """Get data source from a string
+
+        Args:
+            value (str): string to parse
+
+        Returns:
+            int: data source
+        """
+        if value.lower() in ('opensky', 'opensky-network', 'opensky_network', 'opensky network'):
+            return cls.OPENSKY_NETWORK
+        if value.lower() in ('aviation-edge', 'aviation_edge', 'aviation edge'):
+            return cls.AVIATION_EDGE
+        log_and_raise(ValueError, f'Unknown data source: {value}')
 
 
 class StateStatus(IntEnum):
@@ -115,6 +131,59 @@ class State(BaseModel):
     squawk_time: datetime | None
     """datetime | None: squawk update time (Unix timestamp)"""
 
+    @field_validator('data_source', mode='before')
+    @classmethod
+    def parse_data_source(cls, value: Any) -> StateDataSource:
+        """If data source provided as string, parse
+
+        Args:
+            value (Any): data source value
+
+        Returns:
+            StateDataSource: parsed data source
+        """
+        if isinstance(value, str):
+            return StateDataSource.from_string(value)
+        return value
+    
+    @field_validator('status', mode='before')
+    @classmethod
+    def parse_status(cls, value: Any) -> StateStatus:
+        """If status provided as string, parse
+
+        Args:
+            value (Any): status value
+
+        Returns:
+            StateStatus: parsed status
+        """
+        if isinstance(value, str):
+            return StateStatus.from_string(value)
+        return value
+    
+    @model_validator(mode='before')
+    @classmethod
+    def parse_values(cls, values: dict[str, Any]) -> dict[str, Any]:
+        """Process raw values
+
+        Args:
+            values (dict[str, Any]): raw values
+
+        Returns:
+            dict[str, Any]: processed values
+        """
+        cleaned = {}
+        for key, value in values.items():
+
+            # Strip null characters
+            if isinstance(value, bytes):
+                cleaned_bytes = value.replace(b'\x00', b'').strip()
+                cleaned[key] = cleaned_bytes
+            else:
+                cleaned[key] = value
+
+        return cleaned
+
     def values(self) -> list[Any]:
         """Get the values in the state as a list
 
@@ -124,19 +193,19 @@ class State(BaseModel):
         return [
             self.time,
             self.data_source.value,
-            self.aircraft_iata,
-            self.aircraft_icao,
-            self.aircraft_icao24,
-            self.aircraft_registration,
-            self.airline_iata,
-            self.airline_icao,
-            self.arrival_iata,
-            self.arrival_icao,
-            self.departure_iata,
-            self.departure_icao,
-            self.flight_iata,
-            self.flight_icao,
-            self.flight_number,
+            self.aircraft_iata[:4],
+            self.aircraft_icao[:4],
+            self.aircraft_icao24[:6],
+            self.aircraft_registration[:10],
+            self.airline_iata[:3],
+            self.airline_icao[:3],
+            self.arrival_iata[:3],
+            self.arrival_icao[:4],
+            self.departure_iata[:3],
+            self.departure_icao[:4],
+            self.flight_iata[:7],
+            self.flight_icao[:8],
+            self.flight_number[:4],
             self.position,
             self.geo_altitude,
             self.baro_altitude,

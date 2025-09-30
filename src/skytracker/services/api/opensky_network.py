@@ -188,36 +188,3 @@ class OpenskyNetworkAPI(API):
                           f'Expected OpenSky Network data not present ({data.keys()})', err)
         logger.debug(f'Received {len(response.states)} OpenSky Network states.')
         return response.to_states()
-
-
-# async def opensky_service(storage: Storage, repeat: int = 90) -> None:
-#     """Service which periodically collects aircraft states and writes it to the state table
-
-#     Args:
-#         storage (Storage): database storage instance
-#         repeat (int, optional): period with which to collect states [sec]. Defaults to 90 sec.
-#     """
-#     logger.debug('Starting OpenSky service...')
-
-#     # Start OpenSky API
-#     api = OpenskyAPI(settings.opensky_client_id, settings.opensky_client_secret)
-
-#     # Start acquisition loop
-#     running = True
-#     while running:
-#         start_time = time.time()
-
-#         # Try to collect states and write to database
-#         try:
-#             states = api.get_states()
-#             await storage['state'].insert_states(states)
-#             logger.info(f'Inserted {len(states)} OpenSky states into database.')
-
-#         # Catch any exceptions
-#         except Exception as exc:
-#             logger.error(f'OpenSky collection error occurred: "{exc}"')
-
-#         # Repeat
-#         finally:
-#             elapsed_time = time.time() - start_time
-#             await asyncio.sleep(max(0, repeat - elapsed_time))

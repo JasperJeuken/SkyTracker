@@ -140,7 +140,7 @@ export function AircraftMap() {
                 <AircraftTrackLayer callsign={selectedAircraft} pane="aircraft-track" />
             </Pane>
             <Pane name="aircraft-markers" style={{ zIndex: 900 }}>
-                <AircraftMarkerLayer aircraft={aircraft} pane="aircraft-markers" />
+                <AircraftMarkerLayer aircraft={aircraft} pane="aircraft-markers" selectedAircraft={selectedAircraft} />
             </Pane>
         </MapContainer>
     );

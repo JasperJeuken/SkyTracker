@@ -27,6 +27,6 @@ export async function getAircraftDetails(callsign: string) {
 
 export async function getAircraftImages(callsign: string) {
     const res = await fetch(`${API_BASE}/aircraft/${callsign}/photos`);
-    if (!res.ok) throw new Error("Failed to fetch aircraft details");
+    if (!res.ok) throw new Error("Failed to fetch aircraft photos");
     return res.json();
 }

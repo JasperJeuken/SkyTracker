@@ -96,7 +96,8 @@ class WebBrowser:
                 raise HTTPException(status_code=502, detail=f'Failed to fetch page: {exc}')
             return page
 
-    async def get_images_from_page(self, url: str, timeout: int = 10000, limit: int = 0) \
+    async def get_images_from_page(self, url: str, timeout: int = 10000, limit: int = 0,
+                                   trusted_domains: list[str] | None = None) \
         -> list[dict[Literal['image', 'detail'], str]]:
         """Get image (and corresponding) detail URLs from a web page
 
@@ -104,6 +105,7 @@ class WebBrowser:
             url (str): URL to fetch images from
             timeout (int, optional): timeout in milliseconds. Defaults to 10000 ms.
             limit (int, optional): maximum number of results to return (0=all). Defaults to 0 (all).
+            trusted_domains (list[str], optional): only take from these domains. Defaults to None.
 
         Returns:
             list[dict[Literal['image', 'detail'], str]]: image and detail URLs
@@ -134,10 +136,12 @@ class WebBrowser:
             img_url = unquote(img_urls[0])
 
             # Add result
-            results.append({
-                'image': img_url,
-                'detail': info_href
-            })
+            if trusted_domains is not None and \
+                any(domain in info_href for domain in trusted_domains):
+                results.append({
+                    'image': img_url,
+                    'detail': info_href
+                })
             if limit > 0 and len(results) >= limit:
                 break
         await page.close()

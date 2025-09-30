@@ -41,8 +41,8 @@ export function AircraftDetails({ showImages = false }: { showImages?: boolean }
         getAircraftDetails(selectedAircraft)
             .then(data => setDetails(data))
             .catch((err) => {
-                console.error(err);
                 setDetails(null);
+                console.error(err);
             })
             .finally(() => setLoadingDetails(false));
         
@@ -50,8 +50,8 @@ export function AircraftDetails({ showImages = false }: { showImages?: boolean }
         if (showImages) getAircraftImages(selectedAircraft)
             .then((data) => setImages(data))
             .catch((err) => {
-                console.error(err);
                 setImages(null);
+                console.error(err);
             })
             .finally(() => setLoadingImages(false));
     }, [selectedAircraft]);
@@ -69,7 +69,7 @@ export function AircraftDetails({ showImages = false }: { showImages?: boolean }
             </CardHeader>
             <CardContent>
                 {loadingDetails ? (
-                    <Skeleton className="h-120 w-full" />
+                    <Skeleton className="h-140 w-full" />
                 ) : details ? (
                     <>
                         {/* Badges */}
@@ -79,11 +79,16 @@ export function AircraftDetails({ showImages = false }: { showImages?: boolean }
                         {/* <AircraftDetailBadge icon={<ReactCountryFlag svg countryCode={details.origin_country} />} text={details.origin_country} /> */}
 
                         {/* Image carousel */}
-                        {showImages && (loadingImages ? (
+                        {/* {showImages && (loadingImages ? (
                             <Skeleton className="w-full aspect-[16/9] rounded-2xl mt-4" />
                         ) : (
                             <AircraftDetailImages images={images ?? []} />
-                        ))}
+                        ))} */}
+                        { showImages && (loadingImages ? 
+                            <Skeleton className="w-full aspect-[16/9] rounded-2xl mt-4" /> 
+                            : 
+                            <AircraftDetailImages images={images ?? []} />)
+                        }
 
                         {/* Information cards */}
                         <div className="aircraft-details-grid mt-4">

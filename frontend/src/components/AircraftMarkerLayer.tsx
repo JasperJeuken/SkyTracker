@@ -13,7 +13,7 @@ declare module "leaflet" {
 }
 
 
-export function AircraftMarkerLayer({ aircraft, pane }: { aircraft: AircraftSimpleState[], pane: string }) {
+export function AircraftMarkerLayer({ aircraft, pane, selectedAircraft }: { aircraft: AircraftSimpleState[], pane: string, selectedAircraft: string | null }) {
     // Get map instance and create reference for marker canvas
     const { setSelectedAircraft, setSidebarOpen } = useAircraftMap();
     const markerClickedRef = useRef(false);
@@ -54,7 +54,8 @@ export function AircraftMarkerLayer({ aircraft, pane }: { aircraft: AircraftSimp
 
         // Create marker for each aircraft (rotated with heading)
         const markers = aircraft.map(a => {
-            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path fill="#1E90FF" d="M21 15.984l-8.016-4.5V3.516a1.5 1.5 0 0 0-3 0v7.969L2.016 15.984V18l8.016-2.484V21l-2.016 1.5V24l3.516-0.984L15 22.5v-1.5L13.031 21v-5.484L21 18v-2.016z"/></svg>`;
+            const color = a.callsign == selectedAircraft ? "#0757a7" : "#1E90FF";
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path fill="${color}" d="M21 15.984l-8.016-4.5V3.516a1.5 1.5 0 0 0-3 0v7.969L2.016 15.984V18l8.016-2.484V21l-2.016 1.5V24l3.516-0.984L15 22.5v-1.5L13.031 21v-5.484L21 18v-2.016z"/></svg>`;
             const iconUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
             const icon = L.icon({
                 iconUrl,
@@ -87,7 +88,7 @@ export function AircraftMarkerLayer({ aircraft, pane }: { aircraft: AircraftSimp
 
         // Add markers to canvas layer
         layer.addMarkers(markers);
-    }, [aircraft]);
+    }, [aircraft, selectedAircraft]);
 
     return null;
 }

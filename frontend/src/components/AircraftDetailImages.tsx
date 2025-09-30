@@ -1,5 +1,5 @@
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { type AircraftImage } from "./AircraftDetails";
+import { type AircraftImage } from "@/types/api";
 
 export function AircraftDetailImages({ images }: { images: AircraftImage[] }) {
     if (!images || images.length == 0) return null;

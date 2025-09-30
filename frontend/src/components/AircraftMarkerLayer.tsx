@@ -2,7 +2,8 @@ import { useEffect, useRef } from "react";
 import { useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import MarkersCanvas from "../lib/leaflet-markers-canvas";
-import { useAircraftMap, type AircraftState } from "./AircraftMapProvider.js";
+import { useAircraftMap } from "./AircraftMapProvider.js";
+import { type AircraftSimpleState } from "@/types/api.js";
 
 
 declare module "leaflet" {
@@ -12,7 +13,7 @@ declare module "leaflet" {
 }
 
 
-export function AircraftMarkerLayer({ aircraft, pane }: { aircraft: AircraftState[], pane: string }) {
+export function AircraftMarkerLayer({ aircraft, pane }: { aircraft: AircraftSimpleState[], pane: string }) {
     // Get map instance and create reference for marker canvas
     const { setSelectedAircraft, setSidebarOpen } = useAircraftMap();
     const markerClickedRef = useRef(false);
@@ -64,8 +65,8 @@ export function AircraftMarkerLayer({ aircraft, pane }: { aircraft: AircraftStat
             });
 
             const marker = L.marker(
-                [a.latitude, a.longitude],
-                { icon: icon, title: a.icao24 },
+                a.position,
+                { icon: icon, title: a.callsign },
             ).on('click', (evt) => {
                 markerClickedRef.current = true;
                 setSelectedAircraft(evt.target.options.title);

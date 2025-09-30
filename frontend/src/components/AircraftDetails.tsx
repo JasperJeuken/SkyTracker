@@ -12,33 +12,8 @@ import ReactCountryFlag from "react-country-flag";
 import { AircraftDetailItem } from "./AircraftDetailItem";
 import { AircraftDetailBadge } from "./AircraftDetailBadge";
 import { AircraftDetailImages } from "./AircraftDetailImages";
+import { type AircraftDetails, type AircraftImage } from "@/types/api";
 
-
-type AircraftDetails = {
-    icao24: string,
-    known_callsigns: string[], //
-    origin_country: string, //
-    last_state: number,
-    last_position: number,
-    last_contact: number,
-    last_latitude: number | null, //
-    last_longitude: number | null, //
-    last_baro_altitude: number | null, //
-    last_geo_altitude: number | null, //
-    last_velocity: number | null, //
-    last_heading: number | null,
-    last_vertical_rate: number | null,
-    last_on_ground: boolean, //
-    last_spi: boolean, //
-    last_squawk: string | null,
-    last_position_source: string, //
-    last_category: string,
-};
-
-export type AircraftImage = {
-    image_url: string,
-    detail_url: string
-};
 
 
 export function AircraftDetails({ showImages = false }: { showImages?: boolean }) {
@@ -85,7 +60,7 @@ export function AircraftDetails({ showImages = false }: { showImages?: boolean }
         <Card className="backdrop-blur-md shadow-lg">
             <CardHeader>
                 <CardTitle>Selected aircraft</CardTitle>
-                <CardDescription>ICAO24: {details?.icao24.toUpperCase() || ""}</CardDescription>
+                <CardDescription>Callsign: {details?.flight_icao || ""}</CardDescription>
                 <CardAction>
                     <Button variant="ghost" size="icon" onClick={onDeselect} aria-label="Deselect">
                         <X className="h-4 w-4" />
@@ -98,10 +73,10 @@ export function AircraftDetails({ showImages = false }: { showImages?: boolean }
                 ) : details ? (
                     <>
                         {/* Badges */}
-                        <AircraftDetailBadge icon={details.last_on_ground ? <TowerControl className="h-4 w-4" /> : <Plane className="h-4 w-4" />} text={details.last_on_ground ? "On ground" : "In flight"} />
-                        <AircraftDetailBadge icon={<SatelliteDish className="h-4 w-4" />} text={details.last_position_source} />
-                        {details.last_spi && <AircraftDetailBadge icon={<Star className="h-4 w-4" />} text="Special" />}
-                        <AircraftDetailBadge icon={<ReactCountryFlag svg countryCode={details.origin_country} />} text={details.origin_country} />
+                        <AircraftDetailBadge icon={details.is_on_ground ? <TowerControl className="h-4 w-4" /> : <Plane className="h-4 w-4" />} text={details.is_on_ground ? "On ground" : "In flight"} />
+                        {/* <AircraftDetailBadge icon={<SatelliteDish className="h-4 w-4" />} text={details.last_position_source} /> */}
+                        {/* {details.last_spi && <AircraftDetailBadge icon={<Star className="h-4 w-4" />} text="Special" />} */}
+                        {/* <AircraftDetailBadge icon={<ReactCountryFlag svg countryCode={details.origin_country} />} text={details.origin_country} /> */}
 
                         {/* Image carousel */}
                         {showImages && (loadingImages ? (
@@ -112,16 +87,16 @@ export function AircraftDetails({ showImages = false }: { showImages?: boolean }
 
                         {/* Information cards */}
                         <div className="aircraft-details-grid mt-4">
-                            <AircraftDetailItem full label="Callsign" icon={Tag} value={details.known_callsigns[0] || "N/A"} />
+                            <AircraftDetailItem full label="Callsign" icon={Tag} value={details.flight_icao} />
                             <Separator className="aircraft-details-full" />
-                            <AircraftDetailItem label="Latitude" icon={GitCommitVertical} value={details.last_latitude ? Math.round(details.last_latitude * 1000) / 1000 : "N/A"} unit="deg" />
-                            <AircraftDetailItem label="Longitude" icon={GitCommitHorizontal} value={details.last_longitude ? Math.round(details.last_longitude * 1000) / 1000 : "N/A"} unit="deg" />
-                            <AircraftDetailItem label="Baro. altitude" icon={ArrowUpFromLine} value={details.last_baro_altitude ? Math.round(details.last_baro_altitude) : "N/A"} unit="m" />
-                            <AircraftDetailItem label="Velocity" icon={Gauge} value={details.last_velocity ? Math.round(details.last_velocity* 1.94384449 * 10) / 10: "N/A"} unit="kts" />
+                            <AircraftDetailItem label="Latitude" icon={GitCommitVertical} value={details.position[0] ? Math.round(details.position[0] * 1000) / 1000 : "N/A"} unit="deg" />
+                            <AircraftDetailItem label="Longitude" icon={GitCommitHorizontal} value={details.position[1] ? Math.round(details.position[1] * 1000) / 1000 : "N/A"} unit="deg" />
+                            <AircraftDetailItem label="Baro. altitude" icon={ArrowUpFromLine} value={details.baro_altitude ? Math.round(details.baro_altitude) : "N/A"} unit="m" />
+                            <AircraftDetailItem label="Velocity" icon={Gauge} value={details.speed_horizontal ? Math.round(details.speed_horizontal* 1.94384449 * 10) / 10: "N/A"} unit="kts" />
                             <Separator className="aircraft-details-full" />
-                            <AircraftDetailItem label="Heading" icon={(props) => (<CircleArrowOutUpLeft {...props} style={{ transform: `rotate(${details.last_heading ? details.last_heading + 45 : 45}deg)` }} />)} value={details.last_heading ? Math.round(details.last_heading) : "N/A"} unit="deg" />
-                            <AircraftDetailItem label="Vertical speed" icon={MoveVertical} value={details.last_vertical_rate ? Math.round(details.last_vertical_rate * 10) / 10 : "N/A"} unit="m/s" />
-                            <AircraftDetailItem full label="Squawk" icon={RadioTower} value={details.last_squawk} />
+                            <AircraftDetailItem label="Heading" icon={(props) => (<CircleArrowOutUpLeft {...props} style={{ transform: `rotate(${details.heading ? details.heading + 45 : 45}deg)` }} />)} value={details.heading ? Math.round(details.heading) : "N/A"} unit="deg" />
+                            <AircraftDetailItem label="Vertical speed" icon={MoveVertical} value={details.speed_vertical ? Math.round(details.speed_vertical * 10) / 10 : "N/A"} unit="m/s" />
+                            <AircraftDetailItem full label="Squawk" icon={RadioTower} value={details.squawk || "N/A"} />
                         </div>
                     </>
                 ) : (

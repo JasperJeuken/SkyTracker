@@ -6,7 +6,7 @@ import { getLatestBatch } from "../services/api";
 import { AircraftMarkerLayer } from "./AircraftMarkerLayer.js";
 import { ThemeContext } from "./layout/ThemeProvider.js";
 import { useAircraftMap } from "./AircraftMapProvider.js";
-import { type AircraftState } from "./AircraftMapProvider.js"
+import { type AircraftSimpleState } from "@/types/api.js";
 import { AircraftTrackLayer } from "./AircraftTrackLayer.js"
 
 
@@ -42,7 +42,7 @@ const TILE_ATTRIBUTIONS = {
 }
 
 // Aircraft state fetch helper
-function AircraftFetcher({ setAircraft }: { setAircraft: (a: AircraftState[]) => void }) {
+function AircraftFetcher({ setAircraft }: { setAircraft: (a: AircraftSimpleState[]) => void }) {
     const map = useMap();
     const initialFetchDone = useRef(false);
 
@@ -106,7 +106,7 @@ function MapViewSaver() {
 
 export function AircraftMap() {
     const { mapStyle, selectedAircraft } = useAircraftMap();
-    const [aircraft, setAircraft] = useState<AircraftState[]>([]);
+    const [aircraft, setAircraft] = useState<AircraftSimpleState[]>([]);
     const { theme } = useContext(ThemeContext);
     const tileLayerRef = useRef<L.TileLayer | null>(null);
     
@@ -137,7 +137,7 @@ export function AircraftMap() {
             <AircraftFetcher setAircraft={setAircraft} />
             <MapViewSaver />
             <Pane name="aircraft-track" style={{ zIndex: 500 }}>
-                <AircraftTrackLayer icao24={selectedAircraft} pane="aircraft-track" />
+                <AircraftTrackLayer callsign={selectedAircraft} pane="aircraft-track" />
             </Pane>
             <Pane name="aircraft-markers" style={{ zIndex: 900 }}>
                 <AircraftMarkerLayer aircraft={aircraft} pane="aircraft-markers" />

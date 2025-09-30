@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Polyline } from "react-leaflet";
-import { type AircraftState } from "./AircraftMapProvider"
+import { type AircraftDetailedState } from "@/types/api";
 import { getAircraftTrack } from "../services/api";
 
 
@@ -14,24 +14,24 @@ function altitudeToColor(altitude: number | null): string {
 }
 
 
-export function AircraftTrackLayer({ icao24, pane }: { icao24: string | null, pane: string }) {
-    const [track, setTrack] = useState<AircraftState[]>([]);
+export function AircraftTrackLayer({ callsign, pane }: { callsign: string | null, pane: string }) {
+    const [track, setTrack] = useState<AircraftDetailedState[]>([]);
     const [visibleSegments, setVisibleSegments] = useState<number>(0);
 
     // Update track if selected aircraft changes
     useEffect(() => {
-        if (!icao24) {
+        if (!callsign) {
             setTrack([]);
             setVisibleSegments(0);
             return;
         }
-        getAircraftTrack(icao24)
+        getAircraftTrack(callsign)
             .then(track =>{
                 setTrack(track);
                 setVisibleSegments(0);
             })
             .catch(() => setTrack([]));
-    }, [icao24]);
+    }, [callsign]);
     // if (!track || track.length < 2) return null;
 
     // Parse line segments from state history
@@ -46,18 +46,20 @@ export function AircraftTrackLayer({ icao24, pane }: { icao24: string | null, pa
         for (let i = 0; i < track.length - 1; i++) {
             const p1 = track[i];
             const p2 = track[i + 1];
-            const dt = p1.time - p2.time;
+            const t1 = new Date(p1.time).getTime() / 1000
+            const t2 = new Date(p2.time).getTime() / 1000
+            const dt = t1 - t2;
 
             if (dt > 180) {
                 segs.push({
-                    positions: [[p1.latitude, p1.longitude], [p2.latitude, p2.longitude]],
+                    positions: [p1.position, p2.position],
                     type: "gap",
                     startAlt: null,
                     endAlt: null,
                 });
             } else {
                 segs.push({
-                    positions: [[p1.latitude, p1.longitude], [p2.latitude, p2.longitude]],
+                    positions: [p1.position, p2.position],
                     type: "normal",
                     startAlt: p1.altitude,
                     endAlt: p2.altitude

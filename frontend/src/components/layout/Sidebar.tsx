@@ -34,7 +34,7 @@ export function Sidebar() {
                     <Separator className="mb-4" />
 
                     <div className="mb-4">
-                        {selectedAircraft && <AircraftDetails />}
+                        {selectedAircraft && <AircraftDetails showImages />}
                     </div>
                 </motion.aside>
             )}

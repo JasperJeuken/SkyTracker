@@ -13,20 +13,20 @@ export async function getLatestBatch(bounds?: {
 }
 
 
-export async function getAircraftTrack(icao24: string) {
-    const res = await fetch(`${API_BASE}/maps/track/${icao24}`);
+export async function getAircraftTrack(callsign: string) {
+    const res = await fetch(`${API_BASE}/maps/track/${callsign}`);
     if (!res.ok) throw new Error("Failed to fetch aircraft track");
     return res.json();
 }
 
-export async function getAircraftDetails(icao24: string) {
-    const res = await fetch(`${API_BASE}/aircraft/${icao24}`);
+export async function getAircraftDetails(callsign: string) {
+    const res = await fetch(`${API_BASE}/aircraft/${callsign}`);
     if (!res.ok) throw new Error("Failed to fetch aircraft details");
     return res.json();
 }
 
-export async function getAircraftImages(icao24: string) {
-    const res = await fetch(`${API_BASE}/aircraft/${icao24}/photos`);
+export async function getAircraftImages(callsign: string) {
+    const res = await fetch(`${API_BASE}/aircraft/${callsign}/photos`);
     if (!res.ok) throw new Error("Failed to fetch aircraft details");
     return res.json();
 }

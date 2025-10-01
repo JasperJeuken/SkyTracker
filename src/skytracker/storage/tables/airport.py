@@ -90,3 +90,18 @@ class AirportTableManager(TableManager[Airport]):
         columns = list(airports[0].model_dump().keys())
         logger.debug(f'Inserting {len(airports)} airports into database')
         await self._database.insert(self.TABLE_NAME, rows, columns)
+
+    async def get_airport(self, iata: str) -> Airport | None:
+        """Get an airport by IATA code
+
+        Args:
+            iata (str): airport IATA code
+
+        Returns:
+            Airport | None: specified airport
+        """
+        airports = await self._cache.get()
+        for airport in airports:
+            if airport.iata.lower() == iata.lower():
+                return airport
+        return None

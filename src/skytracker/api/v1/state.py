@@ -33,27 +33,7 @@ async def api_get_nearby(storage: Storage = Depends(get_storage),
     return await get_nearby(storage, lat, lon, radius, limit)
 
 
-@router.get('/track/{callsign}', response_model=list[DetailedMapState])
-async def api_get_track(storage: Storage = Depends(get_storage),
-                        callsign: str = Path(),
-                        duration: str = Query('1d'),
-                        limit: int = Query(0, ge=0)) -> list[DetailedMapState]:
-    """Get the track history of a specific aircraft
-
-    Args:
-        storage (Storage, optional): backend storage manager. Defaults to Depends(get_storage).
-        callsign (str): aircraft callsign (ICAO)
-        duration (str, optional): duration of track (i.e. "5h20m" or "10m20s"). Defaults to 1 day.
-        limit (int, optional): maximum number of states to get (0=all). Defaults to 0 (all).
-
-    Returns:
-        list[DetailedMapState]: list of aircraft track states with specified duration
-    """
-    logger.info(f'API (get_track): callsign={callsign} duration={duration} limit={limit}')
-    return await get_track(storage, callsign, duration, limit)
-
-
-@router.get('/all', response_model=list[SimpleMapState])
+@router.get('/area', response_model=list[SimpleMapState])
 async def api_get_all(storage: Storage = Depends(get_storage),
                       south: float | None = Query(None, description='Minimum latitude'),
                       north: float | None = Query(None, description='Maximum latitude'),
@@ -83,7 +63,7 @@ async def api_get_all(storage: Storage = Depends(get_storage),
     return await get_all(storage, south, north, west, east, limit)
 
 
-@router.get('/{callsign}', response_model=State)
+@router.get('/{callsign}/latest', response_model=State)
 async def api_get_latest(storage: Storage = Depends(get_storage), callsign: str = Path()) -> State:
     """Get the last known state of a specific aircraft
 
@@ -96,3 +76,23 @@ async def api_get_latest(storage: Storage = Depends(get_storage), callsign: str 
     """
     logger.info(f'API (get_latest): callsign={callsign}')
     return await get_latest(storage, callsign)
+
+
+@router.get('/{callsign}/history', response_model=list[DetailedMapState])
+async def api_get_track(storage: Storage = Depends(get_storage),
+                        callsign: str = Path(),
+                        duration: str = Query('1d'),
+                        limit: int = Query(0, ge=0)) -> list[DetailedMapState]:
+    """Get the track history of a specific aircraft
+
+    Args:
+        storage (Storage, optional): backend storage manager. Defaults to Depends(get_storage).
+        callsign (str): aircraft callsign (ICAO)
+        duration (str, optional): duration of track (i.e. "5h20m" or "10m20s"). Defaults to 1 day.
+        limit (int, optional): maximum number of states to get (0=all). Defaults to 0 (all).
+
+    Returns:
+        list[DetailedMapState]: list of aircraft track states with specified duration
+    """
+    logger.info(f'API (get_track): callsign={callsign} duration={duration} limit={limit}')
+    return await get_track(storage, callsign, duration, limit)

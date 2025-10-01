@@ -17,7 +17,7 @@ router = APIRouter(prefix='/aircraft', tags=['aircraft'])
 @router.get('/photos', response_model=list[AircraftPhoto])
 async def api_get_photos(storage: Storage = Depends(get_storage),
                          browser: WebBrowser = Depends(get_browser),
-                         callsign: str | None = Query(None),
+                         callsign: Annotated[str | None, Query()] = None,
                          limit: int = Query(5, le=5, ge=1)) -> list[AircraftPhoto]:
     """Get photos of a specific aircraft
 
@@ -35,10 +35,10 @@ async def api_get_photos(storage: Storage = Depends(get_storage),
 
 
 @router.get('', response_model=Aircraft)
-async def api_get_details(storage: Storage = Depends(get_storage),
-                          registration: Annotated[str | None, Query()] = None,
-                          icao24: Annotated[str | None, Query()] = None,
-                          callsign: Annotated[str | None, Query()] = None) -> Aircraft:
+async def api_get_aircraft(storage: Storage = Depends(get_storage),
+                           registration: Annotated[str | None, Query()] = None,
+                           icao24: Annotated[str | None, Query()] = None,
+                           callsign: Annotated[str | None, Query()] = None) -> Aircraft:
     """Get the details of a specific aircraft
 
     Args:
@@ -50,6 +50,6 @@ async def api_get_details(storage: Storage = Depends(get_storage),
     Returns:
         AircraftState: details of the chosen aircraft
     """
-    logger.info(f'API (get_details): registration={registration} icao24={icao24} ' + \
+    logger.info(f'API (get_aircraft): registration={registration} icao24={icao24} ' + \
                 f'callsign={callsign}')
     return await get_aircraft(storage, registration, icao24, callsign)

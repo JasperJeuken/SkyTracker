@@ -1,13 +1,23 @@
 """Aviation Edge API interface"""
 from datetime import datetime
+from typing import TypeVar, Type
 
 import requests
-from pydantic import ValidationError
+from pydantic import ValidationError, BaseModel
 
 from skytracker.models.api import API
-from skytracker.models.api.aviation_edge import AviationEdgeFlightTrackingResponse
+from skytracker.models.api.aviation_edge import (AviationEdgeFlightTrackingResponse,
+                                                 AviationEdgeAirlineDatabase,
+                                                 AviationEdgeAirportDatabase,
+                                                 AviationEdgeAirplaneDatabase)
 from skytracker.models.state import State
+from skytracker.models.airport import Airport
+from skytracker.models.airline import Airline
+from skytracker.models.aircraft import Aircraft
 from skytracker.utils import log_and_raise, logger
+
+
+ModelType = TypeVar('ModelType', bound=BaseModel)
 
 
 class AviationEdgeAPI(API):
@@ -60,6 +70,35 @@ class AviationEdgeAPI(API):
         self._last_request = datetime.now()
         logger.debug(f'Received Aviation Edge data ({len(response.content)} bytes)')
         return response.json()
+    
+    def _get_data(self, endpoint: str, model: Type[ModelType],
+                  arguments: list[str] = None) -> ModelType:
+        """Get data from an endpoint with an expected response
+
+        Args:
+            endpoint (str): endpoint to get data from
+            model (Type[ModelType]): expected response model
+            arguments (list[str], optional): additional query arguments. Defaults to None.
+
+        Raises:
+            ValueError: if response does not match model
+            
+        Returns:
+            ModelType: data response
+        """
+        # Assemble endpoint with arguments
+        if arguments is None:
+            arguments = []
+        arguments += [f'key={self._api_key}']
+        endpoint += '?' + '&'.join(arguments)
+
+        # Retrieve data and parse response
+        data = self._get_json(endpoint)
+        try:
+            response = model.model_validate(data)
+        except ValidationError as err:
+            log_and_raise(ValueError, f'Response does not match expected model', err)
+        return response
 
     def get_states(self) -> list[State]:
         """Get list of aircraft states from Aviation Edge API
@@ -67,18 +106,32 @@ class AviationEdgeAPI(API):
         Returns:
             list[State]: list of aircraft states
         """
-        # Retrieve data
-        arguments = [f'key={self._api_key}']
-        endpoint = 'flights'
-        if len(arguments) > 0:
-            endpoint += '?' + '&'.join(arguments)
-        logger.debug('Requesting Aviation Edge states...')
-        data = self._get_json(endpoint)
-
-        # Parse data
-        try:
-            response = AviationEdgeFlightTrackingResponse.model_validate(data)
-        except ValidationError as err:
-            log_and_raise(ValueError, f'Expected Aviation Edge data not present', err)
-        logger.debug(f'Received {len(response)} Aviation Edge states.')
+        response = self._get_data('flights', AviationEdgeFlightTrackingResponse)
         return response.to_states()
+
+    def get_airport_database(self) -> list[Airport]:
+        """Get list of airports from Aviation Edge database
+
+        Returns:
+            list[Airport]: list of airports
+        """
+        response = self._get_data('airportDatabase', AviationEdgeAirportDatabase)
+        return response.to_airports()
+
+    def get_airline_database(self) -> list[Airline]:
+        """Get list of airlines from Aviation edge database
+
+        Returns:
+            list[Airline]: list of airlines
+        """
+        response = self._get_data('airlineDatabase', AviationEdgeAirlineDatabase)
+        return response.to_airlines()
+
+    def get_aircraft_database(self) -> list[Aircraft]:
+        """Get list of aircraft from Aviation edge database
+
+        Returns:
+            list[Aircraft]: list of aircraft
+        """
+        response = self._get_data('airplaneDatabase', AviationEdgeAirplaneDatabase)
+        return response.to_aircraft()

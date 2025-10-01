@@ -2,7 +2,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: auto auto auto;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
 .aircraft-details-full {
@@ -28,7 +28,7 @@
 }
 
 .aircraft-details-unit {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   margin-left: 0.25rem;
 }
 

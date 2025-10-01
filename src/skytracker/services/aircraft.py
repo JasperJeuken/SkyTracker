@@ -2,13 +2,13 @@
 from urllib.parse import quote
 from fastapi import HTTPException
 
-from skytracker.models.aircraft import AircraftPhoto, AircraftDetails
+from skytracker.models.aircraft import AircraftPhoto, AircraftState
 from skytracker.services.browser import WebBrowser
 from skytracker.storage import Storage
 from skytracker.utils import logger
 
 
-async def get_aircraft_details(storage: Storage, callsign: str) -> AircraftDetails:
+async def get_aircraft_details(storage: Storage, callsign: str) -> AircraftState:
     """Get the details of a specific aircraft
 
     Args:
@@ -24,7 +24,7 @@ async def get_aircraft_details(storage: Storage, callsign: str) -> AircraftDetai
             logger.error(f'No aircraft found with callsign "{callsign}"')
             raise HTTPException(status_code=400,
                                 detail=f'Could not find aircraft with callsign "{callsign}"')
-        return AircraftDetails(**state.model_dump() | {'aircraft_country': ''})
+        return AircraftState(**state.model_dump())
     except ValueError as err:
         logger.error(f'Request failed ({err})')
         raise HTTPException(status_code=400, detail=f'{err}') from err

@@ -21,6 +21,7 @@ export function AircraftMarkerLayer({ aircraft, pane, selectedAircraft }: { airc
         click: () => {
             if (!markerClickedRef.current) {
                 setSelectedAircraft(null);
+                setSidebarOpen(false);
             }
             markerClickedRef.current = false;
         },

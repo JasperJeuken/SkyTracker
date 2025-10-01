@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import IntEnum
 from typing import Any
 
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, field_validator, model_validator, field_serializer
 
 from skytracker.utils import log_and_raise
 
@@ -183,6 +183,32 @@ class State(BaseModel):
                 cleaned[key] = value
 
         return cleaned
+    
+    @field_serializer('data_source')
+    @classmethod
+    def serialize_data_source(cls, data_source: StateDataSource) -> str:
+        """Serialize state data source
+
+        Args:
+            data_source (StateDataSource): state data source
+
+        Returns:
+            str: state data source name
+        """
+        return data_source.name
+    
+    @field_serializer('status')
+    @classmethod
+    def serialize_status(cls, status: StateStatus) -> str:
+        """Serialize state status
+
+        Args:
+            data_source (StateStatus): state status
+
+        Returns:
+            str: state status name
+        """
+        return status.name
 
     def values(self) -> list[Any]:
         """Get the values in the state as a list

@@ -73,9 +73,11 @@ function AircraftFetcher({ setAircraft }: { setAircraft: (a: AircraftSimpleState
         }
 
         map.on("moveend", fetchAircraft);
+        const interval = setInterval(fetchAircraft, 10000);
         
         return () => {
-            map.off("moveend", fetchAircraft)
+            map.off("moveend", fetchAircraft);
+            clearInterval(interval);
         };
     }, [map, setAircraft]);
 

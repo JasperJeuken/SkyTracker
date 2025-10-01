@@ -5,7 +5,7 @@ import requests
 from pydantic import ValidationError
 
 from skytracker.models.api import API
-from skytracker.models.api.aviation_edge import AviationEdgeResponse
+from skytracker.models.api.aviation_edge import AviationEdgeFlightTrackingResponse
 from skytracker.models.state import State
 from skytracker.utils import log_and_raise, logger
 
@@ -77,7 +77,7 @@ class AviationEdgeAPI(API):
 
         # Parse data
         try:
-            response = AviationEdgeResponse.model_validate(data)
+            response = AviationEdgeFlightTrackingResponse.model_validate(data)
         except ValidationError as err:
             log_and_raise(ValueError, f'Expected Aviation Edge data not present', err)
         logger.debug(f'Received {len(response)} Aviation Edge states.')

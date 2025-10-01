@@ -176,6 +176,8 @@ class Airline(BaseModel):
         if isinstance(value, str):
             return [AirlineType.from_string(part.strip()) for part in value.split(',') \
                     if len(part.strip())]
+        if isinstance(value, list):
+            return [AirlineType.from_string(elem) for elem in value if elem is not None]
         return value
     
     @field_serializer('status')

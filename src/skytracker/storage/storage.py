@@ -4,6 +4,9 @@ from typing import Literal, overload
 from skytracker.storage.database_manager import DatabaseManager
 from skytracker.storage.table_manager import TableManager
 from skytracker.storage.tables.state import StateTableManager
+from skytracker.storage.tables.airport import AirportTableManager
+from skytracker.storage.tables.airline import AirlineTableManager
+from skytracker.storage.tables.aircraft import AircraftTableManager
 
 
 class Storage:
@@ -24,8 +27,11 @@ class Storage:
         """
         self._database: DatabaseManager = DatabaseManager(username, password, host, port,
                                                           database, secure)
-        self._tables: dict[Literal['state'], TableManager] = {
-            'state': StateTableManager(self._database)
+        self._tables: dict[Literal['state', 'airport', 'airline', 'aircraft'], TableManager] = {
+            'state': StateTableManager(self._database),
+            'airport': AirportTableManager(self._database),
+            'airline': AirlineTableManager(self._database),
+            'aircraft': AircraftTableManager(self._database)
         }
 
     async def connect(self) -> None:

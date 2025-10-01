@@ -1,6 +1,6 @@
 """Aircraft endpoint models"""
 from typing import Annotated, Any
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import IntEnum
 
 from pydantic import BaseModel, Field, field_validator, field_serializer
@@ -85,6 +85,22 @@ class AircraftClassification(IntEnum):
     UNKNOWN: int = 1
     """int: unknown classification"""
 
+    @classmethod
+    def from_string(cls, value: str) -> int:
+        """Get aircraft classification from a string
+
+        Args:
+            value (str): string to parse
+
+        Returns:
+            int: aircraft classification
+        """
+        match value.lower():
+            case '' | 'unknown':
+                return cls.UNKNOWN
+            case _:
+                log_and_raise(ValueError, f'Unknown aircaft classification: {value}')
+
 
 class AircraftIdentity(BaseModel):
     """Aircraft identity data"""
@@ -102,7 +118,6 @@ class AircraftIdentity(BaseModel):
     """str | None: airline IATA code"""
     airline_icao: Annotated[str | None, Field(description='Airline ICAO code')]
     """str | None: airline ICAO code"""
-
 
 class AircraftModel(BaseModel):
     """Aircraft model data"""
@@ -176,6 +191,11 @@ class AircraftModel(BaseModel):
         """
         if value is None:
             return AircraftClassification.UNKNOWN
+        if isinstance(value, str):
+            try:
+                return int(value)
+            except ValueError:
+                return AircraftClassification.from_string(value)
         return value
     
     @field_serializer('classification')
@@ -206,6 +226,42 @@ class AircraftLifecycle(BaseModel):
     """datetime | None: date aircraft was rolled out of factory"""
     age: Annotated[int | None, Field(description='Aircraft age [year]')]
     """int | None: aircraft age [year]"""
+
+    @field_validator('date_delivery', 'date_first_flight', 'date_registration', 'date_rollout',
+                     mode='before')
+    @classmethod
+    def validate_dates(cls, date: datetime | str | None) -> datetime:
+        """Validate date attributes
+
+        Args:
+            date (datetime): date attribute
+
+        Returns:
+            datetime: validated date attribute
+        """
+        if date is None:
+            return date
+        if isinstance(date, str):
+            return datetime.strptime(date.strip(), '%Y-%m-%d %H:%M:%S')
+        if not date.time():
+            date.hour, date.minute, date.second, date.microsecond = 0, 0, 0, 0
+        return datetime(date.year, date.month, date.day,
+                        date.hour, date.minute, date.second, date.microsecond, tzinfo=timezone.utc)
+    
+    @field_serializer('date_delivery', 'date_first_flight', 'date_registration', 'date_rollout')
+    @classmethod
+    def serialize_dates(cls, date: datetime | None) -> str:
+        """Serialize date
+
+        Args:
+            date (datetime | None): datetime
+
+        Returns:
+            str: serialized datetime
+        """
+        if date is None:
+            return '1970-01-01 00:00:00'
+        return date.strftime('%Y-%m-%d %H:%M:%S')
 
 
 class Aircraft(BaseModel):
@@ -249,6 +305,93 @@ class Aircraft(BaseModel):
             str: aircraft status name
         """
         return aircraft_status.name
+    
+    def flatten(self) -> dict[str, Any]:
+        """Flatten the nested aircraft model into a dictionary
+
+        Returns:
+            dict[str, Any]: flattened aircraft
+        """
+        flattened = {}
+
+        # Identity
+        for key, value in self.identity.model_dump().items():
+            flattened[f'identity_{key}'] = value
+
+        # Model
+        for key, value in self.model.model_dump().items():
+            flattened[f'model_{key}'] = value
+
+        # Lifecycle
+        for key, value in self.lifecycle.model_dump().items():
+            flattened[f'lifecycle_{key}'] = value
+
+        # Apply special key rule (keys cannot be nullable)
+        if flattened['identity_icao24'] is None:
+            flattened['identity_icao24'] = ''
+        if flattened['identity_registration'] is None:
+            flattened['identity_registration'] = ''
+
+        flattened['status'] = self.status.name
+        return flattened
+    
+    @classmethod
+    def unflatten(self, flattened: dict[str, Any]) -> 'Aircraft':
+        """Unflatten a dictionary into the nested aircraft model
+
+        Args:
+            flattened (dict[str, Any]): flattened dictionary
+
+        Returns:
+            Aircraft: nested aircraft model
+        """
+        # Select flattened fields
+        identity_fields = {key.removeprefix('identity_'): value \
+                           for key, value in flattened.items() if key.startswith('identity_')}
+        model_fields = {key.removeprefix('model_'): value \
+                        for key, value in flattened.items() if key.startswith('model_')}
+        lifecycle_fields = {key.removeprefix('lifecycle_'): value \
+                            for key, value in flattened.items() if key.startswith('lifecycle_')}
+        
+        # Reconstruct nested models
+        identity = AircraftIdentity(**identity_fields)
+        model = AircraftModel(**model_fields)
+        lifecycle = AircraftLifecycle(**lifecycle_fields)
+
+        # Revert special key rule
+        if identity.icao24 == '':
+            identity.icao24 = None
+        if identity.registration == '':
+            identity.registration = None
+
+        # Reconstruct aircraft model
+        return Aircraft(
+            identity=identity,
+            model=model,
+            lifecycle=lifecycle,
+            status=flattened['status']
+        )
+    
+    @classmethod
+    def flat_keys(self) -> list[str]:
+        """Get the keys for a flattened aircraft
+
+        Returns:
+            list[str]: keys of flattened aircraft
+        """
+        empty = Aircraft(identity=AircraftIdentity(icao24='', registration='', test_registration='',
+                                                    owner='', airline_iata='', airline_icao=''),
+                         model=AircraftModel(type_iata='', type_iata_code_short='',
+                                             type_iata_code_long='', engine_count=0,
+                                             engine_type=AircraftEngineType.UNKNOWN, model_code='',
+                                             line_number='', serial_number='', family='',
+                                             sub_family='', series='',
+                                             classification=AircraftClassification.UNKNOWN),
+                         lifecycle=AircraftLifecycle(date_delivery=None, date_first_flight=None,
+                                                     date_registration=None, date_rollout=None,
+                                                     age=0),
+                         status=AircraftStatus.UNKNOWN)
+        return list(empty.flatten().keys())
 
 
 class AircraftPhoto(BaseModel):

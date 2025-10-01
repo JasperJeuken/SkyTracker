@@ -161,29 +161,6 @@ class State(BaseModel):
             return StateStatus.from_string(value)
         return value
     
-    @model_validator(mode='before')
-    @classmethod
-    def parse_values(cls, values: dict[str, Any]) -> dict[str, Any]:
-        """Process raw values
-
-        Args:
-            values (dict[str, Any]): raw values
-
-        Returns:
-            dict[str, Any]: processed values
-        """
-        cleaned = {}
-        for key, value in values.items():
-
-            # Strip null characters
-            if isinstance(value, bytes):
-                cleaned_bytes = value.replace(b'\x00', b'').strip()
-                cleaned[key] = cleaned_bytes
-            else:
-                cleaned[key] = value
-
-        return cleaned
-    
     @field_serializer('data_source')
     @classmethod
     def serialize_data_source(cls, data_source: StateDataSource) -> str:

@@ -84,7 +84,7 @@ class StateTableManager(TableManager[State]):
         await self._cache.set(states)
         rows = [state.values() for state in states]
         columns = list(states[0].model_dump().keys())
-        logger.debug(f'Inserting {len(states)} into database...')
+        logger.debug(f'Inserting {len(states)} states into database...')
         await self._database.insert(self.TABLE_NAME, rows, columns)
 
     async def insert_state(self, state: State) -> None:

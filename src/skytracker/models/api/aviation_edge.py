@@ -250,8 +250,8 @@ class AviationEdgeAirportDatabase(ListModel[AviationEdgeAirport]):
             list[Airport]: list of airports
         """
         return [Airport(
-            iata=airport.codeIataAirport,
-            icao=airport.codeIcaoAirport,
+            iata=airport.codeIataAirport.strip(),
+            icao=airport.codeIcaoAirport.strip(),
             name=airport.nameAirport.strip(),
             latitude=airport.latitudeAirport,
             longitude=airport.longitudeAirport,
@@ -259,9 +259,9 @@ class AviationEdgeAirportDatabase(ListModel[AviationEdgeAirport]):
             phone=airport.phone,
             timezone=airport.timezone,
             gmt=airport.GMT,
-            city_iata=airport.codeIataCity,
-            country_iso2=airport.codeIso2Country,
-            country_name=airport.nameCountry
+            city_iata=airport.codeIataCity.strip(),
+            country_iso2=airport.codeIso2Country.strip()[:2],
+            country_name=airport.nameCountry.strip()
         ) for airport in self.root]
 
 
@@ -330,7 +330,7 @@ class AviationEdgeAirlineDatabase(ListModel[AviationEdgeAirline]):
             fleet_size=airline.sizeAirline,
             status=airline.statusAirline,
             types=airline.type,
-            country_iso2=airline.codeIso2Country,
+            country_iso2=airline.codeIso2Country[:2],
             hub_icao=airline.codeHub
         ) for airline in self.root]
     
@@ -450,7 +450,7 @@ class AviationEdgeAirplaneDatabase(ListModel[AviationEdgeAirplane]):
                 type_iata_code_long=airplane.codeIataPlaneLong,
                 engine_count=airplane.enginesCount,
                 engine_type=airplane.enginesType,
-                model_code=airplane.modelCode,
+                model_code=airplane.modelCode.strip() if airplane.modelCode is not None else None,
                 line_number=airplane.lineNumber,
                 serial_number=airplane.constructionNumber,
                 family=airplane.planeModel,

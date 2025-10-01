@@ -3,6 +3,7 @@ from typing import Any, Sequence, Literal
 from asyncio import Lock
 
 import clickhouse_connect
+from clickhouse_connect.datatypes.format import set_read_format
 from clickhouse_connect.driver.asyncclient import AsyncClient
 
 from skytracker.utils import logger, log_and_raise
@@ -112,6 +113,7 @@ class DatabaseManager:
         logger.info('Connecting ClickHouse manager ' + \
                     f'({self.client_settings["host"]}:{self.client_settings["port"]})...')
         self.client = await clickhouse_connect.get_async_client(**self.client_settings)
+        set_read_format('FixedString', 'string')
         await self.set_connected()
         logger.info('Connected ClickHouse manager')
 

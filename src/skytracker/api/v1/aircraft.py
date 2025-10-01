@@ -1,7 +1,7 @@
 """Aircraft API endpoints"""
 from fastapi import APIRouter, Path, Query, Depends, HTTPException
 
-from skytracker.models.aircraft import AircraftDetails, AircraftPhoto
+from skytracker.models.aircraft import AircraftState, AircraftPhoto
 from skytracker.dependencies import get_storage, get_browser
 from skytracker.storage import Storage
 from skytracker.services.browser import WebBrowser
@@ -33,9 +33,9 @@ async def api_get_photos(storage: Storage = Depends(get_storage),
     return await get_aircraft_photos(storage, browser, callsign, limit)
 
 
-@router.get('/{callsign}', response_model=AircraftDetails)
+@router.get('/{callsign}', response_model=AircraftState)
 async def api_get_details(storage: Storage = Depends(get_storage),
-                          callsign: str = Path()) -> AircraftDetails:
+                          callsign: str = Path()) -> AircraftState:
     """Get the details of a specific aircraft
 
     Args:
@@ -43,7 +43,7 @@ async def api_get_details(storage: Storage = Depends(get_storage),
         callsign (str): aircraft callsign (ICAO)
 
     Returns:
-        AircraftDetails: details of the chosen aircraft
+        AircraftState: details of the chosen aircraft
     """
     logger.info(f'API (get_details): callsign={callsign}')
     return await get_aircraft_details(storage, callsign)

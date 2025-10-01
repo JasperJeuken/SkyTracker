@@ -10,7 +10,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 
 from skytracker import dependencies
-from skytracker.api.v1 import aircraft, analysis, flights, maps, search
+from skytracker.api.v1 import aircraft, analysis, flights, state, search
 from skytracker.storage import Storage
 from skytracker.models.api import APIType
 from skytracker.services.browser import WebBrowser
@@ -105,5 +105,5 @@ app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True
 app.include_router(aircraft.router, prefix='/api/v1')
 app.include_router(analysis.router, prefix='/api/v1')
 app.include_router(flights.router, prefix='/api/v1')
-app.include_router(maps.router, prefix='/api/v1')
+app.include_router(state.router, prefix='/api/v1')
 app.include_router(search.router, prefix='/api/v1')

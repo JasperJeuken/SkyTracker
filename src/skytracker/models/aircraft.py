@@ -5,12 +5,7 @@ from enum import IntEnum
 
 from pydantic import BaseModel, Field, field_validator, field_serializer
 
-from skytracker.models.state import State
 from skytracker.utils import log_and_raise
-
-
-AircraftState = State
-"""AircraftState: aircraft state data"""
 
 
 class AircraftStatus(IntEnum):

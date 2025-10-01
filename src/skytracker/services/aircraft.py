@@ -2,29 +2,39 @@
 from urllib.parse import quote
 from fastapi import HTTPException
 
-from skytracker.models.aircraft import AircraftPhoto, AircraftState
+from skytracker.models.aircraft import AircraftPhoto, Aircraft
 from skytracker.services.browser import WebBrowser
 from skytracker.storage import Storage
 from skytracker.utils import logger
 
 
-async def get_aircraft_details(storage: Storage, callsign: str) -> AircraftState:
+async def get_aircraft(storage: Storage, registration: str | None = None,
+                       icao24: str | None = None, callsign: str | None = None) -> Aircraft:
     """Get the details of a specific aircraft
 
     Args:
         storage (Storage): backend storage manager
-        callsign (str): aircraft callsign (ICAO)
+        registration (str | None): aircraft callsign (ICAO)
+        icao24 (str | None): aircraft ICAO 24-bit address (hex)
+        callsign (str | None): aircraft callsign
 
     Returns:
-        AircraftDetails: aircraft details
+        Aircraft: aircraft details
     """
+    if registration is None and icao24 is None and callsign is None:
+        logger.error(f'Registration, ICAO24, nor callsign specified')
+        raise HTTPException(status_code=400, detail=f'Registration, ICAO24, or callsign ' + \
+                            'must be specified')
     try:
-        state = await storage['state'].get_last_state(callsign)
-        if state is None:
-            logger.error(f'No aircraft found with callsign "{callsign}"')
-            raise HTTPException(status_code=400,
-                                detail=f'Could not find aircraft with callsign "{callsign}"')
-        return AircraftState(**state.model_dump())
+        if callsign is not None:
+            state = await storage['state'].get_last_state(callsign)
+            if state is not None:
+                registration, icao24 = state.aircraft_registration, state.aircraft_icao24
+        aircraft = await storage['aircraft'].get_aircraft(registration, icao24)
+        if aircraft is None:
+            logger.error(f'Aircraft not found ({registration})')
+            raise HTTPException(status_code=400, detail=f'Aircraft not found')
+        return aircraft
     except ValueError as err:
         logger.error(f'Request failed ({err})')
         raise HTTPException(status_code=400, detail=f'{err}') from err

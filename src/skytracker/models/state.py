@@ -1,9 +1,9 @@
 """State models"""
 from datetime import datetime
 from enum import IntEnum
-from typing import Any
+from typing import Any, Annotated
 
-from pydantic import BaseModel, field_validator, model_validator, field_serializer
+from pydantic import BaseModel, Field, field_validator, field_serializer
 
 from skytracker.utils import log_and_raise
 
@@ -73,63 +73,63 @@ class StateStatus(IntEnum):
 class State(BaseModel):
     """Aircraft state data"""
 
-    time: datetime
+    time: Annotated[datetime, Field(description='Data timestamp')]
     """datetime: data timestamp"""
-    data_source: StateDataSource
+    data_source: Annotated[StateDataSource, Field(description='Source of state data')]
     """APIType: source of state data"""
 
-    aircraft_iata: str
+    aircraft_iata: Annotated[str, Field(description='Aircraft IATA code')]
     """str: aircraft IATA code (max. 4 characters)"""
-    aircraft_icao: str
+    aircraft_icao: Annotated[str, Field(description='Aircraft ICAO code')]
     """str: aircraft ICAO code (max. 4 characters)"""
-    aircraft_icao24: str
+    aircraft_icao24: Annotated[str, Field(description='Aircraft ICAO 24-bit address (hex)')]
     """str: aircraft ICAO 24-bit address (hex) (6 characters)"""
-    aircraft_registration: str
+    aircraft_registration: Annotated[str, Field(description='Aircraft registration')]
     """str: aircraft registration (max. 8 characters)"""
 
-    airline_iata: str
+    airline_iata: Annotated[str, Field(description='Airline IATA code')]
     """str: airline IATA code (2 characters)"""
-    airline_icao: str
+    airline_icao: Annotated[str, Field(description='Airline ICAO code')]
     """str: airline ICAO code (3 characters)"""
 
-    arrival_iata: str
+    arrival_iata: Annotated[str, Field(description='Arrival airport IATA code')]
     """str: arrival airport IATA code (3 characters)"""
-    arrival_icao: str
+    arrival_icao: Annotated[str, Field(description='Arrival airport ICAO code')]
     """str: arrival airport ICAO code (4 characters)"""
 
-    departure_iata: str
+    departure_iata: Annotated[str, Field(description='Departure airport IATA code')]
     """str: departure airport IATA code (3 characters)"""
-    departure_icao: str
+    departure_icao: Annotated[str, Field(description='Departure airport ICAO code')]
     """str: departure airport ICAO code (4 characters)"""
 
-    flight_iata: str
+    flight_iata: Annotated[str, Field(description='Flight IATA code')]
     """str: flight IATA code"""
-    flight_icao: str
+    flight_icao: Annotated[str, Field(description='Flight ICAO code')]
     """str: flight ICAO code"""
-    flight_number: str
+    flight_number: Annotated[str, Field(description='Flight number')]
     """str: flight number"""
 
-    position: tuple[float, float]
+    position: Annotated[tuple[float, float], Field(description='Latitude/longitude position [deg]')]
     """tuple[float, float]: latitude/longitude position [deg]"""
-    geo_altitude: float | None
+    geo_altitude: Annotated[float | None, Field(description='Geometric altitude [m]')]
     """float | None: geometric altitude [m]"""
-    baro_altitude: float | None
+    baro_altitude: Annotated[float | None, Field(description='Barometric altitude [m]')]
     """float | None: barometric altitude [m]"""
-    heading: float | None
+    heading: Annotated[float | None, Field(description='Heading [deg]')]
     """float | None: heading [deg]"""
-    speed_horizontal: float | None
+    speed_horizontal: Annotated[float | None, Field(description='Horizontal speed [m/s]')]
     """float | None: horizontal speed [m/s]"""
-    speed_vertical: float | None
+    speed_vertical: Annotated[float | None, Field(description='Vertical speed [m/s]')]
     """float | None: vertical speed [m/s]"""
-    is_on_ground: bool
+    is_on_ground: Annotated[bool, Field(description='Whether aircraft is on ground')]
     """bool: whether aircraft is on ground"""
 
-    status: StateStatus
+    status: Annotated[StateStatus, Field(description='Aircraft status')]
     """StateStatus: aircraft status"""
-    squawk: int | None
+    squawk: Annotated[int | None, Field(description='Squawk code')]
     """int | None: squawk code (can be None)"""
-    squawk_time: datetime | None
-    """datetime | None: squawk update time (Unix timestamp)"""
+    squawk_time: Annotated[datetime | None, Field(description='Squawk code update time')]
+    """datetime | None: squawk update time"""
 
     @field_validator('data_source', mode='before')
     @classmethod
@@ -220,3 +220,29 @@ class State(BaseModel):
             self.squawk,
             self.squawk_time
         ]
+
+
+class SimpleMapState(BaseModel):
+    """Simple map state with position and heading"""
+
+    callsign: Annotated[str, Field(description='Aircraft callsign')]
+    """str: aircraft callsign"""
+    position: Annotated[tuple[float, float], Field(description='Latitude/longitude position [deg]')]
+    """tuple[float, float]: latitude/longitude position [deg]"""
+    heading: Annotated[float | None, Field(description='Heading [deg]')]
+    """float | None: heading [deg]"""
+
+
+class DetailedMapState(BaseModel):
+    """Detailed map state with time, position, heading, and altitude"""
+
+    time: Annotated[datetime, Field(description='State timestamp')]
+    """datetime: state timestamp"""
+    callsign: Annotated[str, Field(description='Aircraft callsign')]
+    """str: aircraft callsign"""
+    position: Annotated[tuple[float, float], Field(description='Latitude/longitude position [deg]')]
+    """tuple[float, float]: latitude/longitude position [deg]"""
+    heading: Annotated[float | None, Field(description='Heading [deg]')]
+    """float | None: heading [deg]"""
+    altitude: Annotated[float | None, Field(description='Barometric altitude [m]')]
+    """float | None: barometric altitude [m]"""

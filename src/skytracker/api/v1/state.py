@@ -1,15 +1,14 @@
-"""Maps API endpoints"""
-
-from fastapi import APIRouter, Depends, Query, Path, HTTPException
+"""State API endpoints"""
+from fastapi import APIRouter, Depends, Query, Path
 
 from skytracker.dependencies import get_storage
 from skytracker.storage import Storage
-from skytracker.models.maps import SimpleMapState, DetailedMapState
-from skytracker.services.maps import get_nearby, get_track, get_all
+from skytracker.models.state import SimpleMapState, DetailedMapState, State
+from skytracker.services.maps import get_nearby, get_track, get_all, get_latest
 from skytracker.utils import logger
 
 
-router = APIRouter(prefix='/maps', tags=['maps'])
+router = APIRouter(prefix='/state', tags=['state'])
 
 
 @router.get('/nearby', response_model=list[SimpleMapState])
@@ -54,7 +53,7 @@ async def api_get_track(storage: Storage = Depends(get_storage),
     return await get_track(storage, callsign, duration, limit)
 
 
-@router.get('', response_model=list[SimpleMapState])
+@router.get('/all', response_model=list[SimpleMapState])
 async def api_get_all(storage: Storage = Depends(get_storage),
                       south: float | None = Query(None, description='Minimum latitude'),
                       north: float | None = Query(None, description='Maximum latitude'),
@@ -82,3 +81,18 @@ async def api_get_all(storage: Storage = Depends(get_storage),
     """
     logger.info(f'API (get_all): south={south} north={north} west={west} east={east} limit={limit}')
     return await get_all(storage, south, north, west, east, limit)
+
+
+@router.get('/{callsign}', response_model=State)
+async def api_get_latest(storage: Storage = Depends(get_storage), callsign: str = Path()) -> State:
+    """Get the last known state of a specific aircraft
+
+    Args:
+        storage (Storage, optional): backend storage manager. Defaults to Depends(get_storage).
+        callsign (str, optional): aircraft callsign (ICAO)
+
+    Returns:
+        State: last known state
+    """
+    logger.info(f'API (get_latest): callsign={callsign}')
+    return await get_latest(storage, callsign)

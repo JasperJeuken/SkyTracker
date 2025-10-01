@@ -104,3 +104,22 @@ class AircraftTableManager(TableManager[Aircraft]):
         columns = list(aircraft[0].flatten().keys())
         logger.debug(f'Inserting {len(aircraft)} aircraft into database')
         await self._database.insert(self.TABLE_NAME, rows, columns)
+    
+    async def get_aircraft(self, registration: str | None, icao24: str | None) -> Aircraft | None:
+        """Get aircraft by registration and/or ICAO 24-bit address
+
+        Args:
+            registration (str | None): aircraft registration
+            icao24 (str | None): aircraft ICAO 24-bit address (hex)
+
+        Returns:
+            Aircraft | None: aircraft with associated registration and/or ICAO 24-bit address
+        """
+        aircraft = await self._cache.get()
+        for ac in aircraft:
+            if (registration is not None and ac.identity.registration is not None and \
+                ac.identity.registration.lower() == registration.lower()) or \
+               (icao24 is not None and ac.identity.icao24 is not None and \
+                ac.identity.icao24.lower() == icao24.lower()):
+                return ac
+        return None

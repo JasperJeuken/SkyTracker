@@ -2,7 +2,7 @@
 from fastapi import HTTPException
 
 from skytracker.storage import Storage
-from skytracker.models.maps import SimpleMapState, DetailedMapState
+from skytracker.models.state import SimpleMapState, DetailedMapState, State
 from skytracker.utils import logger
 
 
@@ -47,6 +47,27 @@ async def get_track(storage: Storage, callsign: str, duration: str, limit: int) 
         return [DetailedMapState(time=state.time, callsign=state.flight_icao,
                                  position=state.position, heading=state.heading,
                                  altitude=state.baro_altitude) for state in states]
+    except ValueError as err:
+        logger.error(f'Request failed ({err})')
+        raise HTTPException(status_code=400, detail=f'{err}') from err
+
+
+async def get_latest(storage: Storage, callsign: str) -> State:
+    """Get the latest state of a specific aircraft
+
+    Args:
+        storage (Storage): backend storage manager
+        callsign (str): aircraft callsign (ICAO)
+
+    Returns:
+        State: last known aircraft state
+    """
+    try:
+        state = await storage['state'].get_last_state(callsign)
+        if state is None:
+            logger.error(f'State not found ({callsign})')
+            raise HTTPException(status_code=400, detail=f'State not found')
+        return state
     except ValueError as err:
         logger.error(f'Request failed ({err})')
         raise HTTPException(status_code=400, detail=f'{err}') from err

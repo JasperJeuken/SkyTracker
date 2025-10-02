@@ -1,10 +1,13 @@
 """Aircraft table manager"""
+from typing import Any
+
 from skytracker.storage.database_manager import DatabaseManager
 from skytracker.storage.table_manager import TableManager
 from skytracker.storage.cache import Cache
 from skytracker.services.api.aviation_edge import AviationEdgeAPI
 from skytracker.models.aircraft import Aircraft
 from skytracker.utils import logger
+from skytracker.utils.analysis import search_object_list
 from skytracker.settings import settings
 
 
@@ -105,21 +108,33 @@ class AircraftTableManager(TableManager[Aircraft]):
         logger.debug(f'Inserting {len(aircraft)} aircraft into database')
         await self._database.insert(self.TABLE_NAME, rows, columns)
     
-    async def get_aircraft(self, registration: str | None, icao24: str | None) -> Aircraft | None:
-        """Get aircraft by registration and/or ICAO 24-bit address
+    async def get_aircraft(self, registration: str) -> Aircraft | None:
+        """Get an aircraft by registration
 
         Args:
-            registration (str | None): aircraft registration
-            icao24 (str | None): aircraft ICAO 24-bit address (hex)
+            registration (str): aircraft registration (tail number)
 
         Returns:
-            Aircraft | None: aircraft with associated registration and/or ICAO 24-bit address
+            Aircraft: aircraft with specified registration
         """
         aircraft = await self._cache.get()
         for ac in aircraft:
-            if (registration is not None and ac.identity.registration is not None and \
-                ac.identity.registration.lower() == registration.lower()) or \
-               (icao24 is not None and ac.identity.icao24 is not None and \
-                ac.identity.icao24.lower() == icao24.lower()):
+            ac_reg = ac.identity.registration
+            if ac_reg is None:
+                continue
+            if ac_reg.replace('-', '').lower() == registration.replace('-', '').lower():
                 return ac
-        return None
+        raise KeyError(f'No aircraft with registration "{registration}"')
+
+    async def search_aircraft(self, fields: dict[str, Any], limit: int = 0) -> list[Aircraft]:
+        """Search for aircraft matching specific information
+
+        Args:
+            fields (dict[str, Any]): field-value pairs to search for
+            limit (int, optional): maximum number of aircraft to retrieve (0=all). Defaults to 0.
+
+        Returns:
+            list[Aircraft]: list of aircraft matching fields
+        """
+        aircraft = await self._cache.get()
+        return search_object_list(aircraft, fields, limit)

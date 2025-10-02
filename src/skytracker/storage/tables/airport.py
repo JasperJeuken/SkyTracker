@@ -1,10 +1,13 @@
 """Airport table manager"""
+from typing import Any
+
 from skytracker.storage.database_manager import DatabaseManager
 from skytracker.storage.table_manager import TableManager
 from skytracker.storage.cache import Cache
 from skytracker.services.api.aviation_edge import AviationEdgeAPI
 from skytracker.models.airport import Airport
-from skytracker.utils import logger
+from skytracker.utils import logger, log_and_raise
+from skytracker.utils.analysis import search_object_list
 from skytracker.settings import settings
 
 
@@ -90,18 +93,33 @@ class AirportTableManager(TableManager[Airport]):
         columns = list(airports[0].model_dump().keys())
         logger.debug(f'Inserting {len(airports)} airports into database')
         await self._database.insert(self.TABLE_NAME, rows, columns)
-
-    async def get_airport(self, iata: str) -> Airport | None:
+    
+    async def get_airport(self, iata: str) -> Airport:
         """Get an airport by IATA code
 
         Args:
             iata (str): airport IATA code
 
         Returns:
-            Airport | None: specified airport
+            Airport: airport with specified IATA code
         """
         airports = await self._cache.get()
         for airport in airports:
+            if airport.iata is None:
+                continue
             if airport.iata.lower() == iata.lower():
                 return airport
-        return None
+        log_and_raise(KeyError, f'No airport with IATA code "{iata}"')
+    
+    async def search_airport(self, fields: dict[str, Any], limit: int = 0) -> list[Airport]:
+        """Search for airports matching specific information
+
+        Args:
+            fields (dict[str, Any]): field-value pairs to search for
+            limit (int, optional): maximum number of airports to retrieve (0=all). Defaults to 0.
+
+        Returns:
+            list[Airport]: list of airports matching fields
+        """
+        airports = await self._cache.get()
+        return search_object_list(airports, fields, limit)

@@ -6,35 +6,12 @@ from fastapi import APIRouter, Query, Path, Depends
 from skytracker.models.airline import Airline
 from skytracker.dependencies import get_storage
 from skytracker.storage import Storage
-from skytracker.utils import logger, log_and_raise_http, Errors, Regex
-from skytracker.utils.geographic import is_country_code
+from skytracker.utils import logger, Errors, Regex
+from skytracker.utils.geographic import country_code_validator
 from skytracker.services.airline import get_airline, search_airline
 
 
 router = APIRouter(prefix='/airline', tags=['airline'])
-
-
-def country_code_validator(code: str | None = Query(None, min_length=2, max_length=2,
-                                                    alias='country',
-                                                    title='Country code',
-                                                    description='ISO 3166-1 A-2 code (2 character)',
-                                                    example='US')) -> str:
-    """Validate whether a string is a valid ISO 3166-1 A-2 country code
-
-    Args:
-        code (str): string to parse
-    
-    Raises:
-        HTTPException: if string is not a valid ISO 3166-1 A-2 country code
-
-    Returns:
-        str: valid ISO 3166-1 A-2 country code
-    """
-    if code is None:
-        return None
-    if not is_country_code(code.upper()):
-        log_and_raise_http(f'Invalid country code: {code}', 422)
-    return code.upper()
 
 
 @router.get('/{icao}',
@@ -76,7 +53,7 @@ async def api_search_airline(
                                  title='Airline IATA code',
                                  description='Airline IATA code (2 characters)',
                                  example='AA'),
-        name: str | None = Query(None, regex=Regex.alphanumeric_spaces_wildcard,
+        name: str | None = Query(None,
                                  title='Airline name',
                                  description='Full airline name',
                                  example='American Airlines'),

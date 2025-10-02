@@ -124,23 +124,3 @@ class AirlineTableManager(TableManager[Airline]):
         """
         airlines = await self._cache.get()
         return search_object_list(airlines, fields, limit)
-        
-
-    # async def get_airline(self, iata: str | None, icao: str | None) -> Airline | None:
-    #     """Get aircraft by registration and/or ICAO 24-bit address
-
-    #     Args:
-    #         iata (str | None): airline IATA code
-    #         icao (str | None): airline ICAO 2code
-
-    #     Returns:
-    #         Airline | None: airline with associated IATA and/or ICAO code
-    #     """
-    #     airlines = await self._cache.get()
-    #     for airline in airlines:
-    #         if (iata is not None and airline.iata is not None and \
-    #             airline.iata.lower() == iata.lower()) or \
-    #            (icao is not None and airline.icao is not None and \
-    #             airline.icao.lower() == icao.lower()):
-    #             return airline
-    #     return None

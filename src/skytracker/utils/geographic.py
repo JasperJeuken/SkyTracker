@@ -1,6 +1,9 @@
 """Geographic utilities"""
 import numpy as np
 import pycountry
+from fastapi import Query
+
+from skytracker.utils.logger import log_and_raise_http
 
 
 def distance_between_points(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -91,3 +94,26 @@ def is_country_code(text: str) -> bool:
         bool: whether text is a valid ISO 3166-1 A-2 country code
     """
     return pycountry.countries.get(alpha_2=text) is not None
+
+
+def country_code_validator(code: str | None = Query(None, min_length=2, max_length=2,
+                                                    alias='country',
+                                                    title='Country code',
+                                                    description='ISO 3166-1 A-2 code (2 character)',
+                                                    example='US')) -> str:
+    """Validate whether a string is a valid ISO 3166-1 A-2 country code
+
+    Args:
+        code (str): string to parse
+    
+    Raises:
+        HTTPException: if string is not a valid ISO 3166-1 A-2 country code
+
+    Returns:
+        str: valid ISO 3166-1 A-2 country code
+    """
+    if code is None:
+        return None
+    if not is_country_code(code.upper()):
+        log_and_raise_http(f'Invalid country code: {code}', 422)
+    return code.upper()

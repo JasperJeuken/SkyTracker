@@ -18,43 +18,120 @@ from skytracker.utils import Regex
 class AviationEdgeFlightTrackingAircraft(APIBaseModel):
     """Aviation Edge API flight tracking aircraft data"""
 
-    iataCode: Annotated[str, Field(description='Aircraft IATA code')]
-    """str: aircraft IATA code"""
-    icaoCode: Annotated[str, Field(description='Aircraft ICAO code')]
-    """str: aircraft ICAO code"""
-    icao24: Annotated[str, Field(description='Aircraft ICAO 24-bit address (hex)')]
-    """str: aircraft ICAO 24-bit address (hex)"""
-    regNumber: Annotated[str, Field(description='Aircraft registration number')]
-    """str: aircraft registration number"""
+    iataCode: Annotated[str | None, Field(description='Aircraft IATA code')]
+    """str | None: aircraft IATA code"""
+    icaoCode: Annotated[str | None, Field(description='Aircraft ICAO code')]
+    """str | None: aircraft ICAO code"""
+    icao24: Annotated[str | None, Field(description='Aircraft ICAO 24-bit address (hex)')]
+    """str | None: aircraft ICAO 24-bit address (hex)"""
+    regNumber: Annotated[str | None, Field(description='Aircraft registration number')]
+    """str | None: aircraft registration number"""
+
+    @field_validator('iataCode', 'icaoCode', 'icao24', 'regNumber', mode='after')
+    @classmethod
+    def parse_code(cls, value: str | None) -> str | None:
+        """Parse ICAO or IATA code value
+
+        Args:
+            value (str | None): ICAO or IATA code value
+
+        Returns:
+            str | None: parsed ICAO or IATA code
+        """
+        if value in ('XXA', 'XXB', 'XXC'):
+            return None
+        return value
+    
+    @field_validator('regNumber', mode='after')
+    @classmethod
+    def parse_registration(cls, value: str | None) -> str | None:
+        """Parse registration value
+
+        Args:
+            value (str | None): registration value
+
+        Returns:
+            str | None: parsed registration value
+        """
+        if isinstance(value, str) and not re.match(r'^[A-Z0-9\-]+$', value):
+            return None
+        return value
 
 
 class AviationEdgeFlightTrackingAirline(APIBaseModel):
     """Aviation Edge API flight tracking airline data"""
 
-    iataCode: Annotated[str, Field(description='Airline IATA code')]
-    """str: airline IATA code"""
-    icaoCode: Annotated[str, Field(description='Airline ICAO code')]
-    """str: airline ICAO code"""
+    iataCode: Annotated[str | None, Field(description='Airline IATA code')]
+    """str | None: airline IATA code"""
+    icaoCode: Annotated[str | None, Field(description='Airline ICAO code')]
+    """str | None: airline ICAO code"""
+
+    @field_validator('iataCode', mode='after')
+    @classmethod
+    def parse_iata(cls, value: str | None) -> str | None:
+        """Parse IATA code value
+
+        Args:
+            value (str | None): IATA code value
+
+        Returns:
+            str | None: parsed IATA code
+        """
+        if isinstance(value, str) and len(value) != 2:
+            return None
+        return value
 
 
 class AviationEdgeFlightTrackingAirport(APIBaseModel):
     """Aviation Edge API flight tracking airport data"""
 
-    iataCode: Annotated[str, Field(description='Airport IATA code')]
-    """str: airport IATA code"""
-    icaoCode: Annotated[str, Field(description='Airport ICAO code')]
-    """str: airport ICAO code"""
+    iataCode: Annotated[str | None, Field(description='Airport IATA code')]
+    """str | None: airport IATA code"""
+    icaoCode: Annotated[str | None, Field(description='Airport ICAO code')]
+    """str | None: airport ICAO code"""
+
+    @field_validator('icaoCode', mode='after')
+    @classmethod
+    def parse_icao(cls, value: str | None) -> str | None:
+        """Parse ICAO code value
+
+        Args:
+            value (str | None): ICAO code value
+
+        Returns:
+            str | None: parsed ICAO code
+        """
+        if isinstance(value, str) and len(value) < 4:
+            return None
+        elif isinstance(value, str):
+            return value[:4]
+        return value
 
 
 class AviationEdgeFlightTrackingFlight(APIBaseModel):
     """Aviation Edge API flight tracking flight data"""
 
-    iataNumber: Annotated[str, Field(description='Flight IATA number')]
-    """str: flight IATA number"""
+    iataNumber: Annotated[str | None, Field(description='Flight IATA number')]
+    """str | None: flight IATA number"""
     icaoNumber: Annotated[str, Field(description='Flight ICAO number')]
     """str: flight ICAO number"""
-    number: Annotated[str, Field(description='Flight number')]
-    """str: flight number"""
+    number: Annotated[int | None, Field(description='Flight number')]
+    """int: flight number"""
+
+    @field_validator('iataNumber', 'number', mode='before')
+    @classmethod
+    def parse_code(cls, value: str | None) -> str | None:
+        """Parse code value
+
+        Args:
+            value (str | None): code value
+
+        Returns:
+            str | None: parsed code value
+        """
+        if isinstance(value, str) and value in ('XXD', 'XXF'):
+            return None
+        return value
 
 
 class AviationEdgeFlightTrackingGeography(APIBaseModel):
@@ -109,7 +186,7 @@ class AviationEdgeFlightTrackingState(APIBaseModel):
     """AviationEdgeGeography: aircraft geography data"""
     speed: Annotated[AviationEdgeFlightTrackingSpeed, Field(description='Aircraft speed data')]
     """AviationEdgeSpeed: aircraft speed data"""
-    status: Annotated[str, Field(description='Aircraft status')]
+    status: Annotated[str | None, Field(description='Aircraft status')]
     """str: aircraft status"""
     system: Annotated[AviationEdgeFlightTrackingSystem, Field(description='Aircraft system data')]
     """AviationEdgeSystem: aircraft system data"""
@@ -188,7 +265,8 @@ class AviationEdgeFlightTrackingResponse(ListModel[AviationEdgeFlightTrackingSta
             speed_horizontal=entry.speed.horizontal / 3.6,
             speed_vertical=entry.speed.vspeed / 3.6,
             is_on_ground=bool(entry.speed.isGround),
-            status=StateStatus.from_string(entry.status),
+            status=StateStatus.from_string(entry.status) \
+                if entry.status is not None else StateStatus.UNKNOWN,
             squawk=entry.system.squawk if entry.system.squawk is not None and \
                 len(entry.system.squawk) else None,
             squawk_time=datetime.fromtimestamp(entry.system.updated, tz=timezone.utc)

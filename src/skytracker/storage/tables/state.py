@@ -12,7 +12,7 @@ from skytracker.utils import logger
 class StateTableManager(TableManager[State]):
     """Async aircraft state table manager"""
 
-    TABLE_NAME = 'aircraft_states2'
+    TABLE_NAME = 'state'
     """str: name of aircraft state table"""
 
     def __init__(self, database: DatabaseManager) -> None:
@@ -34,19 +34,19 @@ class StateTableManager(TableManager[State]):
         fields = [
             "time DateTime('UTC')",
             "data_source Enum('opensky_network', 'aviation_edge')",
-            'aircraft_iata FixedString(4)',
-            'aircraft_icao FixedString(4)',
-            'aircraft_icao24 FixedString(6)',
-            'aircraft_registration FixedString(10)',
-            'airline_iata FixedString(3)',
-            'airline_icao FixedString(3)',
-            'arrival_iata FixedString(3)',
-            'arrival_icao FixedString(4)',
-            'departure_iata FixedString(3)',
-            'departure_icao FixedString(4)',
-            'flight_iata FixedString(7)',
+            'aircraft_iata Nullable(FixedString(4))',
+            'aircraft_icao Nullable(FixedString(4))',
+            'aircraft_icao24 Nullable(FixedString(6))',
+            'aircraft_registration Nullable(FixedString(10))',
+            'airline_iata Nullable(FixedString(3))',
+            'airline_icao Nullable(FixedString(3))',
+            'arrival_iata Nullable(FixedString(3))',
+            'arrival_icao Nullable(FixedString(4))',
+            'departure_iata Nullable(FixedString(3))',
+            'departure_icao Nullable(FixedString(4))',
+            'flight_iata Nullable(FixedString(7))',
             'flight_icao FixedString(8)',
-            'flight_number FixedString(4)',
+            'flight_number Nullable(UInt16)',
             'position Point',
             'geo_altitude Nullable(FLOAT)',
             'baro_altitude Nullable(FLOAT)',

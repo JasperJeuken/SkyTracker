@@ -78,36 +78,36 @@ class State(BaseModel):
     data_source: Annotated[StateDataSource, Field(description='Source of state data')]
     """APIType: source of state data"""
 
-    aircraft_iata: Annotated[str, Field(description='Aircraft IATA code')]
-    """str: aircraft IATA code (max. 4 characters)"""
-    aircraft_icao: Annotated[str, Field(description='Aircraft ICAO code')]
-    """str: aircraft ICAO code (max. 4 characters)"""
-    aircraft_icao24: Annotated[str, Field(description='Aircraft ICAO 24-bit address (hex)')]
-    """str: aircraft ICAO 24-bit address (hex) (6 characters)"""
-    aircraft_registration: Annotated[str, Field(description='Aircraft registration')]
-    """str: aircraft registration (max. 8 characters)"""
+    aircraft_iata: Annotated[str | None, Field(description='Aircraft type IATA code')]
+    """str | None: aircraft type IATA code (max. 4 characters)"""
+    aircraft_icao: Annotated[str | None, Field(description='Aircraft type ICAO code')]
+    """str | None: aircraft type ICAO code (max. 4 characters)"""
+    aircraft_icao24: Annotated[str | None, Field(description='Aircraft ICAO 24-bit address (hex)')]
+    """str | None: aircraft ICAO 24-bit address (hex) (6 characters)"""
+    aircraft_registration: Annotated[str | None, Field(description='Aircraft registration')]
+    """str | None: aircraft registration (max. 8 characters)"""
 
-    airline_iata: Annotated[str, Field(description='Airline IATA code')]
-    """str: airline IATA code (2 characters)"""
-    airline_icao: Annotated[str, Field(description='Airline ICAO code')]
-    """str: airline ICAO code (3 characters)"""
+    airline_iata: Annotated[str | None, Field(description='Airline IATA code')]
+    """str | None: airline IATA code (2 characters)"""
+    airline_icao: Annotated[str | None, Field(description='Airline ICAO code')]
+    """str | None: airline ICAO code (3 characters)"""
 
-    arrival_iata: Annotated[str, Field(description='Arrival airport IATA code')]
-    """str: arrival airport IATA code (3 characters)"""
-    arrival_icao: Annotated[str, Field(description='Arrival airport ICAO code')]
-    """str: arrival airport ICAO code (4 characters)"""
+    arrival_iata: Annotated[str | None, Field(description='Arrival airport IATA code')]
+    """str | None: arrival airport IATA code (3 characters)"""
+    arrival_icao: Annotated[str | None, Field(description='Arrival airport ICAO code')]
+    """str | None: arrival airport ICAO code (4 characters)"""
 
-    departure_iata: Annotated[str, Field(description='Departure airport IATA code')]
-    """str: departure airport IATA code (3 characters)"""
-    departure_icao: Annotated[str, Field(description='Departure airport ICAO code')]
-    """str: departure airport ICAO code (4 characters)"""
+    departure_iata: Annotated[str | None, Field(description='Departure airport IATA code')]
+    """str | None: departure airport IATA code (3 characters)"""
+    departure_icao: Annotated[str | None, Field(description='Departure airport ICAO code')]
+    """str | None: departure airport ICAO code (4 characters)"""
 
-    flight_iata: Annotated[str, Field(description='Flight IATA code')]
-    """str: flight IATA code"""
+    flight_iata: Annotated[str | None, Field(description='Flight IATA code')]
+    """str | None: flight IATA code"""
     flight_icao: Annotated[str, Field(description='Flight ICAO code')]
     """str: flight ICAO code"""
-    flight_number: Annotated[str, Field(description='Flight number')]
-    """str: flight number"""
+    flight_number: Annotated[int | None, Field(description='Flight number')]
+    """str | None: flight number"""
 
     position: Annotated[tuple[float, float], Field(description='Latitude/longitude position [deg]')]
     """tuple[float, float]: latitude/longitude position [deg]"""
@@ -196,19 +196,19 @@ class State(BaseModel):
         return [
             self.time,
             self.data_source.value,
-            self.aircraft_iata[:4],
-            self.aircraft_icao[:4],
-            self.aircraft_icao24[:6],
-            self.aircraft_registration[:10],
-            self.airline_iata[:3],
-            self.airline_icao[:3],
-            self.arrival_iata[:3],
-            self.arrival_icao[:4],
-            self.departure_iata[:3],
-            self.departure_icao[:4],
-            self.flight_iata[:7],
-            self.flight_icao[:8],
-            self.flight_number[:4],
+            self.aircraft_iata,
+            self.aircraft_icao,
+            self.aircraft_icao24,
+            self.aircraft_registration,
+            self.airline_iata,
+            self.airline_icao,
+            self.arrival_iata,
+            self.arrival_icao,
+            self.departure_iata,
+            self.departure_icao,
+            self.flight_iata,
+            self.flight_icao,
+            self.flight_number,
             self.position,
             self.geo_altitude,
             self.baro_altitude,

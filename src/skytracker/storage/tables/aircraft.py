@@ -6,7 +6,7 @@ from skytracker.storage.table_manager import TableManager
 from skytracker.storage.cache import Cache
 from skytracker.services.api.aviation_edge import AviationEdgeAPI
 from skytracker.models.aircraft import Aircraft
-from skytracker.utils import logger
+from skytracker.utils import logger, log_and_raise
 from skytracker.utils.analysis import search_object_list
 from skytracker.settings import settings
 
@@ -108,7 +108,7 @@ class AircraftTableManager(TableManager[Aircraft]):
         logger.debug(f'Inserting {len(aircraft)} aircraft into database')
         await self._database.insert(self.TABLE_NAME, rows, columns)
     
-    async def get_aircraft(self, registration: str) -> Aircraft | None:
+    async def get_aircraft(self, registration: str) -> Aircraft:
         """Get an aircraft by registration
 
         Args:
@@ -124,7 +124,7 @@ class AircraftTableManager(TableManager[Aircraft]):
                 continue
             if ac_reg.replace('-', '').lower() == registration.replace('-', '').lower():
                 return ac
-        raise KeyError(f'No aircraft with registration "{registration}"')
+        log_and_raise(KeyError, f'No aircraft with registration {registration}')
 
     async def search_aircraft(self, fields: dict[str, Any], limit: int = 0) -> list[Aircraft]:
         """Search for aircraft matching specific information

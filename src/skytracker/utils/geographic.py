@@ -1,5 +1,6 @@
 """Geographic utilities"""
 import numpy as np
+import pycountry
 
 
 def distance_between_points(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -78,3 +79,15 @@ def shift_longitude_into_range(lon: float, lon_min: float, lon_max: float) -> fl
     while lon > lon_max:
         lon -= 360
     return lon
+
+
+def is_country_code(text: str) -> bool:
+    """Check whether a code is a valid ISO 3166-1 A-2 country code
+
+    Args:
+        text (str): text to parse
+
+    Returns:
+        bool: whether text is a valid ISO 3166-1 A-2 country code
+    """
+    return pycountry.countries.get(alpha_2=text) is not None

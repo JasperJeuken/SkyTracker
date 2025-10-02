@@ -1,15 +1,40 @@
 """Airline API endpoints"""
+from typing import Literal
+
 from fastapi import APIRouter, Query, Path, Depends
 
 from skytracker.models.airline import Airline
-from skytracker.models.errors import Errors
 from skytracker.dependencies import get_storage
 from skytracker.storage import Storage
-from skytracker.utils import logger
-from skytracker.services.airline import get_specific_airline
+from skytracker.utils import logger, log_and_raise_http, Errors, Regex
+from skytracker.utils.geographic import is_country_code
+from skytracker.services.airline import get_airline, search_airline
 
 
 router = APIRouter(prefix='/airline', tags=['airline'])
+
+
+def country_code_validator(code: str | None = Query(None, min_length=2, max_length=2,
+                                                    alias='country',
+                                                    title='Country code',
+                                                    description='ISO 3166-1 A-2 code (2 character)',
+                                                    example='US')) -> str:
+    """Validate whether a string is a valid ISO 3166-1 A-2 country code
+
+    Args:
+        code (str): string to parse
+    
+    Raises:
+        HTTPException: if string is not a valid ISO 3166-1 A-2 country code
+
+    Returns:
+        str: valid ISO 3166-1 A-2 country code
+    """
+    if code is None:
+        return None
+    if not is_country_code(code.upper()):
+        log_and_raise_http(f'Invalid country code: {code}', 422)
+    return code.upper()
 
 
 @router.get('/{icao}',
@@ -19,7 +44,8 @@ router = APIRouter(prefix='/airline', tags=['airline'])
             responses=Errors.not_found)
 async def api_get_airline(
         storage: Storage = Depends(get_storage),
-        icao: str = Path(title='Airline ICAO code',
+        icao: str = Path(regex=Regex.code_3,
+                         title='Airline ICAO code',
                          description='Airline ICAO code (3 characters)',
                          example='AAL')
     ) -> Airline:
@@ -33,6 +59,7 @@ async def api_get_airline(
         Airline: airline details
     """
     logger.info(f'API (get_airline): icao={icao}')
+    return await get_airline(storage, icao)
 
 
 @router.get('',
@@ -41,10 +68,33 @@ async def api_get_airline(
             description='Search for details of an aircraft given specific information')
 async def api_search_airline(
         storage: Storage = Depends(get_storage),
-        icao: str | None = Query(None,
+        icao: str | None = Query(None, regex=Regex.code_3_wildcard,
                                  title='Airline ICAO code',
                                  description='Airline ICAO code (3 characters)',
                                  example='AAL'),
+        iata: str | None = Query(None, regex=Regex.code_2_wildcard,
+                                 title='Airline IATA code',
+                                 description='Airline IATA code (2 characters)',
+                                 example='AA'),
+        name: str | None = Query(None, regex=Regex.alphanumeric_spaces_wildcard,
+                                 title='Airline name',
+                                 description='Full airline name',
+                                 example='American Airlines'),
+        callsign: str | None = Query(None, regex=Regex.alphanumeric_spaces_wildcard,
+                                     title='Airline callsign',
+                                     description='Airline callsign',
+                                     example='AMERICAN'),
+        types: list[Literal['SCHEDULED', 'CHARTER', 'CARGO', 'VIRTUAL', 'LEISURE', 'GOVERNMENT',
+                            'PRIVATE', 'MANUFACTURER', 'SUPPLIER', 'DIVISION'] | None] = 
+                            Query(None,
+                                  title='Airline type (one or more)',
+                                  description='Airline type (one or more can be specified)',
+                                  example=['SCHEDULED', 'CARGO']),
+        country: str | None = Depends(country_code_validator),
+        hub: str | None = Query(None, regex=Regex.code_3_wildcard,
+                                title='Hub airport ICAO code',
+                                description='Hub airport ICAO code (3 characters)',
+                                example='LAX'),
         limit: int = Query(0, ge=0,
                            title='Limit',
                            description='Maximum number of airlines to retrieve (0=all)',
@@ -55,27 +105,19 @@ async def api_search_airline(
     Args:
         storage (Storage): backend storage manager
         icao (str | None): airline ICAO code (3 characters)
+        iata (str | None): airline IATA code (2 characters)
+        name (str | None): full airline name
+        callsign (str | None): airline callsign
+        types (list[Literal['SCHEDULED', 'CHARTER', 'CARGO', 'VIRTUAL', 'LEISURE', 'GOVERNMENT',
+                            'PRIVATE', 'MANUFACTURER', 'SUPPLIER', 'DIVISION'] | None]):
+            airline type (one or more can be specified)
+        country (str | None): ISO 3166-1 A-2 country code (2 characters)
+        hub (str | None): hub airport ICAO code (3 characters)
         limit (int, optional): maximum number of airlines to retrieve (0=all). Defaults to 0 (all).
 
     Returns:
         list[Airline]: airline search results
     """
-    logger.info(f'API (search_airline): icao={icao} limit={limit}')
-
-
-# @router.get('', response_model=Airline)
-# async def get_airport(storage: Storage = Depends(get_storage),
-#                       iata: Annotated[str | None, Query()] = None,
-#                       icao: Annotated[str | None, Query()] = None) -> Airline:
-#     """Get the details of a specific airline
-
-#     Args:
-#         storage (Storage, optional): database storage instance. Defaults to Depends(get_storage).
-#         iata (str, optional): airline IATA code. Defaults to Path().
-#         icao (str, optional): airline icao code. Defaults to Path().
-
-#     Returns:
-#         Airline: details of the chosen airline
-#     """
-#     logger.info(f'API (get_airline): iata={iata} icao={icao}')
-#     return await get_specific_airline(storage, iata, icao)
+    logger.info(f'API (search_airline): icao={icao} iata={iata} name={name} ' + \
+                f'callsign={callsign} types={types} country={country} hub={hub} limit={limit}')
+    return await search_airline(storage, limit, icao, iata, name, callsign, types, country, hub)

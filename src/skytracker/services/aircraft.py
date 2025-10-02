@@ -1,12 +1,10 @@
 """Aircraft endpoint services"""
 from typing import Literal
 
-from fastapi import HTTPException
-
 from skytracker.models.aircraft import AircraftPhoto, Aircraft, AircraftEngineType
 from skytracker.services.browser import WebBrowser
 from skytracker.storage import Storage
-from skytracker.utils import logger, log_and_raise_http
+from skytracker.utils import log_and_raise_http
 from skytracker.utils.analysis import decode, encode
 
 

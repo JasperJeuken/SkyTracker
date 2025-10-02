@@ -1,11 +1,14 @@
 """Airline table manager"""
+from typing import Any
+
 from skytracker.storage.database_manager import DatabaseManager
 from skytracker.storage.table_manager import TableManager
 from skytracker.storage.cache import Cache
 from skytracker.services.api.aviation_edge import AviationEdgeAPI
 from skytracker.models.airline import Airline
-from skytracker.utils import logger
+from skytracker.utils import logger, log_and_raise
 from skytracker.settings import settings
+from skytracker.utils.analysis import search_object_list
 
 
 class AirlineTableManager(TableManager[Airline]):
@@ -91,22 +94,53 @@ class AirlineTableManager(TableManager[Airline]):
         columns = list(airlines[0].model_dump().keys())
         logger.debug(f'Inserting {len(airlines)} airlines into database')
         await self._database.insert(self.TABLE_NAME, rows, columns)
-
-    async def get_airline(self, iata: str | None, icao: str | None) -> Airline | None:
-        """Get aircraft by registration and/or ICAO 24-bit address
+    
+    async def get_airline(self, icao: str) -> Airline:
+        """Get an airline by ICAO code
 
         Args:
-            iata (str | None): airline IATA code
-            icao (str | None): airline ICAO 2code
+            icao (str): airline ICAO code
 
         Returns:
-            Airline | None: airline with associated IATA and/or ICAO code
+            Airline: airline with specified ICAO code
         """
         airlines = await self._cache.get()
         for airline in airlines:
-            if (iata is not None and airline.iata is not None and \
-                airline.iata.lower() == iata.lower()) or \
-               (icao is not None and airline.icao is not None and \
-                airline.icao.lower() == icao.lower()):
+            if airline.icao is None:
+                continue
+            if airline.icao.lower() == icao.lower():
                 return airline
-        return None
+        log_and_raise(KeyError, f'No airline with ICAO code "{icao}"')
+    
+    async def search_airline(self, fields: dict[str, Any], limit: int = 0) -> list[Airline]:
+        """Search for airlines matching specific information
+
+        Args:
+            fields (dict[str, Any]): field-value pairs to search for
+            limit (int, optional): maximum number of airlines to retrieve (0=all). Defaults to 0.
+
+        Returns:
+            list[Airline]: list of airlines matching fields
+        """
+        airlines = await self._cache.get()
+        return search_object_list(airlines, fields, limit)
+        
+
+    # async def get_airline(self, iata: str | None, icao: str | None) -> Airline | None:
+    #     """Get aircraft by registration and/or ICAO 24-bit address
+
+    #     Args:
+    #         iata (str | None): airline IATA code
+    #         icao (str | None): airline ICAO 2code
+
+    #     Returns:
+    #         Airline | None: airline with associated IATA and/or ICAO code
+    #     """
+    #     airlines = await self._cache.get()
+    #     for airline in airlines:
+    #         if (iata is not None and airline.iata is not None and \
+    #             airline.iata.lower() == iata.lower()) or \
+    #            (icao is not None and airline.icao is not None and \
+    #             airline.icao.lower() == icao.lower()):
+    #             return airline
+    #     return None

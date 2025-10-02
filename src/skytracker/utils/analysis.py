@@ -89,6 +89,9 @@ def search_object_list(objects: list[ObjectType], fields: dict[str, Any],
             obj_value = get_nested_attribute(obj, field)
 
             # Support wildcards for strings
+            if obj_value is None and value is not None:
+                match = False
+                break
             if isinstance(value, str):
                 if not fnmatch(obj_value, value.replace('.', '*').replace('_', '?')):
                     match = False

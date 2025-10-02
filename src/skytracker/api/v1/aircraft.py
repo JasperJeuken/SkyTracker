@@ -4,11 +4,10 @@ from typing import Literal
 from fastapi import APIRouter, Query, Path, Depends
 
 from skytracker.models.aircraft import AircraftPhoto, Aircraft
-from skytracker.models.errors import Errors
 from skytracker.dependencies import get_storage, get_browser
 from skytracker.storage import Storage
 from skytracker.services.browser import WebBrowser
-from skytracker.utils import logger
+from skytracker.utils import logger, Errors, Regex
 from skytracker.services.aircraft import get_aircraft_photos, get_aircraft, search_aircraft
 
 
@@ -22,7 +21,8 @@ router = APIRouter(prefix='/aircraft', tags=['aircraft'])
             responses=Errors.not_found)
 async def api_get_aircraft(
         storage: Storage = Depends(get_storage),
-        registration: str = Path(title='Aircraft registration',
+        registration: str = Path(regex=Regex.aircraft_registration,
+                                 title='Aircraft registration',
                                  description='Aircraft registration (tail number)',
                                  example='AB-CDE')
     ) -> Aircraft:
@@ -46,7 +46,8 @@ async def api_get_aircraft(
             responses=Errors.not_found)
 async def api_get_photos(
         browser: WebBrowser = Depends(get_browser),
-        registration: str = Path(title='Aircraft registration',
+        registration: str = Path(regex=Regex.aircraft_registration,
+                                 title='Aircraft registration',
                                  description='Aircraft registration (tail number)',
                                  example='AB-CDE'),
         limit: int = Query(5, ge=1, le=5,
@@ -75,23 +76,23 @@ async def api_get_photos(
             responses=Errors.bad_request)
 async def api_search_aircraft(
         storage: Storage = Depends(get_storage),
-        registration: str | None = Query(None,
+        registration: str | None = Query(None, regex=Regex.aircraft_registration_wildcard,
                                          title='Aircraft registration',
                                          description='Aircraft registration (tail number)',
                                          example='AB-CDE'),
-        icao24: str | None = Query(None, regex='^[0-9A-Fa-f]{6}$',
+        icao24: str | None = Query(None, regex=Regex.aircraft_icao24_wildcard,
                                    title='Aircraft ICAO 24-bit address',
                                    description='Aircraft ICAO 24-bit address (hex, 6 characters)',
                                    example='1A2B3C'),
-        callsign: str | None = Query(None,
+        callsign: str | None = Query(None, regex=Regex.aircraft_callsign_wildcard,
                                      title='Aircraft callsign',
                                      description='Aircraft callsign (ICAO)',
                                      example='ABC123D'),
-        model: str | None = Query(None,
+        model: str | None = Query(None, regex=Regex.aircraft_model_wildcard,
                                   title='Aircraft model IATA code',
                                   description='Aircraft model IATA code (4 characters)',
                                   example='B737'),
-        airline: str | None = Query(None,
+        airline: str | None = Query(None, regex=Regex.code_2_wildcard,
                                     title='Airline IATA code',
                                     description='Airline IATA code (2 characters)',
                                     example='AA'),

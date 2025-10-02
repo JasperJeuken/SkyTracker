@@ -36,15 +36,15 @@ class AirportTableManager(TableManager[Airport]):
         # Fields for airport table
         fields = [
             'iata FixedString(3)',
-            'icao FixedString(4)',
-            'name String',
+            'icao Nullable(FixedString(4))',
+            'name Nullable(String)',
             'latitude Nullable(Float)',
             'longitude Nullable(Float)',
             'geoname_id Nullable(UInt32)',
-            'phone String',
-            'timezone String',
-            'gmt FixedString(5)',
-            'city_iata FixedString(3)',
+            'phone Nullable(String)',
+            'timezone Nullable(String)',
+            'gmt Nullable(FixedString(5))',
+            'city_iata Nullable(FixedString(3))',
             'country_iso2 FixedString(2)',
             'country_name String'
         ]

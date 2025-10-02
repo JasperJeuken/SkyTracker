@@ -124,28 +124,28 @@ class AirlineType(IntEnum):
 class Airline(BaseModel):
     """Airline data"""
 
-    iata: Annotated[str, Field(description='Airline IATA code')]
-    """str: airline IATA code"""
-    icao: Annotated[str, Field(description='Airline ICAO code')]
-    """str: airline ICAO code"""
-    name: Annotated[str, Field(description='Airline name')]
-    """str: airline name"""
-    callsign: Annotated[str, Field(description='Airline callsign')]
-    """str: airline callsign"""
-    founding: Annotated[int, Field(description='Airline founding year')]
-    """int: airline founding year"""
-    fleet_age: Annotated[float, Field(description='Airline fleet age [year]')]
-    """float: airline fleet age [year]"""
-    fleet_size: Annotated[int, Field(description='Airline fleet size [aircraft]')]
-    """int: airline fleet size [aircraft]"""
+    iata: Annotated[str | None, Field(description='Airline IATA code')]
+    """str | None: airline IATA code"""
+    icao: Annotated[str | None, Field(description='Airline ICAO code')]
+    """str | None: airline ICAO code"""
+    name: Annotated[str | None, Field(description='Airline name')]
+    """str | None: airline name"""
+    callsign: Annotated[str | None, Field(description='Airline callsign')]
+    """str | None: airline callsign"""
+    founding: Annotated[int | None, Field(description='Airline founding year')]
+    """int | None: airline founding year"""
+    fleet_age: Annotated[float | None, Field(description='Airline fleet age [year]')]
+    """float | None: airline fleet age [year]"""
+    fleet_size: Annotated[int | None, Field(description='Airline fleet size [aircraft]')]
+    """int | None: airline fleet size [aircraft]"""
     status: Annotated[AirlineStatus, Field(description='Airline status')]
     """AirlineStatus: airline status"""
     types: Annotated[list[AirlineType], Field(description='Airline type')]
     """list[AirlineType]: airline types"""
-    country_iso2: Annotated[str, Field(description='Country ISO 3166-1 alpha-2 code')]
-    """str: country ISO 3166-1 alpha-2 code"""
-    hub_icao: Annotated[str | None, Field(description='Airline hub airport ICAO code')]
-    """str | None: airline hub airport ICAO code"""
+    country_iso2: Annotated[str | None, Field(description='Country ISO 3166-1 alpha-2 code')]
+    """str | None: country ISO 3166-1 alpha-2 code"""
+    hub_iata: Annotated[str | None, Field(description='Airline hub airport IATA code')]
+    """str | None: airline hub airport IATA code"""
 
     @field_validator('status', mode='before')
     @classmethod
@@ -178,7 +178,7 @@ class Airline(BaseModel):
                     if len(part.strip())]
         if isinstance(value, list):
             return [AirlineType.from_string(elem) for elem in value if elem is not None]
-        return value
+        return []
     
     @field_serializer('status')
     @classmethod

@@ -9,8 +9,8 @@ class Airport(BaseModel):
 
     iata: Annotated[str, Field(description='Airport IATA code')]
     """str: airport IATA code"""
-    icao: Annotated[str, Field(description='Airport ICAO code')]
-    """str: airport ICAO code"""
+    icao: Annotated[str | None, Field(description='Airport ICAO code')]
+    """str | None: airport ICAO code"""
     name: Annotated[str, Field(description='Airport name')]
     """str: airport name"""
     latitude: Annotated[float | None, Field(description='Airport latitude [deg]')]
@@ -19,13 +19,13 @@ class Airport(BaseModel):
     """float | None: airport longitude [deg]"""
     geoname_id: Annotated[int | None, Field(description='Airport Geonames ID')]
     """int | None: airport Geonames ID"""
-    phone: Annotated[str, Field(description='Airport phone number')]
+    phone: Annotated[str | None, Field(description='Airport phone number')]
     """str: airport phone number"""
-    timezone: Annotated[str, Field(description='Airport timezone name')]
+    timezone: Annotated[str | None, Field(description='Airport timezone name')]
     """str: airport timezone name"""
-    gmt: Annotated[str, Field(description='Airport GMT offset')]
+    gmt: Annotated[str | None, Field(description='Airport GMT offset')]
     """float: airport GMT offset"""
-    city_iata: Annotated[str, Field(description='City IATA code')]
+    city_iata: Annotated[str | None, Field(description='City IATA code')]
     """str: city IATA code"""
     country_iso2: Annotated[str, Field(description='Country ISO 3166-1 alpha-2 code')]
     """str: country ISO 3166-1 alpha-2 code"""

@@ -55,5 +55,20 @@ def country_name_to_country_code(country_name: str) -> str:
         log_and_raise(ValueError, f'Could not find country "{country_name}"', cause=err)
 
     if not countries:
-        raise ValueError(f'Could not find country "{country_name}"')
+        log_and_raise(ValueError, f'Could not find country "{country_name}"')
     return countries[0].alpha_2
+
+
+def country_code_to_country_name(country_code: str) -> str:
+    """Get the country name from a ISO 3166-1 A-2 country code
+
+    Args:
+        country_code (str): ISO 3166-1 A-2 country code (i.e. "FR", "DE")
+
+    Returns:
+        str: corresponding country name (i.e. "France", "Germany")
+    """
+    country = pycountry.countries.get(alpha_2=country_code)
+    if country is None:
+        log_and_raise(KeyError, f'Could not find country code "{country_code}"')
+    return country.name

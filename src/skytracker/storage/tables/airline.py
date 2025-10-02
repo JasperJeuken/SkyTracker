@@ -35,19 +35,19 @@ class AirlineTableManager(TableManager[Airline]):
 
         # Fields for airline table
         fields = [
-            'iata FixedString(3)',
-            'icao FixedString(4)',
-            'name String',
-            'callsign String',
-            'founding UInt16',
-            'fleet_age Float',
-            'fleet_size UInt16',
+            'iata Nullable(FixedString(3))',
+            'icao Nullable(FixedString(4))',
+            'name Nullable(String)',
+            'callsign Nullable(String)',
+            'founding Nullable(UInt16)',
+            'fleet_age Nullable(Float)',
+            'fleet_size Nullable(UInt16)',
             "status Enum('MERGED', 'HISTORICAL', 'DISABLED', 'NOT_READY', 'UNKNOWN', " + \
                 "'START_UP', 'RESTARTING', 'ACTIVE', 'RENAMED')",
             "types Array(Enum('SCHEDULED', 'CHARTER', 'CARGO', 'VIRTUAL', 'LEISURE', " + \
                 "'GOVERNMENT', 'PRIVATE', 'MANUFACTURER', 'SUPPLIED', 'DIVISION'))",
-            'country_iso2 FixedString(2)',
-            'hub_icao Nullable(FixedString(4))'
+            'country_iso2 Nullable(FixedString(2))',
+            'hub_iata Nullable(FixedString(3))'
         ]
 
         # Create table

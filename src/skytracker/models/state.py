@@ -70,13 +70,8 @@ class StateStatus(IntEnum):
         log_and_raise(ValueError, f'Unknown state status: {value}')
 
 
-class State(BaseModel):
-    """Aircraft state data"""
-
-    time: Annotated[datetime, Field(description='Data timestamp')]
-    """datetime: data timestamp"""
-    data_source: Annotated[StateDataSource, Field(description='Source of state data')]
-    """APIType: source of state data"""
+class StateAircraft(BaseModel):
+    """State aircraft data"""
 
     aircraft_iata: Annotated[str | None, Field(description='Aircraft type IATA code')]
     """str | None: aircraft type IATA code (max. 4 characters)"""
@@ -87,16 +82,23 @@ class State(BaseModel):
     aircraft_registration: Annotated[str | None, Field(description='Aircraft registration')]
     """str | None: aircraft registration (max. 8 characters)"""
 
+
+class StateAirline(BaseModel):
+    """State airline data"""
+
     airline_iata: Annotated[str | None, Field(description='Airline IATA code')]
     """str | None: airline IATA code (2 characters)"""
     airline_icao: Annotated[str | None, Field(description='Airline ICAO code')]
     """str | None: airline ICAO code (3 characters)"""
 
+
+class StateFlight(BaseModel):
+    """State flight data"""
+    
     arrival_iata: Annotated[str | None, Field(description='Arrival airport IATA code')]
     """str | None: arrival airport IATA code (3 characters)"""
     arrival_icao: Annotated[str | None, Field(description='Arrival airport ICAO code')]
     """str | None: arrival airport ICAO code (4 characters)"""
-
     departure_iata: Annotated[str | None, Field(description='Departure airport IATA code')]
     """str | None: departure airport IATA code (3 characters)"""
     departure_icao: Annotated[str | None, Field(description='Departure airport ICAO code')]
@@ -108,6 +110,9 @@ class State(BaseModel):
     """str: flight ICAO code"""
     flight_number: Annotated[int | None, Field(description='Flight number')]
     """str | None: flight number"""
+
+class StatePosition(BaseModel):
+    """State position data"""
 
     position: Annotated[tuple[float, float], Field(description='Latitude/longitude position [deg]')]
     """tuple[float, float]: latitude/longitude position [deg]"""
@@ -124,12 +129,36 @@ class State(BaseModel):
     is_on_ground: Annotated[bool, Field(description='Whether aircraft is on ground')]
     """bool: whether aircraft is on ground"""
 
-    status: Annotated[StateStatus, Field(description='Aircraft status')]
-    """StateStatus: aircraft status"""
+
+class StateTransponder(BaseModel):
+    """State transponder data"""
+
     squawk: Annotated[int | None, Field(description='Squawk code')]
     """int | None: squawk code (can be None)"""
     squawk_time: Annotated[datetime | None, Field(description='Squawk code update time')]
     """datetime | None: squawk update time"""
+
+
+class State(BaseModel):
+    """Aircraft state data"""
+
+    time: Annotated[datetime, Field(description='Data timestamp')]
+    """datetime: data timestamp"""
+    data_source: Annotated[StateDataSource, Field(description='Source of state data')]
+    """APIType: source of state data"""
+    status: Annotated[StateStatus, Field(description='Aircraft status')]
+    """StateStatus: aircraft status"""
+
+    aircraft: Annotated[StateAircraft, Field(description='State aircraft data')]
+    """StateAircraft: state aircraft data"""
+    airline: Annotated[StateAirline, Field(description='State airline data')]
+    """StateAirline: state airline data"""
+    flight: Annotated[StateFlight, Field(description='State flight data')]
+    """StateFlight: state flight data"""
+    position: Annotated[StatePosition, Field(description='State position data')]
+    """StatePosition: state position data"""
+    transponder: Annotated[StateTransponder, Field(description='State transponder data')]
+    """StateTransponder: state transponder data"""
 
     @field_validator('data_source', mode='before')
     @classmethod
@@ -186,40 +215,6 @@ class State(BaseModel):
             str: state status name
         """
         return status.name
-
-    def values(self) -> list[Any]:
-        """Get the values in the state as a list
-
-        Returns:
-            list[Any]: list of state values
-        """
-        return [
-            self.time,
-            self.data_source.value,
-            self.aircraft_iata,
-            self.aircraft_icao,
-            self.aircraft_icao24,
-            self.aircraft_registration,
-            self.airline_iata,
-            self.airline_icao,
-            self.arrival_iata,
-            self.arrival_icao,
-            self.departure_iata,
-            self.departure_icao,
-            self.flight_iata,
-            self.flight_icao,
-            self.flight_number,
-            self.position,
-            self.geo_altitude,
-            self.baro_altitude,
-            self.heading,
-            self.speed_horizontal,
-            self.speed_vertical,
-            self.is_on_ground,
-            self.status.value,
-            self.squawk,
-            self.squawk_time
-        ]
 
 
 class SimpleMapState(BaseModel):

@@ -1,2 +1,2 @@
 """API models module"""
-from .model import APIBaseModel
+from .model import APIBaseModel, flatten_model, unflatten_model

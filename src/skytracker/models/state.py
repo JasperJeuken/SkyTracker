@@ -36,15 +36,13 @@ class StateDataSource(IntEnum):
 class StateStatus(IntEnum):
     """State status"""
 
-    EMPTY: int = 1
-    """int: no given state"""
-    UNKNOWN: int = 2
+    UNKNOWN: int = 1
     """int: unknown"""
-    EN_ROUTE: int = 3
+    EN_ROUTE: int = 2
     """int: en-route"""
-    LANDED: int = 4
+    LANDED: int = 3
     """int: landed"""
-    STARTED: int = 5
+    STARTED: int = 4
     """int: started"""
 
     @classmethod
@@ -57,11 +55,9 @@ class StateStatus(IntEnum):
         Returns:
             int: state status
         """
-        if not len(value):
-            return cls.EMPTY
-        if value.lower() == 'unknown':
+        if value.lower() in ('', 'unknown'):
             return cls.UNKNOWN
-        if value.lower() in ('en-route', 'enroute'):
+        if value.lower() in ('en-route', 'enroute', 'en_route'):
             return cls.EN_ROUTE
         if value.lower() == 'landed':
             return cls.LANDED
@@ -73,28 +69,28 @@ class StateStatus(IntEnum):
 class StateAircraft(BaseModel):
     """State aircraft data"""
 
-    aircraft_iata: Annotated[str | None, Field(description='Aircraft type IATA code')]
+    iata: Annotated[str | None, Field(description='Aircraft type IATA code')]
     """str | None: aircraft type IATA code (max. 4 characters)"""
-    aircraft_icao: Annotated[str | None, Field(description='Aircraft type ICAO code')]
+    icao: Annotated[str | None, Field(description='Aircraft type ICAO code')]
     """str | None: aircraft type ICAO code (max. 4 characters)"""
-    aircraft_icao24: Annotated[str | None, Field(description='Aircraft ICAO 24-bit address (hex)')]
+    icao24: Annotated[str | None, Field(description='Aircraft ICAO 24-bit address (hex)')]
     """str | None: aircraft ICAO 24-bit address (hex) (6 characters)"""
-    aircraft_registration: Annotated[str | None, Field(description='Aircraft registration')]
+    registration: Annotated[str | None, Field(description='Aircraft registration')]
     """str | None: aircraft registration (max. 8 characters)"""
 
 
 class StateAirline(BaseModel):
     """State airline data"""
 
-    airline_iata: Annotated[str | None, Field(description='Airline IATA code')]
+    iata: Annotated[str | None, Field(description='Airline IATA code')]
     """str | None: airline IATA code (2 characters)"""
-    airline_icao: Annotated[str | None, Field(description='Airline ICAO code')]
+    icao: Annotated[str | None, Field(description='Airline ICAO code')]
     """str | None: airline ICAO code (3 characters)"""
 
 
-class StateFlight(BaseModel):
-    """State flight data"""
-    
+class StateAirport(BaseModel):
+    """State airport data"""
+
     arrival_iata: Annotated[str | None, Field(description='Arrival airport IATA code')]
     """str | None: arrival airport IATA code (3 characters)"""
     arrival_icao: Annotated[str | None, Field(description='Arrival airport ICAO code')]
@@ -104,15 +100,19 @@ class StateFlight(BaseModel):
     departure_icao: Annotated[str | None, Field(description='Departure airport ICAO code')]
     """str | None: departure airport ICAO code (4 characters)"""
 
-    flight_iata: Annotated[str | None, Field(description='Flight IATA code')]
+
+class StateFlight(BaseModel):
+    """State flight data"""
+
+    iata: Annotated[str | None, Field(description='Flight IATA code')]
     """str | None: flight IATA code"""
-    flight_icao: Annotated[str, Field(description='Flight ICAO code')]
+    icao: Annotated[str, Field(description='Flight ICAO code')]
     """str: flight ICAO code"""
-    flight_number: Annotated[int | None, Field(description='Flight number')]
+    number: Annotated[int | None, Field(description='Flight number')]
     """str | None: flight number"""
 
-class StatePosition(BaseModel):
-    """State position data"""
+class StateGeography(BaseModel):
+    """State geography data"""
 
     position: Annotated[tuple[float, float], Field(description='Latitude/longitude position [deg]')]
     """tuple[float, float]: latitude/longitude position [deg]"""
@@ -153,10 +153,12 @@ class State(BaseModel):
     """StateAircraft: state aircraft data"""
     airline: Annotated[StateAirline, Field(description='State airline data')]
     """StateAirline: state airline data"""
+    airport: Annotated[StateAirport, Field(description='State airport data')]
+    """StateAirport: state airport data"""
     flight: Annotated[StateFlight, Field(description='State flight data')]
     """StateFlight: state flight data"""
-    position: Annotated[StatePosition, Field(description='State position data')]
-    """StatePosition: state position data"""
+    geography: Annotated[StateGeography, Field(description='State geography data')]
+    """StatePosition: state geography data"""
     transponder: Annotated[StateTransponder, Field(description='State transponder data')]
     """StateTransponder: state transponder data"""
 
@@ -173,8 +175,10 @@ class State(BaseModel):
         """
         if isinstance(value, str):
             return StateDataSource.from_string(value)
+        if isinstance(value, int) and value == 0:
+            return StateDataSource.AVIATION_EDGE
         return value
-    
+
     @field_validator('status', mode='before')
     @classmethod
     def parse_status(cls, value: Any) -> StateStatus:
@@ -188,8 +192,10 @@ class State(BaseModel):
         """
         if isinstance(value, str):
             return StateStatus.from_string(value)
+        if isinstance(value, int) and value == 0:
+            return StateStatus.UNKNOWN
         return value
-    
+
     @field_serializer('data_source')
     @classmethod
     def serialize_data_source(cls, data_source: StateDataSource) -> str:
@@ -202,7 +208,7 @@ class State(BaseModel):
             str: state data source name
         """
         return data_source.name
-    
+
     @field_serializer('status')
     @classmethod
     def serialize_status(cls, status: StateStatus) -> str:

@@ -5,6 +5,7 @@ from skytracker.storage.database_manager import DatabaseManager
 from skytracker.storage.table_manager import TableManager
 from skytracker.storage.cache import Cache
 from skytracker.models.state import State
+from skytracker.models import flatten_model
 from skytracker.storage.queries.state import NearbyQuery, LatestBatchQuery, TrackQuery
 from skytracker.utils import logger
 
@@ -14,6 +15,36 @@ class StateTableManager(TableManager[State]):
 
     TABLE_NAME = 'state'
     """str: name of aircraft state table"""
+    TABLE_FIELDS: dict[str, str] = {
+        'time': "DateTime('UTC')",
+        'data_source': "Enum('OPENSKY_NETWORK', 'AVIATION_EDGE')",
+        'status': "Enum('UNKNOWN', 'EN_ROUTE', 'LANDED', 'STARTED')",
+        'aircraft__iata': 'Nullable(FixedString(4))',
+        'aircraft__icao': 'Nullable(FixedString(4))',
+        'aircraft__icao24': 'Nullable(FixedString(6))',
+        'aircraft__registration': 'Nullable(FixedString(10))',
+        'airline__iata': 'Nullable(FixedString(3))',
+        'airline__icao': 'Nullable(FixedString(3))',
+        'airport__arrival_iata': 'Nullable(FixedString(3))',
+        'airport__arrival_icao': 'Nullable(FixedString(4))',
+        'airport__departure_iata': 'Nullable(FixedString(3))',
+        'airport__departure_icao': 'Nullable(FixedString(4))',
+        'flight__iata': 'Nullable(FixedString(7))',
+        'flight__icao': 'FixedString(8)',
+        'flight__number': 'Nullable(UInt16)',
+        'geography__position': 'Point',
+        'geography__geo_altitude': 'Nullable(FLOAT)',
+        'geography__baro_altitude': 'Nullable(FLOAT)',
+        'geography__heading': 'Nullable(FLOAT)',
+        'geography__speed_horizontal': 'Nullable(FLOAT)',
+        'geography__speed_vertical': 'Nullable(FLOAT)',
+        'geography__is_on_ground': 'BOOLEAN',
+        'transponder__squawk': 'Nullable(UInt16)',
+        'transponder__squawk_time': "Nullable(DateTime('UTC'))"
+    }
+    """dict[str, str]: column_name - column_type pairs"""
+    TABLE_KEYS: tuple[str] = ('flight__icao', 'time')
+    """tuple[str]: keys used in database table"""
 
     def __init__(self, database: DatabaseManager) -> None:
         """Initialize table manager by storing database manager
@@ -27,43 +58,15 @@ class StateTableManager(TableManager[State]):
         """Ensure aircraft state table exists"""
         # Skip if table already exists
         if await self.exists():
-            logger.debug(f'Table "{self.TABLE_NAME}" exists')
+            logger.info(f'Table "{self.TABLE_NAME}" exists')
             return
 
-        # Fields for state table
-        fields = [
-            "time DateTime('UTC')",
-            "data_source Enum('opensky_network', 'aviation_edge')",
-            'aircraft_iata Nullable(FixedString(4))',
-            'aircraft_icao Nullable(FixedString(4))',
-            'aircraft_icao24 Nullable(FixedString(6))',
-            'aircraft_registration Nullable(FixedString(10))',
-            'airline_iata Nullable(FixedString(3))',
-            'airline_icao Nullable(FixedString(3))',
-            'arrival_iata Nullable(FixedString(3))',
-            'arrival_icao Nullable(FixedString(4))',
-            'departure_iata Nullable(FixedString(3))',
-            'departure_icao Nullable(FixedString(4))',
-            'flight_iata Nullable(FixedString(7))',
-            'flight_icao FixedString(8)',
-            'flight_number Nullable(UInt16)',
-            'position Point',
-            'geo_altitude Nullable(FLOAT)',
-            'baro_altitude Nullable(FLOAT)',
-            'heading Nullable(FLOAT)',
-            'speed_horizontal Nullable(FLOAT)',
-            'speed_vertical Nullable(FLOAT)',
-            'is_on_ground BOOLEAN',
-            "status Enum('', 'unknown', 'en-route', 'landed', 'started')",
-            'squawk Nullable(UInt16)',
-            "squawk_time Nullable(DateTime('UTC'))"
-        ]
-
         # Create table
+        fields = [f'{name} {data_type}' for name, data_type in self.TABLE_FIELDS.items()] 
         logger.info(f'Table "{self.TABLE_NAME}" does not exist, creating...')
         await self._database.create_table(self.TABLE_NAME, fields,
                                           'ENGINE MergeTree',
-                                          'ORDER BY (flight_icao, time)',
+                                          f'ORDER BY ({", ".join(self.TABLE_KEYS)})',
                                           'SETTINGS index_granularity=8192')
 
     async def exists(self) -> bool:
@@ -82,8 +85,13 @@ class StateTableManager(TableManager[State]):
         """
         logger.debug(f'Setting cache with {len(states)}...')
         await self._cache.set(states)
-        rows = [state.values() for state in states]
-        columns = list(states[0].model_dump().keys())
+
+        # Get columns and values
+        flattened = [flatten_model(state) for state in states]
+        rows = [list(flat.values()) for flat in flattened]
+        columns = list(flattened[0].keys())
+
+        # Insert into table
         logger.debug(f'Inserting {len(states)} states into database...')
         await self._database.insert(self.TABLE_NAME, rows, columns)
 
@@ -120,7 +128,7 @@ class StateTableManager(TableManager[State]):
         """
         states = await self.get_latest_batch()
         for state in states:
-            if state.flight_icao == callsign:
+            if state.flight.icao == callsign:
                 return state
         return None
 
@@ -140,7 +148,8 @@ class StateTableManager(TableManager[State]):
         Returns:
             list[State]: list of aircraft states in last batch
         """
-        query = LatestBatchQuery(limit, lat_min, lat_max, lon_min, lon_max)
+        query = LatestBatchQuery(limit, lat_min, lat_max, lon_min, lon_max,
+                                 self.TABLE_FIELDS.keys())
         return await self._run_query(query, self.TABLE_NAME)
 
     async def get_nearby(self, lat: float, lon: float,

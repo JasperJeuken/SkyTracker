@@ -2,9 +2,10 @@
 from datetime import datetime, timezone
 
 from skytracker.storage.table_query import TableQuery
-from skytracker.models.state import State
+from skytracker.models.state import (State, StateAircraft, StateAirline, StateAirport, StateFlight,
+                                     StateGeography, StateTransponder)
+from skytracker.models import unflatten_model
 from skytracker.storage.database_manager import DatabaseManager
-from skytracker.utils.analysis import filter_states
 from skytracker.utils.conversions import datetime_ago_from_time_string
 from skytracker.utils.geographic import (distance_between_points, normalize_longitude_bbox,
                                          shift_longitude_into_range)
@@ -18,7 +19,8 @@ class LatestBatchQuery(TableQuery[State]):
 
     def __init__(self, limit: int = 0,
                  lat_min: float | None = None, lat_max: float | None = None,
-                 lon_min: float | None = None, lon_max: float | None = None) -> None:
+                 lon_min: float | None = None, lon_max: float | None = None,
+                 fields: list[str] = None) -> None:
         """Initialize query with optional arguments
 
         Args:
@@ -27,6 +29,7 @@ class LatestBatchQuery(TableQuery[State]):
             lat_max (float, optional): maximum latitude. Defaults to None.
             lon_min (float, optional): minimum longitude. Defaults to None.
             lon_max (float, optional): maximum longitude. Defaults to None.
+            fields (list[str], optional): names of fields in flattened table. Defaults to None.
         """
         # Parse arguments
         if not isinstance(limit, int) or limit < 0:
@@ -44,6 +47,7 @@ class LatestBatchQuery(TableQuery[State]):
         self.bbox: tuple[float, float, float, float] | None = None
         if any(is_not_none):
             self.bbox = (lat_min, lat_max, lon_min, lon_max)
+        self.fields: list[str] = fields if fields is not None else []
 
     async def from_cache(self, states: list[State]) -> list[State]:
         """Filter a cached list of states using stored settings
@@ -62,8 +66,9 @@ class LatestBatchQuery(TableQuery[State]):
             wrapped_boxes = normalize_longitude_bbox(lon_min, lon_max)
             filtered = []
             for box_min, box_max in wrapped_boxes:
-                filtered.extend(state for state in states if lat_min <= state.position[0] <= lat_max 
-                                and box_min <= state.position[1] <= box_max)
+                filtered.extend(state for state in states \
+                                if lat_min <= state.geography.position[0] <= lat_max 
+                                and box_min <= state.geography.position[1] <= box_max)
             states = filtered
             logger.debug(f'Filtered to {len(states)} by bbox ({self.bbox})')
 
@@ -75,8 +80,9 @@ class LatestBatchQuery(TableQuery[State]):
         # Map states to longitude range
         if self.bbox is not None:
             for state in states:
-                longitude = shift_longitude_into_range(state.position[1], self.bbox[2], self.bbox[3])
-                state.position = (state.position[0], longitude)
+                longitude = shift_longitude_into_range(state.geography.position[1],
+                                                       self.bbox[2], self.bbox[3])
+                state.geography.position = (state.geography.position[0], longitude)
         logger.info(f'Retrieved {len(states)} matching states from cache')
         return states
 
@@ -99,8 +105,8 @@ class LatestBatchQuery(TableQuery[State]):
             wrapped_boxes = normalize_longitude_bbox(lon_min, lon_max)
             conditions = []
             for box_min, box_max in wrapped_boxes:
-                conditions.append(f'(position.1 BETWEEN {lat_min} AND {lat_max}' + \
-                                  f' AND position.2 BETWEEN {box_min} AND {box_max})')
+                conditions.append(f'(geography__position.1 BETWEEN {lat_min} AND {lat_max}' + \
+                                  f' AND geography__position.2 BETWEEN {box_min} AND {box_max})')
             query += f" AND ({' OR '.join(conditions)})"
 
         # Add query limit (if specified)
@@ -116,9 +122,9 @@ class LatestBatchQuery(TableQuery[State]):
         # Map states to longitude range
         if self.bbox is not None:
             for state in states:
-                longitude = shift_longitude_into_range(state.position[1],
+                longitude = shift_longitude_into_range(state.geography.position[1],
                                                        self.bbox[2], self.bbox[3])
-                state.position = (state.position[0], longitude)
+                state.geography.position = (state.geography.position[0], longitude)
         return states
 
     def parse_table_row(self, raw_entry: tuple) -> State:
@@ -130,8 +136,8 @@ class LatestBatchQuery(TableQuery[State]):
         Returns:
             State: corresponding State
         """
-        field_names = State.model_fields.keys()
-        return State(**dict(zip(field_names, raw_entry)))
+        unflattened = unflatten_model(dict(zip(self.fields, raw_entry)), State)
+        return State.model_validate(unflattened)
 
 
 class NearbyQuery(TableQuery[State]):
@@ -175,8 +181,8 @@ class NearbyQuery(TableQuery[State]):
         logger.debug(f'Retrieved {len(states)} from cache')
 
         # Filter radius
-        states = [state for state in states if distance_between_points(state.position[0],
-                                                                       state.position[1],
+        states = [state for state in states if distance_between_points(state.geography.position[0],
+                                                                       state.geography.position[1],
                                                                        *self.point) <= self.radius]
         logger.debug(f'Filtered to {len(states)} by radius ({self.radius} km)')
 
@@ -199,11 +205,11 @@ class NearbyQuery(TableQuery[State]):
             list[State]: selected list of states
         """
         # Create query to select latest batch from table
-        query = f'SELECT flight_icao, position, heading FROM {table} ' + \
+        query = f'SELECT flight__icao, geography__position, geography__heading FROM {table} ' + \
                 f'WHERE time=(SELECT MAX(time) FROM {table})'
 
         # Filter radius
-        query += ' AND greatCircleDistance(position.2, position.1, ' + \
+        query += ' AND greatCircleDistance(geography__position.2, geography__position.1, ' + \
                  f'{self.point[1]}, {self.point[0]}) <= {self.radius * 1e3}'
 
         # Add limit (if specified)
@@ -228,29 +234,41 @@ class NearbyQuery(TableQuery[State]):
         return State(
             time=datetime.fromtimestamp(0, tz=timezone.utc),
             data_source=1,
-            aircraft_iata='',
-            aircraft_icao='',
-            aircraft_icao24='',
-            aircraft_registration='',
-            airline_iata='',
-            airline_icao='',
-            arrival_iata='',
-            arrival_icao='',
-            departure_iata='',
-            departure_icao='',
-            flight_iata='',
-            flight_icao=raw_entry[0],
-            flight_number='',
-            position=raw_entry[1],
-            geo_altitude=None,
-            baro_altitude=None,
-            heading=raw_entry[2],
-            speed_horizontal=None,
-            speed_vertical=None,
-            is_on_ground=False,
             status=1,
-            squawk=None,
-            squawk_time=None
+            aircraft=StateAircraft(
+                iata=None,
+                icao=None,
+                icao24=None,
+                registration=None
+            ),
+            airline=StateAirline(
+                iata=None,
+                icao=None
+            ),
+            airport=StateAirport(
+                arrival_iata=None,
+                arrival_icao=None,
+                departure_iata=None,
+                departure_icao=None
+            ),
+            flight=StateFlight(
+                iata=None,
+                icao=raw_entry[0],
+                number=None
+            ),
+            geography=StateGeography(
+                position=raw_entry[1],
+                geo_altitude=None,
+                baro_altitude=None,
+                heading=raw_entry[2],
+                speed_horizontal=None,
+                speed_vertical=None,
+                is_on_ground=False
+            ),
+            transponder=StateTransponder(
+                squawk=None,
+                squawk_time=None
+            )            
         )
 
 
@@ -301,8 +319,8 @@ class TrackQuery(TableQuery[State]):
             list[State]: selected list of states
         """
         # Create query to select specific aircraft history (time descending)
-        query = f'SELECT time, flight_icao, position, baro_altitude, heading FROM {table} ' + \
-                f"WHERE flight_icao='{self.callsign}'"
+        query = 'SELECT time, flight__icao, geography__position, geography__baro_altitude, ' + \
+            f"geography__heading FROM {table} WHERE flight__icao='{self.callsign}'"
 
         # Filter by duration
         query += f" AND time >= '{self.start_timestamp}'::DateTime('UTC')"
@@ -332,27 +350,39 @@ class TrackQuery(TableQuery[State]):
         return State(
             time=raw_entry[0],
             data_source=1,
-            aircraft_iata='',
-            aircraft_icao='',
-            aircraft_icao24='',
-            aircraft_registration='',
-            airline_iata='',
-            airline_icao='',
-            arrival_iata='',
-            arrival_icao='',
-            departure_iata='',
-            departure_icao='',
-            flight_iata='',
-            flight_icao=raw_entry[1],
-            flight_number='',
-            position=raw_entry[2],
-            geo_altitude=None,
-            baro_altitude=raw_entry[3],
-            heading=raw_entry[4],
-            speed_horizontal=None,
-            speed_vertical=None,
-            is_on_ground=False,
             status=1,
-            squawk=None,
-            squawk_time=None
+            aircraft=StateAircraft(
+                iata=None,
+                icao=None,
+                icao24=None,
+                registration=None
+            ),
+            airline=StateAirline(
+                iata=None,
+                icao=None
+            ),
+            airport=StateAirport(
+                arrival_iata=None,
+                arrival_icao=None,
+                departure_iata=None,
+                departure_icao=None
+            ),
+            flight=StateFlight(
+                iata=None,
+                icao=raw_entry[1],
+                number=None
+            ),
+            geography=StateGeography(
+                position=raw_entry[2],
+                geo_altitude=None,
+                baro_altitude=raw_entry[3],
+                heading=raw_entry[4],
+                speed_horizontal=None,
+                speed_vertical=None,
+                is_on_ground=False
+            ),
+            transponder=StateTransponder(
+                squawk=None,
+                squawk_time=None
+            )            
         )

@@ -22,9 +22,9 @@ async def get_nearby(storage: Storage, lat: float, lon: float,
     """
     try:
         states = await storage['state'].get_nearby(lat, lon, radius, limit)
-        return [SimpleMapState(callsign=state.flight_icao,
-                               position=state.position,
-                               heading=state.heading) for state in states]
+        return [SimpleMapState(callsign=state.flight.icao,
+                               position=state.geography.position,
+                               heading=state.geography.heading) for state in states]
     except ValueError as err:
         logger.error(f'Request failed ({err})')
         raise HTTPException(status_code=400, detail=f'{err}') from err
@@ -44,9 +44,9 @@ async def get_track(storage: Storage, callsign: str, duration: str, limit: int) 
     """
     try:
         states = await storage['state'].get_track(callsign, duration, limit)
-        return [DetailedMapState(time=state.time, callsign=state.flight_icao,
-                                 position=state.position, heading=state.heading,
-                                 altitude=state.baro_altitude) for state in states]
+        return [DetailedMapState(time=state.time, callsign=state.flight.icao,
+                                 position=state.geography.position, heading=state.geography.heading,
+                                 altitude=state.geography.baro_altitude) for state in states]
     except ValueError as err:
         logger.error(f'Request failed ({err})')
         raise HTTPException(status_code=400, detail=f'{err}') from err
@@ -90,8 +90,8 @@ async def get_all(storage: Storage, south: float, north: float,
     """
     try:
         states = await storage['state'].get_latest_batch(limit, south, north, west, east)
-        return [SimpleMapState(callsign=state.flight_icao, position=state.position,
-                               heading=state.heading) for state in states]
+        return [SimpleMapState(callsign=state.flight.icao, position=state.geography.position,
+                               heading=state.geography.heading) for state in states]
     except ValueError as err:
         logger.error(f'Request failed ({err})')
         raise HTTPException(status_code=400, detail=f'{err}') from err

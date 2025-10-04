@@ -7,7 +7,8 @@ from pydantic import RootModel, Field, field_validator, model_validator
 
 from skytracker.models.api import APIResponse, APIType
 from skytracker.models import APIBaseModel
-from skytracker.models.state import State, StateStatus
+from skytracker.models.state import (State, StateStatus, StateAircraft, StateAirline, StateFlight,
+                                     StateGeography, StateTransponder, StateAirport)
 from skytracker.models.airport import Airport
 from skytracker.models.airline import Airline
 from skytracker.models.aircraft import Aircraft, AircraftLifecycle, AircraftIdentity, AircraftModel
@@ -245,31 +246,43 @@ class AviationEdgeFlightTrackingResponse(ListModel[AviationEdgeFlightTrackingSta
         return [State(
             time=self._time,
             data_source=APIType.AVIATION_EDGE,
-            aircraft_iata=entry.aircraft.iataCode,
-            aircraft_icao=entry.aircraft.icaoCode,
-            aircraft_icao24=entry.aircraft.icao24,
-            aircraft_registration=entry.aircraft.regNumber,
-            airline_iata=entry.airline.iataCode,
-            airline_icao=entry.airline.icaoCode,
-            arrival_iata=entry.arrival.iataCode,
-            arrival_icao=entry.arrival.icaoCode,
-            departure_iata=entry.departure.iataCode,
-            departure_icao=entry.departure.icaoCode,
-            flight_iata=entry.flight.iataNumber,
-            flight_icao=entry.flight.icaoNumber,
-            flight_number=entry.flight.number,
-            position=(entry.geography.latitude, entry.geography.longitude),
-            geo_altitude=None,
-            baro_altitude=entry.geography.altitude,
-            heading=entry.geography.direction,
-            speed_horizontal=entry.speed.horizontal / 3.6,
-            speed_vertical=entry.speed.vspeed / 3.6,
-            is_on_ground=bool(entry.speed.isGround),
             status=StateStatus.from_string(entry.status) \
                 if entry.status is not None else StateStatus.UNKNOWN,
-            squawk=entry.system.squawk if entry.system.squawk is not None and \
-                len(entry.system.squawk) else None,
-            squawk_time=datetime.fromtimestamp(entry.system.updated, tz=timezone.utc)
+            aircraft=StateAircraft(
+                iata=entry.aircraft.iataCode,
+                icao=entry.aircraft.icaoCode,
+                icao24=entry.aircraft.icao24,
+                registration=entry.aircraft.regNumber
+            ),
+            airline=StateAirline(
+                iata=entry.airline.iataCode,
+                icao=entry.airline.icaoCode
+            ),
+            airport=StateAirport(
+                arrival_iata=entry.arrival.iataCode,
+                arrival_icao=entry.arrival.icaoCode,
+                departure_iata=entry.departure.iataCode,
+                departure_icao=entry.departure.icaoCode
+            ),
+            flight=StateFlight(
+                iata=entry.flight.iataNumber,
+                icao=entry.flight.icaoNumber,
+                number=entry.flight.number
+            ),
+            geography=StateGeography(
+                position=(entry.geography.latitude, entry.geography.longitude),
+                geo_altitude=None,
+                baro_altitude=entry.geography.altitude,
+                heading=entry.geography.direction,
+                speed_horizontal=entry.speed.horizontal / 3.6,
+                speed_vertical=entry.speed.vspeed / 3.6,
+                is_on_ground=bool(entry.speed.isGround),
+            ),
+            transponder=StateTransponder(
+                squawk=entry.system.squawk \
+                    if entry.system.squawk is not None and len(entry.system.squawk) else None,
+                squawk_time=datetime.fromtimestamp(entry.system.updated, tz=timezone.utc)
+            )
         ) for entry in self.root]
 
 

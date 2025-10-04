@@ -6,6 +6,7 @@ from skytracker.storage.table_manager import TableManager
 from skytracker.storage.cache import Cache
 from skytracker.services.api.aviation_edge import AviationEdgeAPI
 from skytracker.models.aircraft import Aircraft
+from skytracker.models import flatten_model, unflatten_model
 from skytracker.utils import logger, log_and_raise
 from skytracker.utils.analysis import search_object_list
 from skytracker.settings import settings
@@ -16,6 +17,35 @@ class AircraftTableManager(TableManager[Aircraft]):
 
     TABLE_NAME = 'aircraft'
     """str: name of aircraft table"""
+    TABLE_FIELDS: dict[str, str] = {
+        'identity__icao24': 'FixedString(6)',
+        'identity__registration': 'FixedString(10)',
+        'identity__test_registration': 'Nullable(FixedString(10))',
+        'identity__owner': 'Nullable(String)',
+        'identity__airline_iata': 'Nullable(FixedString(2))',
+        'identity__airline_icao': 'Nullable(FixedString(3))',
+        'model__type_iata': 'Nullable(String)',
+        'model__type_iata_code_short': 'FixedString(3)',
+        'model__type_iata_code_long': 'FixedString(4)',
+        'model__engine_count': 'Nullable(UInt8)',
+        'model__engine_type': "Enum('JET', 'TURBOFAN', 'TURBOPROP', 'UNKNOWN')",
+        'model__model_code': 'Nullable(String)',
+        'model__line_number': 'Nullable(String)',
+        'model__serial_number': 'Nullable(String)',
+        'model__family': 'Nullable(String)',
+        'model__sub_family': 'Nullable(String)',
+        'model__series': 'Nullable(String)',
+        'model__classification': "Enum('UNKNOWN')",
+        'lifecycle__date_delivery': 'FixedString(20)',
+        'lifecycle__date_first_flight': 'FixedString(20)',
+        'lifecycle__date_registration': 'FixedString(20)',
+        'lifecycle__date_rollout': 'FixedString(20)',
+        'lifecycle__age': 'Nullable(Int16)',
+        'status': "Enum('ACTIVE', 'INACTIVE', 'UNKNOWN')",
+    }
+    """dict[str, str]: column_name - column_type pairs"""
+    TABLE_KEYS: tuple[str] = ('identity__icao24', 'identity__registration')
+    """tuple[str]: keys used in database table"""
 
     def __init__(self, database: DatabaseManager) -> None:
         """Initialize table manager by storing database manager
@@ -33,41 +63,14 @@ class AircraftTableManager(TableManager[Aircraft]):
             await self._load_from_database()
             return
 
-        # Fields for aircraft table
-        fields = [
-            'identity_icao24 FixedString(6)',
-            'identity_registration FixedString(10)',
-            'identity_test_registration Nullable(FixedString(10))',
-            'identity_owner Nullable(String)',
-            'identity_airline_iata Nullable(FixedString(2))',
-            'identity_airline_icao Nullable(FixedString(3))',
-            'model_type_iata Nullable(String)',
-            'model_type_iata_code_short FixedString(3)',
-            'model_type_iata_code_long FixedString(4)',
-            'model_engine_count Nullable(UInt8)',
-            "model_engine_type Enum('JET', 'TURBOFAN', 'TURBOPROP', 'UNKNOWN')",
-            'model_model_code Nullable(String)',
-            'model_line_number Nullable(String)',
-            'model_serial_number Nullable(String)',
-            'model_family Nullable(String)',
-            'model_sub_family Nullable(String)',
-            'model_series Nullable(String)',
-            "model_classification Enum('UNKNOWN')",
-            "lifecycle_date_delivery FixedString(20)",
-            "lifecycle_date_first_flight FixedString(20)",
-            "lifecycle_date_registration FixedString(20)",
-            "lifecycle_date_rollout FixedString(20)",
-            'lifecycle_age Nullable(Int16)',
-            "status Enum('ACTIVE', 'INACTIVE', 'UNKNOWN')",
-        ]
-
         # Create table
+        fields = [f'{name} {data_type}' for name, data_type in self.TABLE_FIELDS.items()] 
         aircraft = self._collect_aircraft()
         logger.info(f'Table "{self.TABLE_NAME}" does not exist, creating...')
         await self._cache.set(aircraft)
         await self._database.create_table(self.TABLE_NAME, fields,
                                           'ENGINE MergeTree',
-                                          'ORDER BY (identity_icao24, identity_registration)',
+                                          f'ORDER BY ({", ".join(self.TABLE_KEYS)})',
                                           'SETTINGS index_granularity=1024')
         await self._insert_aircraft(aircraft)
     
@@ -79,8 +82,13 @@ class AircraftTableManager(TableManager[Aircraft]):
         logger.info(f'Retrieved {len(rows)} aircraft from server')
 
         # Parse into aircraft list
-        field_names = Aircraft.flat_keys()
-        aircraft = [Aircraft.unflatten(dict(zip(field_names, row))) for row in rows]
+        aircraft = [unflatten_model(dict(zip(self.TABLE_FIELDS.keys(), row)),
+                                    Aircraft) for row in rows]
+        for ac in aircraft:
+            if ac.identity.icao24 == '':
+                ac.identity.icao24 = None
+            if ac.identity.registration == '':
+                ac.identity.registration = None
         await self._cache.set(aircraft)
     
     def _collect_aircraft(self) -> list[Aircraft]:
@@ -101,10 +109,18 @@ class AircraftTableManager(TableManager[Aircraft]):
             aircraft (list[Aircraft]): list of aircraft to insert
         """
         logger.debug(f'Inserting {len(aircraft)} aircraft into database...')
-        rows = [list(ac.flatten().values()) for ac in aircraft]
-        with open('var\\testrows.txt', 'w', encoding='utf-8') as file:
-            file.writelines([str(row[18]) + '\n' for row in rows])
-        columns = list(aircraft[0].flatten().keys())
+
+        # Get columns and values (set keys to empty string if None)
+        flattened = [flatten_model(ac) for ac in aircraft]
+        for flat in flattened:
+            if flat['identity__icao24'] is None:
+                flat['identity__icao24'] = ''
+            if flat['identity__registration'] is None:
+                flat['identity__registration'] = ''
+        rows = [list(flat.values()) for flat in flattened]
+        columns = list(flattened[0].keys())
+
+        # Insert into table
         logger.debug(f'Inserting {len(aircraft)} aircraft into database')
         await self._database.insert(self.TABLE_NAME, rows, columns)
     

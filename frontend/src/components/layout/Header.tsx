@@ -1,51 +1,122 @@
-import { Button } from "@/components/ui/button";
-import { Menu, Sun, Moon } from "lucide-react";
-import { cn } from "@/lib/utils"
-import { useContext } from "react";
-import { ThemeContext } from "./ThemeProvider";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAircraftMap } from "../AircraftMapProvider";
+import { ThemeToggle } from "@/components/ui/themeToggle";
+import { Link, NavLink, useLocation } from "react-router-dom";
+import { NavigationMenu, NavigationMenuContent, NavigationMenuItem,
+    NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger,
+    navigationMenuTriggerStyle } from "@/components/ui/navigation-menu";
+import { type LucideIcon, Plane, TowerControl, TicketsPlane, Search, Code } from "lucide-react";
 
 
 export function Header() {
-    const { theme, toggleTheme } = useContext(ThemeContext);
-    const { sidebarOpen, setSidebarOpen, mapStyle, setMapStyle } = useAircraftMap();
+    const location = useLocation();
+    const isHomepage = location.pathname == "/";
 
-    const onToggleSidebar = () => {
-        setSidebarOpen(!sidebarOpen);
-    };
-    
+    const searchComponents: { title: string; href: string; description: string; icon: LucideIcon}[] = [
+        {
+            title: "Aircraft",
+            href: "/search",
+            description: "Search for data about a specific aircraft",
+            icon: Plane,
+        },
+        {
+            title: "Airline",
+            href: "/search",
+            description: "Search for data about a specific airline",
+            icon: TicketsPlane,
+        },
+        {
+            title: "Airport",
+            href: "/search",
+            description: "Search for data about a specific airport",
+            icon: TowerControl,
+        },
+    ];
+
     return (
-        <header className={cn(
-            "flex items-center justify-between",
-            "px-4 py-2 border-b bg-white/80 backdrop-blur-md shadow-sm dark:bg-gray-900/80 dark:text-white")}
-        >
-            <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" onClick={onToggleSidebar} aria-label="Toggle sidebar">
-                    <Menu className="h-5 w-5" />
-                </Button>
-                <span className="text-lg font-semibold">SkyTracker</span>
+        <header className={`fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-2 border-b shadow-sm ${isHomepage ? "bg-gray-100/70 dark:bg-gray-900/70 backdrop-blur-md" : "bg-gray-100 dark:bg-gray-900"}`}>
+            <div className="flex items-center gap-8">
+                {/* Logo */}
+                <Link to="/" className="flex items-center gap-2">
+                    <img src="logo.svg" alt="Logo" className="h-8 w-8" />
+                    <span className="text-xl font-semibold">SkyTracker</span>
+                </Link>
+
+                {/* Navigation */}
+                <NavigationMenu>
+                    <NavigationMenuList>
+                        {/* Home */}
+                        <NavigationMenuItem>
+                            <NavLink to="/">
+                                <NavigationMenuLink className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-sm">
+                                    Home
+                                </NavigationMenuLink>
+                            </NavLink>
+                        </NavigationMenuItem>
+                        {/* About */}
+                        <NavigationMenuItem>
+                            <NavLink to="/about">
+                                <NavigationMenuLink className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-sm">
+                                    About
+                                </NavigationMenuLink>
+                            </NavLink>
+                        </NavigationMenuItem>
+                        {/* Search */}
+                        <NavigationMenuItem>
+                            <NavigationMenuTrigger className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-sm">Search</NavigationMenuTrigger>
+                            <NavigationMenuContent>
+                                <ul className="grid gap-2 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
+                                    <li className="row-span-3">
+                                        <NavigationMenuLink asChild>
+                                            <NavLink to="/search" className="from-muted/50 to-muted flex h-full w-full flex-col justify-end rounded-md bg-linear-to-b p-6 no-underline outline-hidden select-none focus:shadow-md">
+                                                <div className="mt-4 mb-2 text-lg font-medium flex items-center gap-2">
+                                                    <Search className="h-6 w-6" />
+                                                    Search
+                                                </div>
+                                                <p className="text-muted-foreground text-sm leading-tight">
+                                                    Search for specific data
+                                                </p>
+                                            </NavLink>
+                                        </NavigationMenuLink>
+                                    </li>
+                                    {searchComponents.map((component) => (
+                                        <ListItem key={component.title} title={component.title} href={component.href} icon={component.icon}>
+                                            {component.description}
+                                        </ListItem>
+                                    ))}
+                                </ul>
+                            </NavigationMenuContent>
+                        </NavigationMenuItem>
+                    </NavigationMenuList>
+                </NavigationMenu>
             </div>
 
-            <div className="flex gap-2">
-                <Select defaultValue={mapStyle} onValueChange={(val) => setMapStyle(val as "Default" | "Satellite" | "OpenStreetMap")}>
-                    <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Choose theme" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="Default">Default</SelectItem>
-                        <SelectItem value="Satellite">Satellite</SelectItem>
-                        <SelectItem value="OpenStreetMap">OpenStreetmap</SelectItem>
-                    </SelectContent>
-                </Select>
-                <Button variant="outline" size="icon" aria-label="Toggle theme" onClick={toggleTheme}>
-                    {theme === "light" ? (
-                        <Moon className="h-4 w-4" />
-                    ) : (
-                        <Sun className="h-4 w-4" />
-                    )}
-                </Button>
+            {/* Icon buttons */}
+            <div className="flex items-center gap-2">
+                <Link to="https://github.com/JasperJeuken/SkyTracker">
+                    <button className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 hover:dark:bg-gray-700">
+                        <Code className="h-4 w-4" />
+                    </button>
+                </Link>
+                <ThemeToggle />
             </div>
         </header>
+    );
+}
+
+
+function ListItem({ title, children, href, icon: Icon, ...props }: React.ComponentPropsWithoutRef<"li"> & { href: string, icon: LucideIcon }) {
+    return (
+        <li {...props}>
+            <NavigationMenuLink asChild>
+                <NavLink to={href}>
+                    <div className="text-sm leading-none font-medium tracking-tight flex items-center gap-2">
+                        <Icon className="h-5 w-5" />
+                        {title}
+                    </div>
+                    <p className="text-muted-foreground line-clamp-2 text-sm leading-snug">
+                        {children}
+                    </p>
+                </NavLink>
+            </NavigationMenuLink>
+        </li>
     );
 }

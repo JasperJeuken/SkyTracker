@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { ImageOff } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
-import { type AircraftImage } from "@/types/api";
+import { type AircraftPhoto } from "@/types/api";
 
-export function AircraftDetailImages({ images }: { images: AircraftImage[] }) {
+export function AircraftDetailImages({ images }: { images: AircraftPhoto[] }) {
     const has_images = images && images.length > 0
     const [api, setApi] = useState<CarouselApi>();
     const [current, setCurrent] = useState(0);

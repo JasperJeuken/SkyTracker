@@ -20,26 +20,28 @@ export function useAircraftMap() {
 
 export function AircraftMapProvider({ children }: { children: ReactNode }) {
     const [selectedAircraft, setSelectedAircraft] = useState<string | null>(() => {
-        return (localStorage.getItem("selectedAircraft") || null);
+        // return (localStorage.getItem("selectedAircraft") || null);
+        return null;
     });
     const [mapStyle, setMapStyle] = useState<"Default" | "Satellite" | "OpenStreetMap">(() => {
         return (localStorage.getItem("mapStyle") as "Default" | "Satellite" | "OpenStreetMap") || "OpenStreetMap";
     });
     const [sidebarOpen, setSidebarOpen] = useState(() => {
-        return localStorage.getItem('sidebarOpen') ? localStorage.getItem('sidebarOpen') == "true" : false;
+        // return localStorage.getItem('sidebarOpen') ? localStorage.getItem('sidebarOpen') == "true" : false;
+        return false;
     });
 
     useEffect(() => {
         localStorage.setItem("mapStyle", mapStyle);
     }, [mapStyle])
 
-    useEffect(() => {
-        localStorage.setItem('sidebarOpen', sidebarOpen ? "true" : "false");
-    }, [sidebarOpen])
+    // useEffect(() => {
+    //     localStorage.setItem('sidebarOpen', sidebarOpen ? "true" : "false");
+    // }, [sidebarOpen])
 
-    useEffect(() => {
-        localStorage.setItem('selectedAircraft', selectedAircraft ?? "");
-    }, [selectedAircraft])
+    // useEffect(() => {
+    //     localStorage.setItem('selectedAircraft', selectedAircraft ?? "");
+    // }, [selectedAircraft])
 
     return (
         <AircraftMapContext.Provider value={{

@@ -2,11 +2,11 @@ import "leaflet/dist/leaflet.css";
 import { useEffect, useState, useContext, useRef } from "react";
 import { MapContainer, TileLayer, useMap, Pane } from "react-leaflet";
 import L, { type LatLngExpression } from "leaflet";
-import { getLatestBatch } from "../services/api";
+import { getAreaStates } from "@/services/api/state.js";
 import { AircraftMarkerLayer } from "./AircraftMarkerLayer.js";
 import { ThemeContext } from "./layout/ThemeProvider.js";
 import { useAircraftMap } from "./AircraftMapProvider.js";
-import { type AircraftSimpleState } from "@/types/api.js";
+import { type SimpleMapState } from "@/types/api.js";
 import { AircraftTrackLayer } from "./AircraftTrackLayer.js"
 
 
@@ -42,7 +42,7 @@ const TILE_ATTRIBUTIONS = {
 }
 
 // Aircraft state fetch helper
-function AircraftFetcher({ setAircraft }: { setAircraft: (a: AircraftSimpleState[]) => void }) {
+function AircraftFetcher({ setAircraft }: { setAircraft: (a: SimpleMapState[]) => void }) {
     const map = useMap();
     const initialFetchDone = useRef(false);
 
@@ -55,11 +55,11 @@ function AircraftFetcher({ setAircraft }: { setAircraft: (a: AircraftSimpleState
             const sw = bounds.getSouthWest();
 
             try {
-                const data = await getLatestBatch({
-                    lat_min: sw.lat,
-                    lat_max: ne.lat,
-                    lon_min: sw.lng,
-                    lon_max: ne.lng
+                const data = await getAreaStates({
+                    south: sw.lat,
+                    north: ne.lat,
+                    west: sw.lng,
+                    east: ne.lng
                 });
                 setAircraft(data);
             } catch (err) {
@@ -108,7 +108,7 @@ function MapViewSaver() {
 
 export function AircraftMap() {
     const { mapStyle, selectedAircraft } = useAircraftMap();
-    const [aircraft, setAircraft] = useState<AircraftSimpleState[]>([]);
+    const [aircraft, setAircraft] = useState<SimpleMapState[]>([]);
     const { theme } = useContext(ThemeContext);
     const tileLayerRef = useRef<L.TileLayer | null>(null);
     

@@ -6,21 +6,22 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "./ui/scroll-area";
 import { SeparatorWithText } from "./ui/separatorWithText";
-import { getAircraftDetails, getAircraftImages } from "../services/api";
+import { getLatestState } from "@/services/api/state";
+import { getAircraftPhotos } from "@/services/api/aircraft";
 import { useEffect, useState } from "react";
 import ReactCountryFlag from "react-country-flag";
 import { AircraftDetailItem } from "./AircraftDetailItem";
 import { AircraftDetailBadge } from "./AircraftDetailBadge";
 import { AircraftDetailImages } from "./AircraftDetailImages";
-import { type AircraftDetails, type AircraftImage } from "@/types/api";
+import { type State, type AircraftPhoto } from "@/types/api";
 
 
 
 export function AircraftDetails({ showImages = false }: { showImages?: boolean }) {
     const { selectedAircraft, setSelectedAircraft, setSidebarOpen } = useAircraftMap();
-    const [details, setDetails] = useState<AircraftDetails | null>(null);
+    const [details, setDetails] = useState<State | null>(null);
     const [loadingDetails, setLoadingDetails] = useState(false);
-    const [images, setImages] = useState<AircraftImage[] | null>(null);
+    const [images, setImages] = useState<AircraftPhoto[] | null>(null);
     const [loadingImages, setLoadingImages] = useState(false);
 
     const onDeselect = () => {
@@ -39,7 +40,7 @@ export function AircraftDetails({ showImages = false }: { showImages?: boolean }
         if (showImages) setLoadingImages(true);
         
         // Load aircraft details
-        getAircraftDetails(selectedAircraft)
+        getLatestState(selectedAircraft)
             .then(data => setDetails(data))
             .catch(() => {
                 setDetails(null);
@@ -47,7 +48,7 @@ export function AircraftDetails({ showImages = false }: { showImages?: boolean }
             .finally(() => setLoadingDetails(false));
         
         // Load aircraft images
-        if (showImages) getAircraftImages(selectedAircraft)
+        if (showImages) getAircraftPhotos(selectedAircraft)
             .then((data) => setImages(data))
             .catch(() => {
                 setImages(null);
@@ -59,7 +60,7 @@ export function AircraftDetails({ showImages = false }: { showImages?: boolean }
         <Card className="backdrop-blur-md shadow-lg flex flex-col h-full">
             <CardHeader>
                 <CardTitle>Selected aircraft</CardTitle>
-                <CardDescription>Callsign: {details?.flight_icao || ""}</CardDescription>
+                <CardDescription>Callsign: {details?.flight.icao || ""}</CardDescription>
                 <CardAction>
                     <Button variant="ghost" size="icon" onClick={onDeselect} aria-label="Deselect">
                         <X className="h-4 w-4" />
@@ -72,7 +73,7 @@ export function AircraftDetails({ showImages = false }: { showImages?: boolean }
                 ) : details ? (
                     <>
                         {/* Badges */}
-                        <AircraftDetailBadge icon={details.is_on_ground ? <TowerControl className="h-4 w-4" /> : <Plane className="h-4 w-4" />} text={details.is_on_ground ? "On ground" : "In flight"} />
+                        <AircraftDetailBadge icon={details.geography.is_on_ground ? <TowerControl className="h-4 w-4" /> : <Plane className="h-4 w-4" />} text={details.geography.is_on_ground ? "On ground" : "In flight"} />
                         {/* <AircraftDetailBadge icon={<SatelliteDish className="h-4 w-4" />} text={details.last_position_source} /> */}
                         {/* {details.last_spi && <AircraftDetailBadge icon={<Star className="h-4 w-4" />} text="Special" />} */}
                         {/* <AircraftDetailBadge icon={<ReactCountryFlag svg countryCode={details.origin_country} />} text={details.origin_country} /> */}
@@ -92,21 +93,21 @@ export function AircraftDetails({ showImages = false }: { showImages?: boolean }
                         {/* Information cards */}
                         <ScrollArea className="flex-1 w-full overflow-y-auto mt-4">
                             <div className="aircraft-details-grid mt-4">
-                                <AircraftDetailItem label="Departure" icon={PlaneTakeoff} value={details.departure_iata || "N/A"} />
-                                <AircraftDetailItem label="Arrival" icon={PlaneLanding} value={details.arrival_iata || "N/A"} />
+                                <AircraftDetailItem label="Departure" icon={PlaneTakeoff} value={details.airport.departure_iata || "N/A"} />
+                                <AircraftDetailItem label="Arrival" icon={PlaneLanding} value={details.airport.arrival_iata || "N/A"} />
                                 <SeparatorWithText className="aircraft-details-full" text="Aircraft" />
-                                <AircraftDetailItem label="Type" icon={Tag} value={details.aircraft_icao || "N/A"} />
-                                <AircraftDetailItem label="24-bit address" icon={Tag} value={details.aircraft_icao24 || "N/A"} />
-                                <AircraftDetailItem full label="Registration" icon={Tag} value={details.aircraft_registration || "N/A"} />
+                                <AircraftDetailItem label="Type" icon={Tag} value={details.aircraft.iata || "N/A"} />
+                                <AircraftDetailItem label="24-bit address" icon={Tag} value={details.aircraft.icao24 || "N/A"} />
+                                <AircraftDetailItem full label="Registration" icon={Tag} value={details.aircraft.registration || "N/A"} />
                                 <SeparatorWithText className="aircraft-details-full" text="Location" />
-                                <AircraftDetailItem label="Latitude" icon={GitCommitVertical} value={details.position[0] ? Math.round(details.position[0] * 1000) / 1000 : "N/A"} unit="deg" />
-                                <AircraftDetailItem label="Longitude" icon={GitCommitHorizontal} value={details.position[1] ? Math.round(details.position[1] * 1000) / 1000 : "N/A"} unit="deg" />
-                                <AircraftDetailItem label="Baro. altitude" icon={ArrowUpFromLine} value={details.baro_altitude ? Math.round(details.baro_altitude) : "N/A"} unit="m" />
-                                <AircraftDetailItem label="Heading" icon={(props) => (<CircleArrowOutUpLeft {...props} style={{ transform: `rotate(${details.heading ? details.heading + 45 : 45}deg)` }} />)} value={details.heading ? Math.round(details.heading) : "N/A"} unit="deg" />
+                                <AircraftDetailItem label="Latitude" icon={GitCommitVertical} value={details.geography.position[0] ? Math.round(details.geography.position[0] * 1000) / 1000 : "N/A"} unit="deg" />
+                                <AircraftDetailItem label="Longitude" icon={GitCommitHorizontal} value={details.geography.position[1] ? Math.round(details.geography.position[1] * 1000) / 1000 : "N/A"} unit="deg" />
+                                <AircraftDetailItem label="Baro. altitude" icon={ArrowUpFromLine} value={details.geography.baro_altitude ? Math.round(details.geography.baro_altitude) : "N/A"} unit="m" />
+                                <AircraftDetailItem label="Heading" icon={(props) => (<CircleArrowOutUpLeft {...props} style={{ transform: `rotate(${details.geography.heading ? details.geography.heading + 45 : 45}deg)` }} />)} value={details.geography.heading ? Math.round(details.geography.heading) : "N/A"} unit="deg" />
                                 <SeparatorWithText className="aircraft-details-full" text="Speed" />
-                                <AircraftDetailItem label="Velocity" icon={Gauge} value={details.speed_horizontal ? Math.round(details.speed_horizontal* 1.94384449 * 10) / 10: "N/A"} unit="kts" />
-                                <AircraftDetailItem label="Vertical speed" icon={MoveVertical} value={details.speed_vertical ? Math.round(details.speed_vertical * 10) / 10 : "N/A"} unit="m/s" />
-                                <AircraftDetailItem full label="Squawk" icon={RadioTower} value={details.squawk || "N/A"} />
+                                <AircraftDetailItem label="Velocity" icon={Gauge} value={details.geography.speed_horizontal ? Math.round(details.geography.speed_horizontal* 1.94384449 * 10) / 10: "N/A"} unit="kts" />
+                                <AircraftDetailItem label="Vertical speed" icon={MoveVertical} value={details.geography.speed_vertical ? Math.round(details.geography.speed_vertical * 10) / 10 : "N/A"} unit="m/s" />
+                                <AircraftDetailItem full label="Squawk" icon={RadioTower} value={details.transponder.squawk || "N/A"} />
                             </div>
                         </ScrollArea>
                     </>

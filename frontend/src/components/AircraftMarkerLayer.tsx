@@ -3,7 +3,7 @@ import { useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import MarkersCanvas from "../lib/leaflet-markers-canvas";
 import { useAircraftMap } from "./AircraftMapProvider.js";
-import { type AircraftSimpleState } from "@/types/api.js";
+import { type SimpleMapState } from "@/types/api.js";
 
 
 declare module "leaflet" {
@@ -13,7 +13,7 @@ declare module "leaflet" {
 }
 
 
-export function AircraftMarkerLayer({ aircraft, pane, selectedAircraft }: { aircraft: AircraftSimpleState[], pane: string, selectedAircraft: string | null }) {
+export function AircraftMarkerLayer({ aircraft, pane, selectedAircraft }: { aircraft: SimpleMapState[], pane: string, selectedAircraft: string | null }) {
     // Get map instance and create reference for marker canvas
     const { setSelectedAircraft, setSidebarOpen } = useAircraftMap();
     const markerClickedRef = useRef(false);

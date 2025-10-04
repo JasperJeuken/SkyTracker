@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Polyline } from "react-leaflet";
-import { type AircraftDetailedState } from "@/types/api";
-import { getAircraftTrack } from "../services/api";
+import { type DetailedMapState } from "@/types/api";
+import { getHistoryStates } from "@/services/api/state";
 
 
 function altitudeToColor(altitude: number | null): string {
@@ -15,7 +15,7 @@ function altitudeToColor(altitude: number | null): string {
 
 
 export function AircraftTrackLayer({ callsign, pane }: { callsign: string | null, pane: string }) {
-    const [track, setTrack] = useState<AircraftDetailedState[]>([]);
+    const [track, setTrack] = useState<DetailedMapState[]>([]);
     const [visibleSegments, setVisibleSegments] = useState<number>(0);
 
     // Update track if selected aircraft changes
@@ -25,7 +25,7 @@ export function AircraftTrackLayer({ callsign, pane }: { callsign: string | null
             setVisibleSegments(0);
             return;
         }
-        getAircraftTrack(callsign)
+        getHistoryStates(callsign)
             .then(track =>{
                 setTrack(track);
                 setVisibleSegments(0);

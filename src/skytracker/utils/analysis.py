@@ -2,6 +2,7 @@
 from typing import Any, TypeVar
 from urllib.parse import quote, unquote
 from fnmatch import fnmatch
+from enum import Enum, IntEnum
 
 from skytracker.models.state import State
 
@@ -93,7 +94,7 @@ def search_object_list(objects: list[ObjectType], fields: dict[str, Any],
                 match = False
                 break
             if isinstance(value, str):
-                if not fnmatch(obj_value, value.replace('.', '*').replace('_', '?')):
+                if not fnmatch(str(obj_value), value.replace('.', '*').replace('_', '?')):
                     match = False
                     break
             elif obj_value != value:

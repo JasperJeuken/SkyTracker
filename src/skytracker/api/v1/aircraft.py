@@ -102,10 +102,10 @@ async def api_search_aircraft(
                                          example=4),
         engine_type: Literal['JET', 'UNKNOWN', 'TURBOPROP', 'TURBOFAN'] | None = 
                              Query(None,
-                                 title='Type of engines',
-                                 description='Type of engines on aircraft ' + \
-                                             '(JET, TURBOPROP, TURBOFAN, or UNKNOWN)',
-                                 example='JET'),
+                                   title='Type of engines',
+                                   description='Type of engines on aircraft ' + \
+                                               '(JET, TURBOPROP, TURBOFAN, or UNKNOWN)',
+                                   example='JET'),
         limit: int = Query(0, ge=0,
                            title='Limit',
                            description='Maximum number of aircraft to retrieve (0=all)',

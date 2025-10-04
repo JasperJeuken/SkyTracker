@@ -21,6 +21,10 @@ class Regex:
     """str: regular expression for aircraft model code"""
     aircraft_model_wildcard: str = r'^[A-Z0-9\_\.]{1,4}$'
     """str: regular expression for aircraft model code supporting wildcards"""
+    transponder_squawk: str = r'^[0-9]{1,4}$'
+    """str: regular expression for transponder squawk code"""
+    transponder_squawk_wildcard: str = r'^[0-9\_\.]{1,4}$'
+    """str: regular expression for transponder squawk code supporting wildcards"""
     code_2: str = r'^[A-Z0-9]{2}$'
     """str: regular expression for 2-character alphanumeric code"""
     code_2_wildcard: str = r'^[A-Z0-9\_\.]{1,2}$'

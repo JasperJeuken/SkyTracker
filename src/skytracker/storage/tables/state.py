@@ -1,5 +1,5 @@
 """Aircraft state table manager"""
-from typing import Optional
+from typing import Any
 
 from skytracker.storage.database_manager import DatabaseManager
 from skytracker.storage.table_manager import TableManager
@@ -8,6 +8,7 @@ from skytracker.models.state import State
 from skytracker.models import flatten_model
 from skytracker.storage.queries.state import NearbyQuery, LatestBatchQuery, TrackQuery
 from skytracker.utils import logger
+from skytracker.utils.analysis import search_object_list
 
 
 class StateTableManager(TableManager[State]):
@@ -117,14 +118,14 @@ class StateTableManager(TableManager[State]):
         query = TrackQuery(callsign, duration, limit)
         return await self._run_query(query, self.TABLE_NAME)
 
-    async def get_last_state(self, callsign: str) -> Optional[State]:
+    async def get_last_state(self, callsign: str) -> State | None:
         """Get the last known state of a specific aircraft
 
         Args:
             callsign (str): aircraft callsign (ICAO)
 
         Returns:
-            Optional[State]: last known aircraft state, or None if not found
+            State | None: last known aircraft state, or None if not found
         """
         states = await self.get_latest_batch()
         for state in states:
@@ -133,8 +134,8 @@ class StateTableManager(TableManager[State]):
         return None
 
     async def get_latest_batch(self, limit: int = 0,
-                               lat_min: Optional[float] = None, lat_max: Optional[float] = None,
-                               lon_min: Optional[float] = None, lon_max: Optional[float] = None) \
+                               lat_min: float | None = None, lat_max: float | None = None,
+                               lon_min: float | None = None, lon_max: float | None = None) \
                                 -> list[State]:
         """Get the latest batch of states in the table
 
@@ -177,3 +178,16 @@ class StateTableManager(TableManager[State]):
         query = f'SELECT COUNT(*) FROM {self.TABLE_NAME}'
         logger.debug(f'Requesting row count with "{query}"')
         return await self._database.sql_query(query)[0][0]
+    
+    async def search_state(self, fields: dict[str, Any], limit: int = 0) -> list[State]:
+        """Search for states matching specific information
+
+        Args:
+            fields (dict[str, Any]): field-value pairs to search for
+            limit (int, optional): maximum number of states to retrieve (0=all). Defaults to 0.
+
+        Returns:
+            list[State]: list of states matching fields
+        """
+        batch = await self.get_latest_batch()
+        return search_object_list(batch, fields, limit)

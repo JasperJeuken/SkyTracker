@@ -5,8 +5,6 @@ import HomePage from "@/pages/Home/HomePage";
 import AboutPage from "@/pages/About/AboutPage";
 import SearchPage from "@/pages/Search/SearchPage";
 import NotFound from "@/pages/NotFound"
-// import { Layout } from './components/layout/Layout';
-// import { ThemeProvider } from './components/layout/ThemeProvider';
 
 
 function App() {

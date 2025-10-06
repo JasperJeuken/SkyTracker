@@ -1,13 +1,14 @@
 import "leaflet/dist/leaflet.css";
-import { useEffect, useState, useContext, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { MapContainer, TileLayer, useMap, Pane } from "react-leaflet";
 import L, { type LatLngExpression } from "leaflet";
 import { getAreaStates } from "@/services/api/state.js";
-import { AircraftMarkerLayer } from "./AircraftMarkerLayer.js";
-import { ThemeContext } from "./layout/ThemeProvider.js";
-import { useAircraftMap } from "./AircraftMapProvider.js";
+import { AircraftMarkerLayer } from "@/components/visuals/aircraftMap/AircraftMarkerLayer.js";
 import { type SimpleMapState } from "@/types/api.js";
-import { AircraftTrackLayer } from "./AircraftTrackLayer.js"
+// import { AircraftTrackLayer } from "./AircraftTrackLayer.js"
+import { useMapStore } from "@/store/mapStore.js";
+import { useTheme } from "next-themes";
+import { AircraftMapSettings } from "@/components/visuals/aircraftMap/AircraftMapSettings.js";
 
 
 
@@ -107,9 +108,12 @@ function MapViewSaver() {
 }
 
 export function AircraftMap() {
-    const { mapStyle, selectedAircraft } = useAircraftMap();
+    // Get variables
+    const mapStyle = useMapStore((state) => state.mapStyle);
+    const selectedAircraft = useMapStore((state) => state.selectedAircraft);
     const [aircraft, setAircraft] = useState<SimpleMapState[]>([]);
-    const { theme } = useContext(ThemeContext);
+    const { resolvedTheme } = useTheme();
+    const currentTheme = (resolvedTheme === undefined ? "dark" : resolvedTheme) as "light" | "dark";
     const tileLayerRef = useRef<L.TileLayer | null>(null);
     
     // Restore center/zoom from local storage
@@ -129,21 +133,24 @@ export function AircraftMap() {
     });
 
     return (
-        <MapContainer className="h-full w-full z-0" center={initialView.center as LatLngExpression} zoom={initialView.zoom} minZoom={3} zoomControl={false}>
-            <TileLayer
-                ref={tileLayerRef}
-                url={MAP_TILES[mapStyle][theme]}
-                attribution={TILE_ATTRIBUTIONS[mapStyle][theme]}
-                key={`${mapStyle}-${theme}`}
-            />
-            <AircraftFetcher setAircraft={setAircraft} />
-            <MapViewSaver />
-            <Pane name="aircraft-track" style={{ zIndex: 500 }}>
-                <AircraftTrackLayer callsign={selectedAircraft} pane="aircraft-track" />
-            </Pane>
-            <Pane name="aircraft-markers" style={{ zIndex: 900 }}>
-                <AircraftMarkerLayer aircraft={aircraft} pane="aircraft-markers" selectedAircraft={selectedAircraft} />
-            </Pane>
-        </MapContainer>
+        <div className="absolute inset-0 z-0">
+            <AircraftMapSettings />
+            <MapContainer className="h-full w-full" center={initialView.center as LatLngExpression} zoom={initialView.zoom} minZoom={3} zoomControl={false}>
+                <TileLayer
+                    ref={tileLayerRef}
+                    url={MAP_TILES[mapStyle][currentTheme]}
+                    attribution={TILE_ATTRIBUTIONS[mapStyle][currentTheme]}
+                    key={`${mapStyle}-${currentTheme}`}
+                />
+                <AircraftFetcher setAircraft={setAircraft} />
+                <MapViewSaver />
+                {/* <Pane name="aircraft-track" style={{ zIndex: 500 }}>
+                    <AircraftTrackLayer callsign={selectedAircraft} pane="aircraft-track" />
+                </Pane> */}
+                <Pane name="aircraft-markers" style={{ zIndex: 900 }}>
+                    <AircraftMarkerLayer aircraft={aircraft} pane="aircraft-markers" selectedAircraft={selectedAircraft} />
+                </Pane>
+            </MapContainer>
+        </div>
     );
 }

@@ -1,10 +1,13 @@
 import { motion, AnimatePresence } from "motion/react";
-import { AircraftDetails } from "../AircraftDetails";
-import { useAircraftMap } from "../AircraftMapProvider";
+import { useMapStore } from "@/store/mapStore";
+import { useAppStore } from "@/store/appStore";
+// import { AircraftDetails } from "../AircraftDetails";
 
 
 export function Sidebar() {
-    const { selectedAircraft, sidebarOpen } = useAircraftMap();
+    const sidebarOpen = useMapStore((state) => state.sidebarOpen);
+    const selectedAircraft = useMapStore((state) => state.selectedAircraft)
+    const headerHeight = useAppStore((state) => state.headerHeight);
     return (
         <AnimatePresence>
             {sidebarOpen && (
@@ -14,8 +17,11 @@ export function Sidebar() {
                     exit={{ x: -260, opacity: 0 }}
                     transition={{ type: "tween", duration: 0.3 }}
                     className="absolute top-0 left-0 h-full w-100 border-r bg-white/70 backdrop-blur-md shadow-lg z-50 p-4 dark:bg-gray-800/80 flex flex-col"
+                    style={{ marginTop: headerHeight - 1, padding: 0 }}
                 >
-                    {selectedAircraft && <AircraftDetails showImages />}
+                    {selectedAircraft && (
+                        <p>{selectedAircraft}</p>
+                    )}
                 </motion.aside>
             )}
         </AnimatePresence>

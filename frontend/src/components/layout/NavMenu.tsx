@@ -26,6 +26,7 @@ export function NavMenu() {
             icon: TowerControl,
         },
     ];
+    const navLinkClass = "bg-gray-300/40 hover:bg-gray-100/40 dark:bg-gray-800/40 dark:hover:bg-gray-700/40 rounded-sm font-medium";
 
     return (
         <NavigationMenu>
@@ -33,7 +34,7 @@ export function NavMenu() {
                 {/* Home */}
                 <NavigationMenuItem>
                 <NavigationMenuLink asChild>
-                    <NavLink to="/" className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-sm font-medium">
+                    <NavLink to="/" className={navLinkClass}>
                         Home
                     </NavLink>
                 </NavigationMenuLink>
@@ -41,14 +42,14 @@ export function NavMenu() {
                 {/* About */}
                 <NavigationMenuItem>
                     <NavigationMenuLink asChild>
-                        <NavLink to="/about" className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-sm font-medium">
+                        <NavLink to="/about" className={navLinkClass}>
                                 About
                         </NavLink>
                     </NavigationMenuLink>
                 </NavigationMenuItem>
                 {/* Search */}
                 <NavigationMenuItem>
-                    <NavigationMenuTrigger className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-sm">Search</NavigationMenuTrigger>
+                    <NavigationMenuTrigger className={navLinkClass}>Search</NavigationMenuTrigger>
                     <NavigationMenuContent>
                         <ul className="grid gap-2 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
                             <li className="row-span-3">

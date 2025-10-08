@@ -5,7 +5,8 @@ from typing import List, Annotated, Any, Literal, get_args
 from pydantic import BaseModel, Field, model_validator
 
 from skytracker.models.api import APIResponse, APIType
-from skytracker.models.state import State, StateStatus
+from skytracker.models.state import (State, StateStatus, StateAircraft, StateAirline, StateAirport,
+                                     StateDataSource, StateFlight, StateGeography, StateTransponder)
 
 
 StateFields = Literal['icao24', 'callsign', 'origin_country', 'time_position', 'last_contact',
@@ -94,30 +95,44 @@ class OpenSkyNetworkResponse(BaseModel, APIResponse):
         """
         return [State(
             time=datetime.fromtimestamp(self.time, tz=timezone.utc),
-            data_source=APIType.OPENSKY_NETWORK,
-            aircraft_iata='',
-            aircraft_icao='',
-            aircraft_icao24=entry.icao24,
-            aircraft_registration=entry.callsign if entry.callsign is not None else '',
-            airline_iata='',
-            airline_icao='',
-            arrival_iata='',
-            arrival_icao='',
-            departure_iata='',
-            departure_icao='',
-            flight_iata='',
-            flight_icao='',
-            flight_number='',
-            position=(entry.latitude, entry.longitude) if entry.latitude is not None \
-                and entry.longitude is not None else (0.0, 0.0),
-            geo_altitude=entry.geo_altitude,
-            baro_altitude=entry.baro_altitude,
-            heading=entry.true_track,
-            speed_horizontal=entry.velocity,
-            speed_vertical=entry.vertical_rate,
-            is_on_ground=entry.on_ground,
-            status=StateStatus.EMPTY,
-            squawk=entry.squawk,
-            squawk_time=datetime.fromtimestamp(entry.last_contact, tz=timezone.utc) \
-                if entry.last_contact is not None else None
+            data_source=StateDataSource.OPENSKY_NETWORK,
+            status=StateStatus.UNKNOWN,
+            aircraft=StateAircraft(
+                iata=None,
+                icao=None,
+                icao24=entry.icao24.upper(),
+                registration=entry.callsign.strip() \
+                    if entry.callsign is not None and len(entry.callsign.strip()) else None
+            ),
+            airline=StateAirline(
+                iata=None,
+                icao=None
+            ),
+            airport=StateAirport(
+                arrival_iata=None,
+                arrival_icao=None,
+                departure_iata=None,
+                departure_icao=None
+            ),
+            flight=StateFlight(
+                iata=None,
+                icao=entry.callsign.strip() \
+                    if entry.callsign is not None and len(entry.callsign.strip()) else '',
+                number=None
+            ),
+            geography=StateGeography(
+                position=(entry.latitude, entry.longitude) \
+                    if entry.latitude is not None and entry.longitude is not None else (0., 0.),
+                geo_altitude=entry.geo_altitude,
+                baro_altitude=entry.baro_altitude,
+                heading=entry.true_track,
+                speed_horizontal=entry.velocity,
+                speed_vertical=entry.vertical_rate,
+                is_on_ground=entry.on_ground
+            ),
+            transponder=StateTransponder(
+                squawk=entry.squawk,
+                squawk_time=datetime.fromtimestamp(entry.last_contact) \
+                    if entry.last_contact is not None else None
+            )
         ) for entry in self.states]

@@ -5,7 +5,7 @@ import L, { type LatLngExpression } from "leaflet";
 import { getAreaStates } from "@/services/api/state.js";
 import { AircraftMarkerLayer } from "@/components/visuals/aircraftMap/AircraftMarkerLayer.js";
 import { type SimpleMapState } from "@/types/api.js";
-// import { AircraftTrackLayer } from "./AircraftTrackLayer.js"
+import { AircraftTrackLayer } from "@/components/visuals/aircraftMap/AircraftTrackLayer.js"
 import { useMapStore } from "@/store/mapStore.js";
 import { useTheme } from "next-themes";
 import { AircraftMapSettings } from "@/components/visuals/aircraftMap/AircraftMapSettings.js";
@@ -144,9 +144,9 @@ export function AircraftMap() {
                 />
                 <AircraftFetcher setAircraft={setAircraft} />
                 <MapViewSaver />
-                {/* <Pane name="aircraft-track" style={{ zIndex: 500 }}>
+                <Pane name="aircraft-track" style={{ zIndex: 500 }}>
                     <AircraftTrackLayer callsign={selectedAircraft} pane="aircraft-track" />
-                </Pane> */}
+                </Pane>
                 <Pane name="aircraft-markers" style={{ zIndex: 900 }}>
                     <AircraftMarkerLayer aircraft={aircraft} pane="aircraft-markers" selectedAircraft={selectedAircraft} />
                 </Pane>

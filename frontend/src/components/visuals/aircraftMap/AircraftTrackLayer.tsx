@@ -32,7 +32,6 @@ export function AircraftTrackLayer({ callsign, pane }: { callsign: string | null
             })
             .catch(() => setTrack([]));
     }, [callsign]);
-    // if (!track || track.length < 2) return null;
 
     // Parse line segments from state history
     const segments = useMemo(() => {

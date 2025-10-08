@@ -3,7 +3,7 @@ import argparse
 import asyncio
 
 from skytracker.storage import Storage
-from skytracker.services.opensky import opensky_service
+from skytracker.services.api.api import collection_service
 from skytracker.settings import settings
 
 
@@ -24,15 +24,16 @@ async def main() -> None:
     args = parser.parse_args()
     if 0 < args.repeat < 15:
         raise ValueError('Repeat value must be at least 15 seconds, or 0 for one call...')
-    
+
     # Open database connection
     storage = Storage(settings.clickhouse_user, settings.clickhouse_password,
                       settings.clickhouse_host, settings.clickhouse_port,
                       settings.clickhouse_database, settings.clickhouse_secure)
+    await storage.connect()
     
     # Run service until interrupted or completion
     try:
-        await opensky_service(storage, args.repeat)
+        await collection_service(storage, repeat=args.repeat)
     except KeyboardInterrupt:
         pass
 

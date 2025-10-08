@@ -53,7 +53,7 @@ export async function getLatestState(callsign: string): Promise<State> {
     return data;
 }
 
-export async function getHistoryStates(callsign: string, params: StateHistoryParams = {}): Promise<DetailedMapState[]> {
+export async function getHistoryStates(callsign: string, params: StateHistoryParams = { }): Promise<DetailedMapState[]> {
     const { data } = await apiClient.get<DetailedMapState[]>(`/state/${callsign}/history`, { params });
     return data;
 }

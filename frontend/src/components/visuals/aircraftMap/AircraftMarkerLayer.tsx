@@ -5,11 +5,12 @@ import MarkersCanvas from "@/lib/leaflet-markers-canvas";
 // import { useAircraftMap } from "./AircraftMapProvider.js";
 import { type SimpleMapState } from "@/types/api.js";
 import { useMapStore } from "@/store/mapStore";
+import { getAircraftSVG } from "@/components/visuals/aircraftMap/AircraftMarkers";
 
 
 declare module "leaflet" {
     interface IconOptions {
-        rotationAngle?: number;
+        rotationAngle: number | null;
     }
 }
 
@@ -18,7 +19,6 @@ export function AircraftMarkerLayer({ aircraft, pane, selectedAircraft }: { airc
     // Get map instance and create reference for marker canvas
     const setSelectedAircraft = useMapStore((state) => state.setSelectedAircraft);
     const setSidebarOpen = useMapStore((state) => state.setSidebarOpen);
-    // const { setSelectedAircraft, setSidebarOpen } = useAircraftMap();
     const markerClickedRef = useRef(false);
     const map = useMapEvents({
         click: () => {
@@ -59,7 +59,7 @@ export function AircraftMarkerLayer({ aircraft, pane, selectedAircraft }: { airc
         // Create marker for each aircraft (rotated with heading)
         const markers = aircraft.map(a => {
             const color = a.callsign == selectedAircraft ? "#0757a7" : "#1E90FF";
-            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path fill="${color}" d="M21 15.984l-8.016-4.5V3.516a1.5 1.5 0 0 0-3 0v7.969L2.016 15.984V18l8.016-2.484V21l-2.016 1.5V24l3.516-0.984L15 22.5v-1.5L13.031 21v-5.484L21 18v-2.016z"/></svg>`;
+            const svg = getAircraftSVG(a.model ?? "", color);
             const iconUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
             const icon = L.icon({
                 iconUrl,

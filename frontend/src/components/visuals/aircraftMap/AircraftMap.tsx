@@ -43,7 +43,7 @@ const TILE_ATTRIBUTIONS = {
 }
 
 // Aircraft state fetch helper
-function AircraftFetcher({ setAircraft }: { setAircraft: (a: SimpleMapState[]) => void }) {
+function MapStateFetcher({ setAircraft }: { setAircraft: (a: SimpleMapState[]) => void }) {
     const map = useMap();
     const initialFetchDone = useRef(false);
 
@@ -142,7 +142,7 @@ export function AircraftMap() {
                     attribution={TILE_ATTRIBUTIONS[mapStyle][currentTheme]}
                     key={`${mapStyle}-${currentTheme}`}
                 />
-                <AircraftFetcher setAircraft={setAircraft} />
+                <MapStateFetcher setAircraft={setAircraft} />
                 <MapViewSaver />
                 <Pane name="aircraft-track" style={{ zIndex: 500 }}>
                     <AircraftTrackLayer callsign={selectedAircraft} pane="aircraft-track" />

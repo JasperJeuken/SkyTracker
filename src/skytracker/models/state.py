@@ -232,6 +232,8 @@ class SimpleMapState(BaseModel):
     """tuple[float, float]: latitude/longitude position [deg]"""
     heading: Annotated[float | None, Field(description='Heading [deg]')]
     """float | None: heading [deg]"""
+    model: Annotated[str | None, Field(description='Aircraft model IATA code')]
+    """str | None: aircraft model IATA code"""
 
 
 class DetailedMapState(BaseModel):

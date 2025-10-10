@@ -27,7 +27,8 @@ async def get_nearby(storage: Storage, lat: float, lon: float,
         states = await storage['state'].get_nearby(lat, lon, radius, limit)
         return [SimpleMapState(callsign=state.flight.icao,
                                position=state.geography.position,
-                               heading=state.geography.heading) for state in states]
+                               heading=state.geography.heading,
+                               model=state.aircraft.iata) for state in states]
     except ValueError as err:
         log_and_raise_http(f'{err}', 400, err)
 
@@ -91,7 +92,8 @@ async def get_area(storage: Storage, south: float, north: float,
     try:
         states = await storage['state'].get_latest_batch(limit, south, north, west, east)
         return [SimpleMapState(callsign=state.flight.icao, position=state.geography.position,
-                               heading=state.geography.heading) for state in states]
+                               heading=state.geography.heading, model=state.aircraft.iata) \
+                                for state in states]
     except ValueError as err:
         log_and_raise_http(f'{err}', 400, err)
 

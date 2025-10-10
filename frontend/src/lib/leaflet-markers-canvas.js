@@ -1,9 +1,7 @@
 /**
- * leaflet-markers-canvas (copied/converted for ESM)
+ * leaflet-markers-canvas
  * Original: https://github.com/francoisromain/leaflet-markers-canvas
- * Author: francoisromain (give attribution per original license)
- *
- * Converted to ESM so it can be imported directly by Vite/ESM apps.
+ * Author: francoisromain
  */
 
 import L from "leaflet";

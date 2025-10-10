@@ -42,6 +42,7 @@ export type SimpleMapState = {
     callsign: string,
     position: [number, number],
     heading: number | null,
+    model: string | null,
 }
 
 export type DetailedMapState = {

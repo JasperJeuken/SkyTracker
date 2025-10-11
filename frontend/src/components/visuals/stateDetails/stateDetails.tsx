@@ -2,7 +2,7 @@ import { type State } from "@/types/api";
 import { getLatestState } from "@/services/api/state";
 import { useEffect, useState } from "react";
 import { useMapStore } from "@/store/mapStore";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+// import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SmallCard } from "@/components/ui/small-card";
 
@@ -45,6 +45,8 @@ export function StateDetails() {
                     <p>More test</p>
                 </div>
                 <SmallCard text="hello" description="more text here..." />
+                <p>{details?.aircraft.iata}</p>
+                <p>{loading && "bruh"}</p>
                 {/* <Card className="w-full">
                     <CardHeader>
                         <CardTitle>{loading  && selectedAircraft}</CardTitle>

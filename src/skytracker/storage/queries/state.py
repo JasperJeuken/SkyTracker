@@ -1,9 +1,11 @@
 """State table queries"""
 from datetime import datetime, timezone
 
+import numpy as np
+
 from skytracker.storage.table_query import TableQuery
 from skytracker.models.state import (State, StateAircraft, StateAirline, StateAirport, StateFlight,
-                                     StateGeography, StateTransponder)
+                                     StateGeography, StateTransponder, SimpleMapState)
 from skytracker.models import unflatten_model
 from skytracker.storage.database_manager import DatabaseManager
 from skytracker.utils.conversions import datetime_ago_from_time_string
@@ -66,7 +68,7 @@ class LatestBatchQuery(TableQuery[State]):
             wrapped_boxes = normalize_longitude_bbox(lon_min, lon_max)
             filtered = []
             for box_min, box_max in wrapped_boxes:
-                filtered.extend(state for state in states \
+                filtered.extend(state.model_copy(deep=True) for state in states \
                                 if lat_min <= state.geography.position[0] <= lat_max 
                                 and box_min <= state.geography.position[1] <= box_max)
             states = filtered
@@ -140,6 +142,139 @@ class LatestBatchQuery(TableQuery[State]):
         return State.model_validate(unflattened)
 
 
+class LatestBatchMapQuery(TableQuery[SimpleMapState]):
+    """Query to select the latest aircraft simple map states (with optional bounding box)"""
+
+    allows_cache = True
+    fields = ['flight.icao', 'geography.position', 'geography.heading', 'aircraft.icao',
+              'geography.baro_altitude']
+
+    def __init__(self, limit: int = 0,
+                 lat_min: float | None = None, lat_max: float | None = None,
+                 lon_min: float | None = None, lon_max: float | None = None) -> None:
+        """Initialize query with optional arguments
+
+        Args:
+            limit (int, optional): maximum number of states to get (0=all). Defaults to 0.
+            lat_min (float, optional): minimum latitude. Defaults to None.
+            lat_max (float, optional): maximum latitude. Defaults to None.
+            lon_min (float, optional): minimum longitude. Defaults to None.
+            lon_max (float, optional): maximum longitude. Defaults to None.
+        """
+        # Parse arguments
+        if not isinstance(limit, int) or limit < 0:
+            log_and_raise(ValueError, f'Query limit not an integer >= 0 ({limit})')
+        is_not_none = [val is not None for val in (lat_min, lat_max, lon_min, lon_max)]
+        if any(is_not_none) and not all(is_not_none):
+            log_and_raise(ValueError, 'Not all bounding box values are specified')
+        if any(is_not_none):
+            if not all(isinstance(val, (int, float)) for val in (lat_min, lat_max,
+                                                                 lon_min, lon_max)):
+                log_and_raise(ValueError, 'Not all bounding box values are numeric')
+
+        # Store values
+        self.limit: int = limit
+        self.bbox: tuple[float, float, float, float] | None = None
+        if any(is_not_none):
+            self.bbox = (lat_min, lat_max, lon_min, lon_max)
+
+    async def from_cache(self, states: list[State]) -> list[SimpleMapState]:
+        """Filter a cached list of states using stored settings
+
+        Args:
+            states (list[State]): cached list of states
+
+        Returns:
+            list[SimpleMapState]: filtered list of simple map states
+        """
+        logger.debug(f'Retrieved {len(states)} from cache')
+
+        # Filter bounding box if specified
+        map_states = []
+        if self.bbox is not None:
+            lat_min, lat_max, lon_min, lon_max = self.bbox
+            wrapped_boxes = normalize_longitude_bbox(lon_min, lon_max)
+            for state in states:
+                for box_min, box_max in wrapped_boxes:
+                    lat, lon = state.geography.position
+                    if lat_min <= lat <= lat_max and box_min <= lon <= box_max:
+                        lon = shift_longitude_into_range(lon, lon_min, lon_max)
+                        map_states.append(SimpleMapState(callsign=state.flight.icao,
+                                                         position=(lat, lon),
+                                                         heading=state.geography.heading,
+                                                         model=state.aircraft.icao,
+                                                         altitude=state.geography.baro_altitude))
+            logger.debug(f'Filtered to {len(map_states)} by bbox ({self.bbox})')
+        else:
+            map_states = [SimpleMapState(callsign=state.flight.icao,
+                                         position=state.geography.position,
+                                         heading=state.geography.heading,
+                                         model=state.aircraft.icao,
+                                         altitude=state.geography.baro_altitude) \
+                                            for state in states]
+
+        # Return states (limit if specified)
+        if self.limit > 0:
+            map_states = map_states[:self.limit]
+            logger.debug(f'Filtered to {len(map_states)} by limit ({self.limit})')
+        logger.info(f'Retrieved {len(map_states)} matching states from cache')
+        return map_states
+
+    async def from_server(self, table: str, db: DatabaseManager) -> list[SimpleMapState]:
+        """Query a list of states from server database
+
+        Args:
+            table (str): name of database table
+            db (DatabaseManager): database manager instance
+
+        Returns:
+            list[SimpleMapState]: selected list of simple map states
+        """
+        # Create query to select latest batch from table
+        query = 'SELECT flight__icao, geography__position, geography__heading, aircraft__icao, ' + \
+            f'geography__baro_altitude FROM {table} WHERE time=(SELECT MAX(time) FROM {table})'
+
+        # Filter bounding box (normalize longitude to allow for map wrapping)
+        if self.bbox is not None:
+            lat_min, lat_max, lon_min, lon_max = self.bbox
+            wrapped_boxes = normalize_longitude_bbox(lon_min, lon_max)
+            conditions = []
+            for box_min, box_max in wrapped_boxes:
+                conditions.append(f'(geography__position.1 BETWEEN {lat_min} AND {lat_max}' + \
+                                  f' AND geography__position.2 BETWEEN {box_min} AND {box_max})')
+            query += f" AND ({' OR '.join(conditions)})"
+
+        # Add query limit (if specified)
+        if self.limit > 0:
+            query += f' LIMIT {self.limit}'
+
+        # Get states with query
+        logger.debug(f'Querying server with "{query}"...')
+        rows = await db.sql_query(query)
+        logger.info(f'Retrieved {len(rows)} matching states from server')
+        states = [self.parse_table_row(row) for row in rows]
+
+        # Map states to longitude range
+        if self.bbox is not None:
+            for state in states:
+                longitude = shift_longitude_into_range(state.position[1],
+                                                       self.bbox[2], self.bbox[3])
+                state.position = (state.position[0], longitude)
+        return states
+
+    def parse_table_row(self, raw_entry: tuple) -> SimpleMapState:
+        """Parse raw table data into a simple map state
+
+        Args:
+            raw_entry (tuple): raw table data
+
+        Returns:
+            SimpleMapState: corresponding simple map state
+        """
+        unflattened = unflatten_model(dict(zip(self.fields, raw_entry)), SimpleMapState)
+        return SimpleMapState.model_validate(unflattened)
+
+
 class NearbyQuery(TableQuery[State]):
     """Query to select aircraft within a radius from a specified point"""
 
@@ -205,8 +340,9 @@ class NearbyQuery(TableQuery[State]):
             list[State]: selected list of states
         """
         # Create query to select latest batch from table
-        query = f'SELECT flight__icao, geography__position, geography__heading FROM {table} ' + \
-                f'WHERE time=(SELECT MAX(time) FROM {table})'
+        query = 'SELECT flight__icao, geography__position, geography__heading, ' + \
+            f'aircraft__icao, geography__baro_altitude FROM {table} ' + \
+            f'WHERE time=(SELECT MAX(time) FROM {table})'
 
         # Filter radius
         query += ' AND greatCircleDistance(geography__position.2, geography__position.1, ' + \
@@ -237,7 +373,7 @@ class NearbyQuery(TableQuery[State]):
             status=1,
             aircraft=StateAircraft(
                 iata=None,
-                icao=None,
+                icao=raw_entry[3],
                 icao24=None,
                 registration=None
             ),
@@ -259,7 +395,7 @@ class NearbyQuery(TableQuery[State]):
             geography=StateGeography(
                 position=raw_entry[1],
                 geo_altitude=None,
-                baro_altitude=None,
+                baro_altitude=raw_entry[4],
                 heading=raw_entry[2],
                 speed_horizontal=None,
                 speed_vertical=None,

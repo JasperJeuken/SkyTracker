@@ -43,6 +43,7 @@ export type SimpleMapState = {
     position: [number, number],
     heading: number | null,
     model: string | null,
+    altitude: number | null,
 }
 
 export type DetailedMapState = {

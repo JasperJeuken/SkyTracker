@@ -4,9 +4,10 @@ from typing import Any
 from skytracker.storage.database_manager import DatabaseManager
 from skytracker.storage.table_manager import TableManager
 from skytracker.storage.cache import Cache
-from skytracker.models.state import State
+from skytracker.models.state import State, SimpleMapState
 from skytracker.models import flatten_model
-from skytracker.storage.queries.state import NearbyQuery, LatestBatchQuery, TrackQuery
+from skytracker.storage.queries.state import (NearbyQuery, LatestBatchQuery, TrackQuery,
+                                              LatestBatchMapQuery)
 from skytracker.utils import logger
 from skytracker.utils.analysis import search_object_list
 
@@ -151,6 +152,25 @@ class StateTableManager(TableManager[State]):
         """
         query = LatestBatchQuery(limit, lat_min, lat_max, lon_min, lon_max,
                                  self.TABLE_FIELDS.keys())
+        return await self._run_query(query, self.TABLE_NAME)
+    
+    async def get_latest_batch_map(self, limit: int = 0,
+                               lat_min: float | None = None, lat_max: float | None = None,
+                               lon_min: float | None = None, lon_max: float | None = None) \
+                               -> list[SimpleMapState]:
+        """Get the latest batch of states in the table as simple map states
+
+        Args:
+            limit (int, optional):  maximum number of states to get (0=all). Defaults to 0 (all).
+            lat_min (float, optional): minimum latitude
+            lat_max (float, optional): maximmum latitude
+            lon_min (float, optional): minimum longitude
+            lon_max (float, optional): maximum longitude
+
+        Returns:
+            list[SimpleMapState]: list of simple map states in last batch
+        """
+        query = LatestBatchMapQuery(limit, lat_min, lat_max, lon_min, lon_max)
         return await self._run_query(query, self.TABLE_NAME)
 
     async def get_nearby(self, lat: float, lon: float,

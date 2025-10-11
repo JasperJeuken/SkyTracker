@@ -1255,13 +1255,18 @@ const typeDesignatorIcons: { [key: string]: [string, number] } = {
     'AT4': ['twin_large', 1],
     '143': ['b707', 0.68],
     'BE4W': ['jet_swept', 0.92],
+    'IL76': ['airliner', 0.90],
+    'D28': ['twin_small', 1],
+    'AJ27': ['jet_swept', 0.97],
+    'C295': ['twin_large', 1],
+    'C919': ['airliner', 0.90],
 };
 
 
 const aircraftSVGcache = new Map<string, string>();
 
 
-export function getAircraftSVG(modelCode: string | null, color = "#000000"): string {
+export function getAircraftSVG(modelCode: string | null, color: string = "#000000", strokeColor: string = "#000000"): string {
     modelCode = modelCode == "0000" ? null : modelCode;
     const code = modelCode ? modelCode.toUpperCase() : "";
 
@@ -1288,7 +1293,7 @@ export function getAircraftSVG(modelCode: string | null, color = "#000000"): str
     } else if (path) {
         const paths = Array.isArray(path) ? path: [path];
         const pathElements = paths
-            .map(p=> `<path d="${p}" fill="${color}" stroke="${color}" stroke-width="${strokeScale * scale}" />`)
+            .map(p=> `<path d="${p}" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeScale * scale / 2}" />`)
             .join("");
         svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${w * scale}" height="${h * scale}" viewBox="${viewBox || `0 0 ${w} ${h}`}">${pathElements}</svg>`;
     } else {

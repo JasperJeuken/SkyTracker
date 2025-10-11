@@ -284,6 +284,8 @@ const markersCanvas = {
     const { x, y } = this._map.getSize();
     this._canvas.width = x;
     this._canvas.height = y;
+    this._canvas.style.width = `${x}px`;
+    this._canvas.style.height = `${y}px`;
 
     this._redraw();
   },

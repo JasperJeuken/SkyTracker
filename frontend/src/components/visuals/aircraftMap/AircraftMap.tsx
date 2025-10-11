@@ -2,7 +2,6 @@ import "leaflet/dist/leaflet.css";
 import { useEffect, useState, useRef } from "react";
 import { MapContainer, TileLayer, useMap, Pane } from "react-leaflet";
 import L, { type LatLngExpression } from "leaflet";
-import { getAreaStates } from "@/services/api/state.js";
 import { AircraftMarkerLayer } from "@/components/visuals/aircraftMap/AircraftMarkerLayer.js";
 import { type SimpleMapState } from "@/types/api.js";
 import { AircraftTrackLayer } from "@/components/visuals/aircraftMap/AircraftTrackLayer.js"
@@ -45,40 +44,44 @@ const TILE_ATTRIBUTIONS = {
 // Aircraft state fetch helper
 function MapStateFetcher({ setAircraft }: { setAircraft: (a: SimpleMapState[]) => void }) {
     const map = useMap();
-    const initialFetchDone = useRef(false);
+    const workerRef = useRef<Worker | null>(null);
 
     useEffect(() => {
         if (!map) return;
-        
-        const fetchAircraft = async () => {
-            const bounds = map.getBounds();
-            const ne = bounds.getNorthEast();
-            const sw = bounds.getSouthWest();
+        if (!workerRef.current) {
+            workerRef.current = new Worker(new URL('@/workers/aircraftMapWorker.js', import.meta.url), { type: "module" });
+        }
+        const worker = workerRef.current;
 
-            try {
-                const data = await getAreaStates({
-                    south: sw.lat,
-                    north: ne.lat,
-                    west: sw.lng,
-                    east: ne.lng
-                });
-                setAircraft(data);
-            } catch (err) {
-                console.error(err)
-            }
+        const fetchAircraft = () => {
+            const bounds = map.getBounds();
+            worker.postMessage({
+                bounds: {
+                    south: bounds.getSouthWest().lat,
+                    west: bounds.getSouthWest().lng,
+                    north: bounds.getNorthEast().lat,
+                    east: bounds.getNorthEast().lng,
+                }
+            });
         };
 
-        if (!initialFetchDone.current) {
-            initialFetchDone.current = true;
-            fetchAircraft();
-        }
-
-        map.on("moveend", fetchAircraft);
+        // Setup handlers
+        const handleMessage = (e: MessageEvent) => {
+            if (e.data.data) setAircraft(e.data.data);
+            if (e.data.error) console.error(e.data.error);
+        };
+        worker.addEventListener('message', handleMessage);
+        fetchAircraft();
+        map.on('moveend', fetchAircraft);
         const interval = setInterval(fetchAircraft, 10000);
-        
+
+        // Remove handlers
         return () => {
-            map.off("moveend", fetchAircraft);
+            map.off('moveend', fetchAircraft);
             clearInterval(interval);
+            worker.removeEventListener('message', handleMessage);
+            worker.terminate();
+            workerRef.current = null;
         };
     }, [map, setAircraft]);
 
@@ -135,20 +138,23 @@ export function AircraftMap() {
     return (
         <div className="absolute inset-0 z-0">
             <AircraftMapSettings />
-            <MapContainer className="h-full w-full" center={initialView.center as LatLngExpression} zoom={initialView.zoom} minZoom={3} zoomControl={false}>
+            <MapContainer className="h-full w-full" center={initialView.center as LatLngExpression} zoom={initialView.zoom} minZoom={3.5} zoomControl={false}>
+                <MapStateFetcher setAircraft={setAircraft} />
+                <MapViewSaver />
                 <TileLayer
                     ref={tileLayerRef}
                     url={MAP_TILES[mapStyle][currentTheme]}
                     attribution={TILE_ATTRIBUTIONS[mapStyle][currentTheme]}
                     key={`${mapStyle}-${currentTheme}`}
                 />
-                <MapStateFetcher setAircraft={setAircraft} />
-                <MapViewSaver />
                 <Pane name="aircraft-track" style={{ zIndex: 500 }}>
                     <AircraftTrackLayer callsign={selectedAircraft} pane="aircraft-track" />
                 </Pane>
+                <Pane name="aircraft-shadows" style={{ zIndex: 700 }}>
+                    <AircraftMarkerLayer aircraft={aircraft} selectedAircraft={selectedAircraft} pane="aircraft-shadows" color="#2d2e3027" altitudeOffset />
+                </Pane>
                 <Pane name="aircraft-markers" style={{ zIndex: 900 }}>
-                    <AircraftMarkerLayer aircraft={aircraft} pane="aircraft-markers" selectedAircraft={selectedAircraft} />
+                    <AircraftMarkerLayer aircraft={aircraft} selectedAircraft={selectedAircraft} pane="aircraft-markers" color="#1E90FF" selectedColor="#0757a7" strokeColor="#081623ff" selectable popup />
                 </Pane>
             </MapContainer>
         </div>

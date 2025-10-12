@@ -11,17 +11,17 @@ apiClient.interceptors.response.use(
     (response) => response,
     (error: AxiosError) => {
         if (error.response) {
-            console.error("API error:", {
-                status: error.response.status,
-                message: error.response.statusText,
-                data: error.response.data,
-            });
+            // console.error("API error:", {
+            //     status: error.response.status,
+            //     message: error.response.statusText,
+            //     data: error.response.data,
+            // });
             throw new Error(`API request failed (${error.response.status}): ${error.response.statusText}`);
         } else if (error.request) {
-            console.error("No response from server:", error.message);
+            // console.error("No response from server:", error.message);
             throw new Error("No response from server");
         } else {
-            console.error("Request error:", error.message);
+            // console.error("Request error:", error.message);
             throw new Error(`Request error: ${error.message}`)
         }
     }

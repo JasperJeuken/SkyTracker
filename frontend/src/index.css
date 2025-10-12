@@ -74,6 +74,10 @@
   --color-sidebar-border: var(--sidebar-border);
 
   --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-skytracker-light: oklch(0.9195 0.0404 163.86);
+
+  --color-skytracker-dark: oklch(0.3705 0.0665 160.03);
 }
 
 :root {

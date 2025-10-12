@@ -6,14 +6,12 @@ import { useMapStore } from "@/store/mapStore";
 import { useEffect, useState } from "react";
 import { type State, type Aircraft, type Airport, type Airline, type AircraftPhoto } from "@/types/api";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AircraftImages } from "./AircraftImages";
-import { SmallCard } from "@/components/ui/card-small";
-import { ValueCard } from "@/components/ui/card-value";
-import { AirportCard } from "./AircraftAirports";
-import { Hash, Plane } from "lucide-react";
+import { MapDetailsAirport } from "./MapDetailsAirport";
+import { MapDetailsImages } from "./MapDetailsImages";
+import { MapDetailsHeader } from "./MapDetailsHeader";
 
 
-function useAircraftDetails(callsign: string | null) {
+function useMapDetails(callsign: string | null) {
     // Data states
     const [stateData, setStateData] = useState<State | null>(null);
     const [aircraftData, setAircraftData] = useState<Aircraft | null>(null);
@@ -74,6 +72,7 @@ function useAircraftDetails(callsign: string | null) {
                     })()
                     : (async () => {
                         setError((e) => ({ ...e, aircraft: "No aircraft registration" }));
+                        setLoading((v) => ({ ...v, aircraft: false}));
                     })();
 
                 // Fetch airline data (parallel)
@@ -92,6 +91,7 @@ function useAircraftDetails(callsign: string | null) {
                     })()
                     : (async () => {
                         setError((e) => ({ ...e, airline: "No airline ICAO code" }));
+                        setLoading((v) => ({ ...v, airline: false}));
                     })();
 
                 // Fetch photos data (parallel)
@@ -110,6 +110,7 @@ function useAircraftDetails(callsign: string | null) {
                     })()
                     : (async () => {
                         setError((e) => ({ ...e, photos: "No aircraft registration" }));
+                        setLoading((v) => ({ ...v, photos: false}));
                     })();
 
                 // Fetch airport data (parallel)
@@ -130,11 +131,12 @@ function useAircraftDetails(callsign: string | null) {
                             setAirportData({ departure: null, arrival: null });
                             setError((e) => ({ ...e, airport: "Airport not found" }));
                         } finally {
-                            setLoading((v) => ({ ...v, airport: false}));
+                            setLoading((v) => ({ ...v, airport: false }));
                         }
                     })()
                     : (async () => {
                         setError((e) => ({ ...e, airport: "No airport IATA code" }));
+                        setLoading((v) => ({ ...v, airport: false }));
                     })();
                 
                 await Promise.all([aircraftPromise, airlinePromise, photosPromise, airportPromise]);
@@ -160,20 +162,15 @@ function useAircraftDetails(callsign: string | null) {
 }
 
 
-export function AircraftDetails() {
+export function MapDetails() {
     const selectedAircraft = useMapStore((state) => state.selectedAircraft);
-    const { stateData, aircraftData, airlineData, photosData, airportData, loading, error } = useAircraftDetails(selectedAircraft);
+    const { stateData, photosData, airportData, loading, error } = useMapDetails(selectedAircraft);
 
     return (
         <ScrollArea className="flex-1 overflow-y-auto p-3">
-            <div className="flex items-center gap-1.5 mb-3">
-                <SmallCard text={selectedAircraft ?? ""} tooltip="Callsign" className="h-10 !px-4 font-bold text-lg" variant="accent"/>
-                {stateData?.flight.number && <SmallCard text={stateData?.flight.number ?? ""} tooltip="Flight number" className="h-10" icon={Hash} />}
-                {stateData?.aircraft.icao && <SmallCard text={stateData?.aircraft.icao ?? ""} tooltip="Aircraft type" className="h-10" icon={Plane} />}
-                
-            </div>
-            <AircraftImages data={photosData} error={error.photos} className="mb-3" />
-            <AirportCard data={stateData} className="mb-3" />
+            <MapDetailsHeader stateData={stateData} loading={loading['state']} error={error['state']} className="mb-3" />
+            <MapDetailsImages photosData={photosData} error={error.photos} className="mb-3" />
+            <MapDetailsAirport data={{state: stateData, airport: airportData}} loading={{state: loading['state'], airport: loading['airport']}} error={{state: error['state'], airport: error['airport']}} className="mb-3" />
         </ScrollArea>
     );
 }

@@ -110,6 +110,15 @@ function MapViewSaver() {
     return null;
 }
 
+function MapRefSetter() {
+    const setMapRef = useMapStore((state) => state.setMapRef);
+    const map = useMap();
+    useEffect(() => {
+        setMapRef(map);
+    }, [map, setMapRef]);
+    return null;
+}
+
 export function AircraftMap() {
     // Get variables
     const mapStyle = useMapStore((state) => state.mapStyle);
@@ -141,6 +150,7 @@ export function AircraftMap() {
             <MapContainer className="h-full w-full" center={initialView.center as LatLngExpression} zoom={initialView.zoom} minZoom={3.5} zoomControl={false}>
                 <MapStateFetcher setAircraft={setAircraft} />
                 <MapViewSaver />
+                <MapRefSetter />
                 <TileLayer
                     ref={tileLayerRef}
                     url={MAP_TILES[mapStyle][currentTheme]}

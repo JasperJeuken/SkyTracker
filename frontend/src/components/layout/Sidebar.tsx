@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useMapStore } from "@/store/mapStore";
 import { useAppStore } from "@/store/appStore";
-import { AircraftDetails } from "@/components/visuals/aircraftDetails/AircraftDetails";
+import { MapDetails } from "@/components/visuals/mapDetails/MapDetails";
 
 
 export function Sidebar() {
@@ -20,7 +20,7 @@ export function Sidebar() {
                     style={{ marginTop: headerHeight - 1, padding: 0 }}
                 >
                     {selectedAircraft && (
-                        <AircraftDetails />
+                        <MapDetails />
                     )}
                 </motion.aside>
             )}

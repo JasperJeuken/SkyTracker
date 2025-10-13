@@ -1,0 +1,64 @@
+.aircraft-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto auto;
+  gap: 0.5rem;
+}
+
+.aircraft-details-full {
+  grid-column: 1 / span 2;
+}
+
+.aircraft-details-item {
+  border-radius: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.aircraft-details-label {
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+}
+
+.aircraft-details-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.aircraft-details-unit {
+  font-size: 0.75rem;
+  margin-left: 0.25rem;
+}
+
+.leaflet-popup {
+  translate: 0px -5px;
+  outline-color: transparent !important;
+}
+
+.leaflet-popup-close-button {
+  display: none !important;
+  border: none;
+}
+
+.leaflet-popup-tip-container {
+  display: none !important;
+}
+
+.leaflet-popup-content-wrapper {
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.leaflet-popup-content {
+  width: auto !important;
+  margin: 0 !important;
+  border: none;
+}
+
+.leaflet-popup-pane {
+  z-index: 1000 !important;
+}

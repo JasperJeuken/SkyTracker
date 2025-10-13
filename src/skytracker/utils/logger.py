@@ -5,6 +5,8 @@ import sys
 import os
 from pathlib import Path
 
+from fastapi import HTTPException
+
 
 LOG_FORMAT: str = '%(asctime)s [%(levelname)s] %(relativepath)s:%(funcName)s() - %(message)s'
 
@@ -80,17 +82,31 @@ def setup_logger(name: Optional[str] = None, level: int = logging.DEBUG,
 logger: logging.Logger = setup_logger('skytracker')
 
 
-def log_and_raise(exc_type: type[Exception], message: str,
-                  cause: Optional[Exception] = None) -> None:
+def log_and_raise(exc_type: type[Exception], message: str, cause: Exception | None = None) -> None:
     """Log an exception message and raise the corresponding exception
 
     Args:
         exc_type (type[Exception]): type of exception to raise
         message (str): message to raise exception with
-        cause (Exception, optional): exception which caused this exception. Defaults to None.
+        cause (Exception | None, optional): exception which caused this exception. Defaults to None.
 
     Raises:
         exc_type: raised exception with specified message, from cause (if specified)
     """
     logger.error(message)
     raise exc_type(message) from cause
+
+
+def log_and_raise_http(message: str, status_code: int, cause: Exception | None = None) -> None:
+    """Log an exception message and raise a HTTPException
+
+    Args:
+        message (str): message to raise exception with
+        status_code (int): HTML status code to raise exception with
+        cause (Exception | None, optional): exception which caused this exception. Defaults to None.
+    
+    Raises:
+        HTTPException: raised exception with status code and message, from cause (if specified)
+    """
+    logger.error(message)
+    raise HTTPException(status_code=status_code, detail=message) from cause

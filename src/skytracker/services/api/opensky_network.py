@@ -1,20 +1,21 @@
-"""OpenSky API interface"""
-import json
-import time
-import asyncio
+"""OpenSky Network API interface"""
 from typing import Optional, Union, Literal
 from datetime import datetime
 
 import requests
+from pydantic import ValidationError
 
 from skytracker.models.state import State
-from skytracker.storage import Storage
+from skytracker.models.api import API
+from skytracker.models.api.opensky_network import OpenSkyNetworkResponse
 from skytracker.utils import logger, log_and_raise
-from skytracker.settings import settings
 
 
-class OpenskyAPI:
+class OpenskyNetworkAPI(API):
     """OpenSky API object"""
+
+    RATE_LIMIT: int = 10
+    """int: rate limit in seconds"""
 
     def __init__(self, client_id: str, client_secret: str) -> None:
         """Initialize API by getting access token
@@ -75,11 +76,12 @@ class OpenskyAPI:
         """Update the internal API access token"""
         self._access_token = self._get_access_token()
 
-    def _get_json(self, endpoint: str) -> dict:
+    def _get_json(self, endpoint: str, timeout: int = 10) -> dict:
         """Get JSON data from an API endpoint
 
         Args:
             endpoint (str): endpoint to get
+            timeout (int, optional): request timeout in seconds. Defaults to 10 seconds.
 
         Raises:
             TimeoutError: if request times out
@@ -89,7 +91,7 @@ class OpenskyAPI:
             dict: received JSON data
         """
         # Check rate limiting
-        if (datetime.now() - self._last_request).seconds < 10:
+        if (datetime.now() - self._last_request).seconds < self.RATE_LIMIT:
             log_and_raise(ValueError, 'Too many OpenSky requests (wait at least 10 seconds)')
 
         # Check if access token should be updated
@@ -105,7 +107,7 @@ class OpenskyAPI:
         # Perform request
         try:
             logger.debug(f'Requesting OpenSky data ({url})...')
-            response = requests.get(url, headers=headers, timeout=10)
+            response = requests.get(url, headers=headers, timeout=timeout)
             response.raise_for_status()
         except requests.Timeout as exc:
             log_and_raise(TimeoutError, 'Could not get OpenSky data (timeout)', exc)
@@ -177,42 +179,12 @@ class OpenskyAPI:
             endpoint += '?' + '&'.join(arguments)
         logger.debug(f'Requesting OpenSky states from "{endpoint}"...')
         data = self._get_json(endpoint)
-        if 'states' not in data or 'time' not in data:
-            log_and_raise(ValueError, f'Expected OpenSky data not present ({data.keys()})')
 
-        # Parse to state list
-        logger.debug(f'Received {len(data['states'])} OpenSky states (time={data['time']}).')
-        return [State.from_raw([data['time']] + state + [0]) for state in data['states']]
-
-
-async def opensky_service(storage: Storage, repeat: int = 90) -> None:
-    """Service which periodically collects aircraft states and writes it to the state table
-
-    Args:
-        storage (Storage): database storage instance
-        repeat (int, optional): period with which to collect states [sec]. Defaults to 90 sec.
-    """
-    logger.debug('Starting OpenSky service...')
-
-    # Start OpenSky API
-    api = OpenskyAPI(settings.opensky_client_id, settings.opensky_client_secret)
-
-    # Start acquisition loop
-    running = True
-    while running:
-        start_time = time.time()
-
-        # Try to collect states and write to database
+        # Parse data
         try:
-            states = api.get_states()
-            await storage['state'].insert_states(states)
-            logger.info(f'Inserted {len(states)} OpenSky states into database.')
-
-        # Catch any exceptions
-        except Exception as exc:
-            logger.error(f'OpenSky collection error occurred: "{exc}"')
-
-        # Repeat
-        finally:
-            elapsed_time = time.time() - start_time
-            await asyncio.sleep(max(0, repeat - elapsed_time))
+            response = OpenSkyNetworkResponse.model_validate(data)
+        except ValidationError as err:
+            log_and_raise(ValueError,
+                          f'Expected OpenSky Network data not present ({data.keys()})', err)
+        logger.debug(f'Received {len(response.states)} OpenSky Network states.')
+        return response.to_states()

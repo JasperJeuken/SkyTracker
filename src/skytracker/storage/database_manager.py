@@ -3,6 +3,7 @@ from typing import Any, Sequence, Literal
 from asyncio import Lock
 
 import clickhouse_connect
+from clickhouse_connect.datatypes.format import set_read_format
 from clickhouse_connect.driver.asyncclient import AsyncClient
 
 from skytracker.utils import logger, log_and_raise
@@ -112,6 +113,7 @@ class DatabaseManager:
         logger.info('Connecting ClickHouse manager ' + \
                     f'({self.client_settings["host"]}:{self.client_settings["port"]})...')
         self.client = await clickhouse_connect.get_async_client(**self.client_settings)
+        set_read_format('FixedString', 'string')
         await self.set_connected()
         logger.info('Connected ClickHouse manager')
 
@@ -197,11 +199,12 @@ class DatabaseManager:
         logger.info(f'Inserting {len(rows)} rows into "{name}"...')
         await self.client.insert(name, rows, column_names)
 
-    async def sql_query(self, sql_query: str) -> Sequence[Sequence[Any]]:
+    async def sql_query(self, sql_query: str, time_limit: float = 1.) -> Sequence[Sequence[Any]]:
         """Perform an SQL query
 
         Args:
             sql_query (str): SQL query
+            time_limit (float, optional): query execution time limit [s]. Defaults to 1 second.
 
         Returns:
             Sequence[Sequence[Any]]: list of matching rows
@@ -209,8 +212,13 @@ class DatabaseManager:
         await self.connect()
         if not isinstance(sql_query, str) or len(sql_query) == 0:
             log_and_raise(ValueError, f'Invalid SQL query ({sql_query})')
-        if not sql_query.endswith(';'):
-            sql_query += ';'
+
+        # Set maximum execution time
+        if sql_query.endswith(';'):
+            sql_query = sql_query[:-1]
+        sql_query += f' SETTINGS max_execution_time={time_limit};'
+
+        # Run query
         logger.debug(f'Running SQL query ({sql_query})')
         result = await self.client.query(sql_query)
         return result.result_rows

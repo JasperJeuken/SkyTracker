@@ -1,18 +1,34 @@
 """Main API (entrypoint)"""
 from contextlib import asynccontextmanager
 import asyncio
+import sys
 from asyncio.tasks import Task
 from typing import AsyncGenerator
 
 from fastapi import FastAPI
+from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 
 from skytracker import dependencies
-from skytracker.api.v1 import aircraft, analysis, flights, maps, search
+from skytracker.api.v1 import aircraft, analysis, flights, state, search, airport, airline
 from skytracker.storage import Storage
-from skytracker.services.opensky import opensky_service
+from skytracker.services.browser import WebBrowser
+from skytracker.services.api.api import collection_service
 from skytracker.utils import logger
 from skytracker.settings import settings
+
+
+# Set asyncio to use Windows event loop policy
+if sys.platform.startswith('win'):
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
+
+origins = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:4173',
+    'http://127.0.0.1:4173'
+]
 
 
 @asynccontextmanager
@@ -37,9 +53,14 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     await dependencies.storage.connect()
     logger.debug('Connected to database.')
 
+    # Initialize web browser
+    dependencies.browser = WebBrowser()
+    await dependencies.browser.start()
+    logger.debug('Opened web browser.')
+
     # Start background services
     tasks: list[Task] = []
-    tasks.append(asyncio.create_task(opensky_service(dependencies.storage, repeat=90)))
+    tasks.append(asyncio.create_task(collection_service(dependencies.storage, repeat=90)))
     logger.debug(f'Started {len(tasks)} services.')
 
     # Run FastAPI application
@@ -59,6 +80,12 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     await dependencies.storage.close()
     dependencies.storage = None
     logger.debug('Closed database connection.')
+
+    # Close web browser
+    await dependencies.browser.stop()
+    dependencies.browser = None
+    logger.debug('Closed web browser')
+
     logger.debug('Application lifespan ended.')
 
 
@@ -70,9 +97,13 @@ app = FastAPI(
 )
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True,
+                   allow_methods=['*'], allow_headers=['*'])
 
 app.include_router(aircraft.router, prefix='/api/v1')
+app.include_router(airport.router, prefix='/api/v1')
+app.include_router(airline.router, prefix='/api/v1')
 app.include_router(analysis.router, prefix='/api/v1')
 app.include_router(flights.router, prefix='/api/v1')
-app.include_router(maps.router, prefix='/api/v1')
+app.include_router(state.router, prefix='/api/v1')
 app.include_router(search.router, prefix='/api/v1')

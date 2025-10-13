@@ -1,15 +1,12 @@
 """General storage interaction class"""
-from typing import TypedDict, Literal, overload
+from typing import Literal, overload
 
 from skytracker.storage.database_manager import DatabaseManager
 from skytracker.storage.table_manager import TableManager
 from skytracker.storage.tables.state import StateTableManager
-
-
-class TableManagers(TypedDict):
-    """Table manager dictionary"""
-    state: StateTableManager
-    """StateTableManager: aircraft state table manager"""
+from skytracker.storage.tables.airport import AirportTableManager
+from skytracker.storage.tables.airline import AirlineTableManager
+from skytracker.storage.tables.aircraft import AircraftTableManager
 
 
 class Storage:
@@ -30,8 +27,11 @@ class Storage:
         """
         self._database: DatabaseManager = DatabaseManager(username, password, host, port,
                                                           database, secure)
-        self._tables: TableManagers = {
-            'state': StateTableManager(self._database)
+        self._tables: dict[Literal['state', 'airport', 'airline', 'aircraft'], TableManager] = {
+            'state': StateTableManager(self._database),
+            'airport': AirportTableManager(self._database),
+            'airline': AirlineTableManager(self._database),
+            'aircraft': AircraftTableManager(self._database)
         }
 
     async def connect(self) -> None:
@@ -64,44 +64,3 @@ class Storage:
             TableManager: manager of specified table
         """
         return self._tables[table_name]
-
-
-if __name__ == '__main__':
-    import json
-    import time
-
-    async def _main():
-        # Get database credentials
-        with open('credentials.json', 'r', encoding='utf-8') as file:
-            credentials = json.load(file)
-        username, password = credentials['clickhouseUser'], credentials['clickhouseSecret']
-
-        # Create storage manager
-        storage = Storage(username, password)
-        await storage.connect()
-
-        # Run queries
-        start = time.time()
-        history = await storage['state'].get_aircraft_history('0081ef', limit=5)
-        last = await storage['state'].get_last_aircraft_state('0081ef')
-        batch = await storage['state'].get_latest_batch()
-        end = time.time()
-        print((end - start) * 1000, 'ms')
-
-        # Print result
-        for state in history:
-            print(state.time, state.icao24, state.callsign, state.longitude, state.latitude)
-        print(last)
-        print(len(batch))
-
-        # Close manager
-        await storage.close()
-
-    # Run main
-    import asyncio
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        asyncio.run(_main())
-    except KeyboardInterrupt:
-        pass

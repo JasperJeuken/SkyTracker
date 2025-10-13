@@ -1,13 +1,10 @@
 """SkyTracker command line script"""
 import argparse
-import pathlib
-import json
-import time
 import asyncio
-from datetime import datetime
 
 from skytracker.storage import Storage
-from skytracker.services.opensky import OpenskyAPI
+from skytracker.services.api.api import collection_service
+from skytracker.settings import settings
 
 
 # TODO: remove (obsolete)
@@ -22,66 +19,25 @@ async def main() -> None:
         description='Track aircraft over the world',
         usage='skytracker.py [options]'
     )
-    parser.add_argument_group('File settings', 'Change credentials and output file')
-    parser.add_argument('-h', '--host', default='localhost', type=str,
-                        help='Hostname for ClickHouse server (default: "localhost")')
-    parser.add_argument('-p', '--port', default=8123, type=int,
-                        help='Port for ClickHouse server (default: 8123)')
-    parser.add_argument('-c', '--credentials', default='credentials.json', type=pathlib.Path,
-                        help='Path to credentials file (default: "credentials.json")')
-    parser.add_argument_group('State parameters', 'Settings for state request')
-    parser.add_argument('-t', '--time', default=None, type=int,
-                        help='Unix timestamp for states to get, max. 30 min ago (default: now)')
-    parser.add_argument('--icao24', default=None, nargs='*', type=str,
-                        help='One or more ICAO 24 addresses to get for (default: none)')
-    parser.add_argument('--bbox', default=None, nargs=4, type=float,
-                        help='(lat0, lon0, lat1, lon1) bounding box to get (default: none)')
-    parser.add_argument('-r', '--repeat', default=0, type=int,
-                        help='Repeat request every X seconds, min. 15 sec, 0=once (default: 0)')
+    parser.add_argument('-r', '--repeat', default=90, type=int,
+                        help='Repeat request every X seconds (default: 90)')
     args = parser.parse_args()
     if 0 < args.repeat < 15:
         raise ValueError('Repeat value must be at least 15 seconds, or 0 for one call...')
 
-    # Start data manager
-    with open(args.credentials, 'r', encoding='utf-8') as file:
-        credentials = json.load(file)
-    username, password = credentials['clickhouseUser'], credentials['clickhouseSecret']
-    storage: Storage = Storage(username, password)
+    # Open database connection
+    storage = Storage(settings.clickhouse_user, settings.clickhouse_password,
+                      settings.clickhouse_host, settings.clickhouse_port,
+                      settings.clickhouse_database, settings.clickhouse_secure)
     await storage.connect()
+    
+    # Run service until interrupted or completion
+    try:
+        await collection_service(storage, repeat=args.repeat)
+    except KeyboardInterrupt:
+        pass
 
-    # Start Opensky API
-    api = OpenskyAPI(credentials_file=args.credentials)
-
-    # Start acquisition
-    running = True
-    while running:
-        start_time = time.time()
-        try:
-
-            # Get states from API
-            if args.repeat != 0:
-                args.time = None  # use current time when repeating
-            states = api.get_states(args.time, args.icao24, args.bbox)
-
-            # Write states to data storage
-            await storage['state'].insert_states(states)
-            print(f'[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] inserted {len(states)} states')
-
-        # Catch exception
-        except Exception as exc:
-            print(f'[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] error occurred:')
-            print(exc)
-
-        # Repeat or stop
-        finally:
-            if args.repeat == 0:
-                running = False
-                continue
-            elapsed_time = time.time() - start_time
-            sleep_time = min(max(0, args.repeat - elapsed_time), args.repeat)
-            time.sleep(sleep_time)
-
-    # Close manager
+    # Close database connection
     await storage.close()
 
 

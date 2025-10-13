@@ -161,7 +161,7 @@ export function AircraftMap() {
                     <AircraftTrackLayer callsign={selectedAircraft} pane="aircraft-track" />
                 </Pane>
                 <Pane name="aircraft-shadows" style={{ zIndex: 700 }}>
-                    <AircraftMarkerLayer aircraft={aircraft} selectedAircraft={selectedAircraft} pane="aircraft-shadows" color="#2d2e3027" altitudeOffset />
+                    <AircraftMarkerLayer aircraft={aircraft} selectedAircraft={selectedAircraft} pane="aircraft-shadows" color="#2d2e3040" altitudeOffset />
                 </Pane>
                 <Pane name="aircraft-markers" style={{ zIndex: 900 }}>
                     <AircraftMarkerLayer aircraft={aircraft} selectedAircraft={selectedAircraft} pane="aircraft-markers" color="#1E90FF" selectedColor="#0757a7" strokeColor="#081623ff" selectable popup />

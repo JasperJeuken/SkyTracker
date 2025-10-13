@@ -9,6 +9,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { MapDetailsAirport } from "./MapDetailsAirport";
 import { MapDetailsImages } from "./MapDetailsImages";
 import { MapDetailsHeader } from "./MapDetailsHeader";
+import { ValueCard } from "@/components/ui/card-value";
+import { MapDetailsPosition } from "./MapDetailsPosition";
 
 
 function useMapDetails(callsign: string | null) {
@@ -171,6 +173,7 @@ export function MapDetails() {
             <MapDetailsHeader stateData={stateData} loading={loading['state']} error={error['state']} className="mb-3" />
             <MapDetailsImages photosData={photosData} error={error.photos} className="mb-3" />
             <MapDetailsAirport data={{state: stateData, airport: airportData}} loading={{state: loading['state'], airport: loading['airport']}} error={{state: error['state'], airport: error['airport']}} className="mb-3" />
+            <MapDetailsPosition data={stateData} loading={loading['state']} error={error['state']} />
         </ScrollArea>
     );
 }

@@ -1,7 +1,22 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Skeleton } from "./skeleton";
 
 
-export function SmallCard({ text, icon: Icon, tooltip, className, variant="default" }: { text: string | number, icon?: React.ElementType, tooltip?: string, className?: string, variant?: "default" | "accent" }) {
+export function SmallCard({
+    text,
+    icon: Icon,
+    tooltip,
+    className,
+    variant="default",
+    loading = false
+}: {
+    text: string | number,
+    icon?: React.ElementType,
+    tooltip?: string,
+    className?: string,
+    variant?: "default" | "accent",
+    loading?: boolean
+}) {
     let bgColor = "";
     let textColor = "";
     switch(variant) {
@@ -15,22 +30,28 @@ export function SmallCard({ text, icon: Icon, tooltip, className, variant="defau
             break;
     }
     return (
-        <TooltipProvider>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <div className={`flex items-center gap-1 h-10 p-2 rounded-sm shadow-md ${bgColor} ${className}`}>
-                        {Icon && (
-                            <Icon className={`${textColor} py-0.5`} />
-                        )}
-                        <span className={`text-md ${textColor}`}>{text}</span>
-                    </div>
-                </TooltipTrigger>
-                {tooltip && 
-                    <TooltipContent className="max-w-xs text-sm" side="bottom">
-                        {tooltip}
-                    </TooltipContent>
-                }
-            </Tooltip>
-        </TooltipProvider>
+        <>
+            {loading ? (
+                <Skeleton className="h-10 w-15" />
+            ) : (
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div className={`flex items-center gap-1 h-10 min-w-15 p-2 rounded-sm shadow-md ${bgColor} ${className}`}>
+                                {Icon && (
+                                    <Icon className={`${textColor} py-0.5`} />
+                                )}
+                                <span className={`text-md ${textColor}`}>{text}</span>
+                            </div>
+                        </TooltipTrigger>
+                        {tooltip && 
+                            <TooltipContent className="max-w-xs text-sm" side="bottom">
+                                {tooltip}
+                            </TooltipContent>
+                        }
+                    </Tooltip>
+                </TooltipProvider>
+            )}
+        </>
     );
 }

@@ -1,7 +1,27 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Skeleton } from "./skeleton";
 
 
-export function ValueCard({ value, label, unit="", icon: Icon, tooltip, fullWidth=false, className, variant="default" }: { value: string | number, label?: string, unit?: string, icon?: React.ElementType, tooltip?: string, fullWidth?: boolean, className?: string, variant?: "default" | "accent" }) {
+export function ValueCard({ 
+    value, 
+    label, 
+    unit="", 
+    icon: Icon, 
+    tooltip, 
+    fullWidth=false, 
+    className, 
+    variant="default", 
+    loading=false
+}: {
+    value: string | number, 
+    label?: string, 
+    unit?: string, icon?: React.ElementType, 
+    tooltip?: string, 
+    fullWidth?: boolean, 
+    className?: string, 
+    variant?: "default" | "accent", 
+    loading?: boolean 
+}) {
     let bgColor = "";
     let textColor = "";
     let unitColor = "";
@@ -18,34 +38,40 @@ export function ValueCard({ value, label, unit="", icon: Icon, tooltip, fullWidt
             break;
     }
     return (
-        <TooltipProvider>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <div className={`px-3 py-2 pb-3 rounded-xl shadow-lg ${bgColor} ${fullWidth ? "w-full" : "w-fit"} ${className}`}>
-                        {label &&(
-                            <div className="mb-[0.25rem]">
-                                <span className={`text-[0.75rem] font-medium ${unitColor}`}>{label}</span>
-                            </div>
-                        )}
-                        <div className="flex items-center gap-2">
-                            {Icon && (
-                                <div className="flex items-center justify-center h-full">
-                                    <Icon className={`w-6 h-6 ${textColor} p-0.5`} />
+        <>
+            {loading ? (
+                <Skeleton className={`h-18 w-25 ${className}`} />
+            ): (
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div className={`h-18 min-w-25 px-3 py-2 pb-3 rounded-xl shadow-lg ${bgColor} ${fullWidth ? "w-full" : "w-fit"} ${className}`}>
+                                {label &&(
+                                    <div className="mb-[0.2rem]">
+                                        <span className={`text-[0.7rem] font-medium ${unitColor}`}>{label}</span>
+                                    </div>
+                                )}
+                                <div className={`flex items-center ${label ? "" : "justify-center"}`}>
+                                    {Icon && (
+                                        <div className="flex items-center justify-center h-full mr-2">
+                                            <Icon className={` ${textColor} p-0.5`} />
+                                        </div>
+                                    )}
+                                    <div className="flex items-center space-x-2">
+                                        <span className={`${label ? "text-[1.1rem]" : "text-[1.5rem]"} font-semibold ${textColor}`}>{value}</span>
+                                        {unit && <span className={`${label ? "text-[0.8rem]" : "text-[0.9rem]"} ${unitColor}`}>{unit}</span>}
+                                    </div>
                                 </div>
-                            )}
-                            <div className="flex items-center space-x-2">
-                                <span className={`text-[1.1rem] font-semibold ${textColor}`}>{value}</span>
-                                {unit && <span className={`text-[0.75rem] ${unitColor}`}>{unit}</span>}
                             </div>
-                        </div>
-                    </div>
-                </TooltipTrigger>
-                {tooltip && 
-                    <TooltipContent className="max-w-xs text-sm" side="bottom">
-                        {tooltip}
-                    </TooltipContent>
-                }
-            </Tooltip>
-        </TooltipProvider>
+                        </TooltipTrigger>
+                        {tooltip && 
+                            <TooltipContent className="max-w-xs text-sm" side="bottom">
+                                {tooltip}
+                            </TooltipContent>
+                        }
+                    </Tooltip>
+                </TooltipProvider>
+            )}
+        </>
     );
 }

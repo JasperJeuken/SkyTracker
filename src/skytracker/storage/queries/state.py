@@ -461,7 +461,8 @@ class TrackQuery(TableQuery[State]):
         """
         # Create query to select specific aircraft history (time descending)
         query = 'SELECT time, flight__icao, geography__position, geography__baro_altitude, ' + \
-            f"geography__heading FROM {table} WHERE flight__icao='{self.callsign}'"
+            f'geography__heading, geography__speed_horizontal FROM {table} ' + \
+            f"WHERE flight__icao='{self.callsign}'"
 
         # Filter by duration
         query += f" AND time >= '{self.start_timestamp}'::DateTime('UTC')"
@@ -488,7 +489,7 @@ class TrackQuery(TableQuery[State]):
         Returns:
             State: corresponding State
         """
-        return State(
+        state = State(
             time=raw_entry[0],
             data_source=1,
             status=1,
@@ -518,12 +519,16 @@ class TrackQuery(TableQuery[State]):
                 geo_altitude=None,
                 baro_altitude=raw_entry[3],
                 heading=raw_entry[4],
-                speed_horizontal=None,
+                speed_horizontal=raw_entry[5],
                 speed_vertical=None,
                 is_on_ground=False
             ),
             transponder=StateTransponder(
                 squawk=None,
                 squawk_time=None
-            )            
+            )
         )
+        curr = state.time
+        state.time = datetime(curr.year, curr.month, curr.day, curr.hour, curr.minute, curr.second,
+                              curr.microsecond, tzinfo=timezone.utc)
+        return state

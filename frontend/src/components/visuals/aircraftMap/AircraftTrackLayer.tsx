@@ -16,6 +16,7 @@ function altitudeToColor(altitude: number | null): string {
 
 export function AircraftTrackLayer({ callsign, pane }: { callsign: string | null, pane: string }) {
     const track = useMapStore((state) => callsign ? state.history[callsign] : null);
+    const selectedPosition = useMapStore((state) => state.selectedPosition);
     const setHistory = useMapStore((state) => state.setHistory);
     const [visibleSegments, setVisibleSegments] = useState<number>(0);
     const prevCallsign = useRef<string | null>(null);
@@ -39,19 +40,25 @@ export function AircraftTrackLayer({ callsign, pane }: { callsign: string | null
     const segments = useMemo(() => {
         if (!callsign || !track || track.length < 2) return [];
 
-        const sortedTrack = [...track].sort(
+        const sortedTrack = [...new Set(track)].sort(
             (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
         );
 
         const segs: {
             positions: [number, number][];
-            type: "gap" | "normal";
+            type: "gap" | "normal" | "current";
             startAlt: number | null;
             endAlt: number | null;
-        }[] = []
+        }[] = [{
+            positions: [sortedTrack[0].position, sortedTrack[0].position],
+            type: "current",
+            startAlt: sortedTrack[0].altitude,
+            endAlt: sortedTrack[0].altitude
+        }];
         for (let i = 0; i < sortedTrack.length - 1; i++) {
             const p1 = sortedTrack[i];
             const p2 = sortedTrack[i + 1];
+            if (p1 == p2) continue;
             const t1 = new Date(p1.time).getTime() / 1000
             const t2 = new Date(p2.time).getTime() / 1000
             const dt = t1 - t2;
@@ -83,6 +90,14 @@ export function AircraftTrackLayer({ callsign, pane }: { callsign: string | null
             prevTrackLength.current = 0;
             return;
         }
+
+        // Use animated marker positions
+        segments[0] = {
+            positions: [segments[0].positions[0], selectedPosition],
+            type: "current",
+            startAlt: segments[0].startAlt,
+            endAlt: segments[0].endAlt
+        }
         
         if (callsign !== prevCallsign.current) {
             setVisibleSegments(0);
@@ -102,7 +117,8 @@ export function AircraftTrackLayer({ callsign, pane }: { callsign: string | null
 
         prevTrackLength.current = segments.length;
         prevCallsign.current = callsign ?? null;
-    }, [segments, callsign]);
+    }, [segments, callsign, selectedPosition]);
+
 
     // Create polyline segments
     return (
@@ -110,8 +126,10 @@ export function AircraftTrackLayer({ callsign, pane }: { callsign: string | null
             {segments.slice(0, visibleSegments).map((seg, idx) => (
                 seg.type === "gap" ? (
                     <Polyline key={idx} positions={seg.positions} pathOptions={{ color: "grey", weight: 2, dashArray: "6, 8" }} pane={pane}/>
-                ) : (
+                ) : seg.type === "normal" ?  (
                     <Polyline key={idx} positions={seg.positions} pathOptions={{ color: altitudeToColor(seg.endAlt), weight: 3 }} pane={pane} />
+                ) : (
+                    <Polyline key={idx} positions={seg.positions} pathOptions={{ color: altitudeToColor(seg.endAlt), weight: 3, dashArray: "6, 8" }} pane={pane} />
                 )
             ))}
         </>

@@ -15,6 +15,8 @@ const emptySidebarDetails: SidebarDetails = {
 export interface MapStore {
     // States
     selected: string | null;
+    selectedPosition: [number, number];
+    lastUpdate: number;
     history: Record<string, MapState[]>;
     details: Record<string, SidebarDetails>;
     mapStyle: "Default" | "Satellite" | "OpenStreetMap";
@@ -23,6 +25,8 @@ export interface MapStore {
 
     // Actions
     setSelected: (callsign: string | null) => void;
+    setSelectedPosition: (position: [number, number]) => void;
+    setLastUpdate: (update: number) => void;
     setHistory: (callsign: string, history: MapState[]) => void;
     appendHistoryPoint: (callsign: string, point: MapState) => void;
     prependHistoryPoint: (callsign: string, point: MapState) => void;
@@ -41,6 +45,8 @@ export interface MapStore {
 export const useMapStore = create<MapStore>()((set) => ({
     // States
     selected: null,
+    selectedPosition: [0., 0.],
+    lastUpdate: performance.now(),
     history: {},
     details: {},
     mapStyle: (localStorage.getItem("mapStyle") as "Default" | "Satellite" | "OpenStreetMap") || "OpenStreetMap",
@@ -49,6 +55,8 @@ export const useMapStore = create<MapStore>()((set) => ({
 
     // Actions
     setSelected: (callsign) => set({ selected: callsign }),
+    setSelectedPosition: (position) => set({ selectedPosition: position }),
+    setLastUpdate: (update) => set({ lastUpdate: update }),
     setHistory: (callsign, history) => set((store) => ({ history: { ...store.history, [callsign]: history } })),
     appendHistoryPoint: (callsign, point) => set((store) => {
         const current = store.history[callsign] || [];

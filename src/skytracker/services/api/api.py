@@ -28,15 +28,25 @@ async def collection_service(storage: Storage, repeat: int = 90) -> None:
     while running:
         start_time = time.time()
 
-        # Collect states and write to database
+        # Collect states from all APIs
         try:
             states_opensky_network = api_opensky_network.get_states()
+        except Exception as exc:
+            logger.error(f'OpenSky Network collection error: "{exc}"')
+            states_opensky_network = []
+        try:
             states_aviation_edge = api_aviation_edge.get_states()
+        except Exception as exc:
+            logger.error(f'Aviation Edge collection error: "{exc}"')
+            states_aviation_edge = []
+        
+        # Combine states and write to database
+        try:
             states = merge_states(states_opensky_network, states_aviation_edge)
             await storage['state'].insert_states(states)
-            logger.info(f'Collected {len(states)} aircraft states.')
+            logger.info(f'Inserted {len(states)} aircraft states into database.')
         except Exception as exc:
-            logger.error(f'Aircraft state collection error: "{exc}"')
+            logger.error(f'Database insertion error: "{exc}"')
 
         # Repeat
         elapsed_time = time.time() - start_time

@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
 import MarkersCanvas from "@/lib/leaflet-markers-canvas";
-import { type SimpleMapState } from "@/types/api.js";
+import { type MapState } from "@/types/api.js";
 import { useMapStore } from "@/store/mapStore";
 import { getAircraftSVG } from "@/components/visuals/aircraftMap/AircraftMarkers";
 
@@ -37,7 +37,7 @@ export function AircraftMarkerLayer({
     popup = false,
     selectable = false
 }: {
-    aircraft: SimpleMapState[], 
+    aircraft: MapState[], 
     selectedAircraft: string | null, 
     pane: string, color: string,
     selectedColor?: string,
@@ -47,7 +47,7 @@ export function AircraftMarkerLayer({
     selectable?: boolean 
 }) {
     // Get map instance and create reference for marker canvas
-    const setSelectedAircraft = useMapStore((state) => state.setSelectedAircraft);
+    const setSelectedAircraft = useMapStore((state) => state.setSelected);
     const setSidebarOpen = useMapStore((state) => state.setSidebarOpen);
     const markerClickedRef = useRef(false);
     const layerRef = useRef<any>(null);

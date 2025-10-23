@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query, Path
 
 from skytracker.dependencies import get_storage
 from skytracker.storage import Storage
-from skytracker.models.state import SimpleMapState, DetailedMapState, State
+from skytracker.models.state import MapState, State
 from skytracker.services.state import get_nearby, get_track, get_area, get_latest, search_state
 from skytracker.utils import logger, Errors, Regex
 
@@ -14,7 +14,7 @@ router = APIRouter(prefix='/state', tags=['state'])
 
 
 @router.get('/nearby',
-            response_model=list[SimpleMapState],
+            response_model=list[MapState],
             summary='Get aircraft states near a specific point',
             description='Retrieve states of aircraft that are close to a specified position')
 async def api_get_nearby(
@@ -33,7 +33,7 @@ async def api_get_nearby(
                            title='Limit',
                            description='Maximum number of states to retrieve (0=all)',
                            example=20)
-    ) -> list[SimpleMapState]:
+    ) -> list[MapState]:
     """Get list of aircraft states close to a specified location
 
     Args:
@@ -44,14 +44,14 @@ async def api_get_nearby(
         limit (int, optional): maximum number of states to get (0=all). Defaults to 0 (all).
 
     Returns:
-        list[SimpleMapState]: list of aircraft states near specific point
+        list[MapState]: list of aircraft states near specific point
     """
     logger.info(f'API (get_nearby): lat={lat} lon={lon} radius={radius} limit={limit}')
     return await get_nearby(storage, lat, lon, radius, limit)
 
 
 @router.get('/area',
-            response_model=list[SimpleMapState],
+            response_model=list[MapState],
             summary='Get aircraft states within a bounding box',
             description='Retrieve states of aircraft that are within a specified bounding box')
 async def api_get_all(
@@ -76,7 +76,7 @@ async def api_get_all(
                            title='Limit',
                            description='Max. number of states to return (0=all)',
                            example=20)
-    ) -> list[SimpleMapState]:
+    ) -> list[MapState]:
     """Get the latest batch of aircraft states
 
     The latest batch of aircraft states represent the most up-to-date states of aircraft around
@@ -92,7 +92,7 @@ async def api_get_all(
         limit (int, optional): maximum number of states to return (0=all). Defaults to 0 (all).
 
     Returns:
-        List[SimpleMapState]: list of aircraft map states (icao24, latitude, longitude, heading)
+        List[MapState]: list of aircraft map states (icao24, latitude, longitude, heading)
     """
     logger.info(f'API (get_all): south={south} north={north} west={west} east={east} limit={limit}')
     return await get_area(storage, south, north, west, east, limit)
@@ -125,7 +125,7 @@ async def api_get_latest(
 
 
 @router.get('/{callsign}/history',
-            response_model=list[DetailedMapState],
+            response_model=list[MapState],
             summary='Get the state history of a specific aircraft',
             description='Use the callsign of an aircraft to retrieve ' + \
                         'the state history of that aircraft',
@@ -136,7 +136,7 @@ async def api_get_track(
                              title='Callsign',
                              description='Aircraft callsign (ICAO)',
                              example='ABC1234'),
-        duration: str = Query('1d',
+        duration: str = Query('10h',
                               title='Duration',
                               description='Length of history to retrieve (time string)',
                               example='2h40m'),
@@ -144,7 +144,7 @@ async def api_get_track(
                            title='Limit',
                            description='Max. number of states to retrieve (0=all)',
                            example=20)
-    ) -> list[DetailedMapState]:
+    ) -> list[MapState]:
     """Get the track history of a specific aircraft
 
     Args:
@@ -154,7 +154,7 @@ async def api_get_track(
         limit (int, optional): maximum number of states to get (0=all). Defaults to 0 (all).
 
     Returns:
-        list[DetailedMapState]: list of aircraft track states with specified duration
+        list[MapState]: list of aircraft track states with specified duration
     """
     logger.info(f'API (get_track): callsign={callsign} duration={duration} limit={limit}')
     return await get_track(storage, callsign, duration, limit)

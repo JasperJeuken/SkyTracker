@@ -1,28 +1,29 @@
-import type { State } from "@/types/api";
+import type { Loadable, State } from "@/types/api";
 import { SmallCard } from "@/components/ui/card-small";
 import { useMapStore } from "@/store/mapStore";
 import { Hash, Locate, Plane } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-export function MapDetailsHeader({ stateData, loading, error, className }: {stateData: State | null, loading: boolean, error: string | null, className?: string}) {
-    const selectedAircraft = useMapStore((state) => state.selectedAircraft);
+
+export function MapDetailsHeader({ data, className }: {data: Loadable<State>, className?: string}) {
+    const selectedAircraft = useMapStore((state) => state.selected);
     const map = useMapStore((state) => state.mapRef);
 
     const recenter = () => {
-        if (!map || !stateData || !stateData.geography.position) return;
-        map.setView([stateData!.geography.position[0], stateData!.geography.position[1]], 10, { animate: true, duration: 1 });
+        if (!map || data.status != "success") return;
+        map.setView([data.data.geography.position[0], data.data.geography.position[1]], 10, { animate: true, duration: 1 });
     }
 
     return (
         <div className={`flex items-center gap-1.5 ${className} w-full relative`}>
-            {loading && !error && <Skeleton className="h-10 w-20"/>}
-            {!loading && (error || !stateData) && <SmallCard text="Failed to load data..." className="h-10 !px-4" />}
-            {!loading && stateData && (
+            {data.status === "loading" && <Skeleton className="h-10 w-20"/>}
+            {data.status === "error" && <SmallCard text="Failed to load data..." className="h-10 !px-4" />}
+            {data.status === "success" && (
                 <>
                     <SmallCard text={selectedAircraft ?? ""} tooltip="Callsign" className="h-10 !px-4 font-bold text-lg" variant="accent"/>
-                    {stateData?.flight.number && <SmallCard text={stateData?.flight.number ?? ""} tooltip="Flight number" className="h-10" icon={Hash} />}
-                    {stateData?.aircraft.icao && <SmallCard text={stateData?.aircraft.icao ?? ""} tooltip="Aircraft type" className="h-10" icon={Plane} />}
+                    {data.data.flight.number && <SmallCard text={data.data.flight.number ?? ""} tooltip="Flight number" className="h-10" icon={Hash} />}
+                    {data.data.aircraft.icao && <SmallCard text={data.data.aircraft.icao ?? ""} tooltip="Aircraft type" className="h-10" icon={Plane} />}
                     
                     <Tooltip>
                         <TooltipTrigger asChild>
@@ -37,5 +38,5 @@ export function MapDetailsHeader({ stateData, loading, error, className }: {stat
                 </>
             )}
         </div>
-    )   
+    )
 }

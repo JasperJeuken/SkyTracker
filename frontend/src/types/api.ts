@@ -38,20 +38,14 @@ export type State = {
     },
 }
 
-export type SimpleMapState = {
+export type MapState = {
+    time: string,
     callsign: string,
     position: [number, number],
     heading: number | null,
     model: string | null,
     altitude: number | null,
-}
-
-export type DetailedMapState = {
-    time: string,
-    callsign: string,
-    position: [number, number],
-    heading: number | null,
-    altitude: number | null,
+    velocity: number | null,
 }
 
 export type Airline = {
@@ -119,4 +113,21 @@ export type Aircraft = {
 export type AircraftPhoto = {
     image_url: string,
     detail_url: string,
+}
+
+export type Loadable<T> =
+    | { status: "idle"}
+    | { status: "loading" }
+    | { status: "success"; data: T }
+    | { status: "error"; error: string };
+
+export type SidebarDetails = {
+    state: Loadable<State>,
+    photos: Loadable<AircraftPhoto[]>,
+    aircraft: Loadable<Aircraft>,
+    airport: {
+        departure: Loadable<Airport>,
+        arrival: Loadable<Airport>,
+    }
+    airline: Loadable<Airline>,
 }

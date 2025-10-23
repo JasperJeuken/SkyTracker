@@ -5,7 +5,7 @@ import numpy as np
 
 from skytracker.storage.table_query import TableQuery
 from skytracker.models.state import (State, StateAircraft, StateAirline, StateAirport, StateFlight,
-                                     StateGeography, StateTransponder, SimpleMapState)
+                                     StateGeography, StateTransponder, MapState)
 from skytracker.models import unflatten_model
 from skytracker.storage.database_manager import DatabaseManager
 from skytracker.utils.conversions import datetime_ago_from_time_string
@@ -142,12 +142,12 @@ class LatestBatchQuery(TableQuery[State]):
         return State.model_validate(unflattened)
 
 
-class LatestBatchMapQuery(TableQuery[SimpleMapState]):
+class LatestBatchMapQuery(TableQuery[MapState]):
     """Query to select the latest aircraft simple map states (with optional bounding box)"""
 
     allows_cache = True
-    fields = ['flight.icao', 'geography.position', 'geography.heading', 'aircraft.icao',
-              'geography.baro_altitude']
+    fields = ['time', 'flight.icao', 'geography.position', 'geography.heading', 'aircraft.icao',
+              'geography.baro_altitude', 'geography.speed_horizontal']
 
     def __init__(self, limit: int = 0,
                  lat_min: float | None = None, lat_max: float | None = None,
@@ -178,14 +178,14 @@ class LatestBatchMapQuery(TableQuery[SimpleMapState]):
         if any(is_not_none):
             self.bbox = (lat_min, lat_max, lon_min, lon_max)
 
-    async def from_cache(self, states: list[State]) -> list[SimpleMapState]:
+    async def from_cache(self, states: list[State]) -> list[MapState]:
         """Filter a cached list of states using stored settings
 
         Args:
             states (list[State]): cached list of states
 
         Returns:
-            list[SimpleMapState]: filtered list of simple map states
+            list[MapState]: filtered list of simple map states
         """
         logger.debug(f'Retrieved {len(states)} from cache')
 
@@ -199,19 +199,23 @@ class LatestBatchMapQuery(TableQuery[SimpleMapState]):
                     lat, lon = state.geography.position
                     if lat_min <= lat <= lat_max and box_min <= lon <= box_max:
                         lon = shift_longitude_into_range(lon, lon_min, lon_max)
-                        map_states.append(SimpleMapState(callsign=state.flight.icao,
-                                                         position=(lat, lon),
-                                                         heading=state.geography.heading,
-                                                         model=state.aircraft.icao,
-                                                         altitude=state.geography.baro_altitude))
+                        map_states.append(MapState(time=state.time,
+                                                   callsign=state.flight.icao,
+                                                   position=(lat, lon),
+                                                   heading=state.geography.heading,
+                                                   model=state.aircraft.icao,
+                                                   altitude=state.geography.baro_altitude,
+                                                   velocity=state.geography.speed_horizontal))
             logger.debug(f'Filtered to {len(map_states)} by bbox ({self.bbox})')
         else:
-            map_states = [SimpleMapState(callsign=state.flight.icao,
-                                         position=state.geography.position,
-                                         heading=state.geography.heading,
-                                         model=state.aircraft.icao,
-                                         altitude=state.geography.baro_altitude) \
-                                            for state in states]
+            map_states = [MapState(time=state.time,
+                                   callsign=state.flight.icao,
+                                   position=state.geography.position,
+                                   heading=state.geography.heading,
+                                   model=state.aircraft.icao,
+                                   altitude=state.geography.baro_altitude,
+                                   velocity=state.geography.speed_horizontal) \
+                          for state in states]
 
         # Return states (limit if specified)
         if self.limit > 0:
@@ -220,7 +224,7 @@ class LatestBatchMapQuery(TableQuery[SimpleMapState]):
         logger.info(f'Retrieved {len(map_states)} matching states from cache')
         return map_states
 
-    async def from_server(self, table: str, db: DatabaseManager) -> list[SimpleMapState]:
+    async def from_server(self, table: str, db: DatabaseManager) -> list[MapState]:
         """Query a list of states from server database
 
         Args:
@@ -228,11 +232,12 @@ class LatestBatchMapQuery(TableQuery[SimpleMapState]):
             db (DatabaseManager): database manager instance
 
         Returns:
-            list[SimpleMapState]: selected list of simple map states
+            list[MapState]: selected list of simple map states
         """
         # Create query to select latest batch from table
-        query = 'SELECT flight__icao, geography__position, geography__heading, aircraft__icao, ' + \
-            f'geography__baro_altitude FROM {table} WHERE time=(SELECT MAX(time) FROM {table})'
+        query = 'SELECT time, flight__icao, geography__position, geography__heading, ' + \
+            f'aircraft__icao, geography__baro_altitude, geography__speed_horizontal ' + \
+            f'FROM {table} WHERE time=(SELECT MAX(time) FROM {table})'
 
         # Filter bounding box (normalize longitude to allow for map wrapping)
         if self.bbox is not None:
@@ -262,7 +267,7 @@ class LatestBatchMapQuery(TableQuery[SimpleMapState]):
                 state.position = (state.position[0], longitude)
         return states
 
-    def parse_table_row(self, raw_entry: tuple) -> SimpleMapState:
+    def parse_table_row(self, raw_entry: tuple) -> MapState:
         """Parse raw table data into a simple map state
 
         Args:
@@ -271,8 +276,8 @@ class LatestBatchMapQuery(TableQuery[SimpleMapState]):
         Returns:
             SimpleMapState: corresponding simple map state
         """
-        unflattened = unflatten_model(dict(zip(self.fields, raw_entry)), SimpleMapState)
-        return SimpleMapState.model_validate(unflattened)
+        unflattened = unflatten_model(dict(zip(self.fields, raw_entry)), MapState)
+        return MapState.model_validate(unflattened)
 
 
 class NearbyQuery(TableQuery[State]):

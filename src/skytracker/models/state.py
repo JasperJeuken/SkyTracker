@@ -223,9 +223,11 @@ class State(BaseModel):
         return status.name
 
 
-class SimpleMapState(BaseModel):
-    """Simple map state with position and heading"""
+class MapState(BaseModel):
+    """State with elements necessary for map drawing"""
 
+    time: Annotated[datetime, Field(description='State timestamp')]
+    """datetime: state timestamp"""
     callsign: Annotated[str, Field(description='Aircraft callsign')]
     """str: aircraft callsign"""
     position: Annotated[tuple[float, float], Field(description='Latitude/longitude position [deg]')]
@@ -236,18 +238,5 @@ class SimpleMapState(BaseModel):
     """str | None: aircraft model ICAO code"""
     altitude: Annotated[float | None, Field(description='Altitude [m]')]
     """float | None: altitude [m]"""
-
-
-class DetailedMapState(BaseModel):
-    """Detailed map state with time, position, heading, and altitude"""
-
-    time: Annotated[datetime, Field(description='State timestamp')]
-    """datetime: state timestamp"""
-    callsign: Annotated[str, Field(description='Aircraft callsign')]
-    """str: aircraft callsign"""
-    position: Annotated[tuple[float, float], Field(description='Latitude/longitude position [deg]')]
-    """tuple[float, float]: latitude/longitude position [deg]"""
-    heading: Annotated[float | None, Field(description='Heading [deg]')]
-    """float | None: heading [deg]"""
-    altitude: Annotated[float | None, Field(description='Barometric altitude [m]')]
-    """float | None: barometric altitude [m]"""
+    velocity: Annotated[float | None, Field(description='Horizontal velocity [m/s]')]
+    """float | None: horizontal velocity [m/s]"""

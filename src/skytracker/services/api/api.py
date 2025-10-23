@@ -62,7 +62,8 @@ def merge_states(states_opensky_network: list[State],
     # Get geography data by ICAO 24-bit address
     geographies: dict[str, StateGeography] = {}
     for state in states_opensky_network:
-        geographies[state.aircraft.icao24] = state.geography
+        if state.aircraft.icao24 is not None:
+            geographies[state.aircraft.icao24] = state.geography
 
     # Look up ICAO 24-bit address
     updates = {'position': 0, 'baro_altitude': 0, 'geo_altitude': 0, 'heading': 0,

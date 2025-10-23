@@ -6,7 +6,7 @@ import { MapDetails } from "@/components/visuals/mapDetails/MapDetails";
 
 export function Sidebar() {
     const sidebarOpen = useMapStore((state) => state.sidebarOpen);
-    const selectedAircraft = useMapStore((state) => state.selectedAircraft)
+    const selectedAircraft = useMapStore((state) => state.selected)
     const headerHeight = useAppStore((state) => state.headerHeight);
     return (
         <AnimatePresence>

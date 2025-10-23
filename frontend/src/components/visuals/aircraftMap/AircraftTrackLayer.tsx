@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Polyline } from "react-leaflet";
-import { type DetailedMapState } from "@/types/api";
 import { getHistoryStates } from "@/services/api/state";
+import { useMapStore } from "@/store/mapStore";
 
 
 function altitudeToColor(altitude: number | null): string {
@@ -15,36 +15,43 @@ function altitudeToColor(altitude: number | null): string {
 
 
 export function AircraftTrackLayer({ callsign, pane }: { callsign: string | null, pane: string }) {
-    const [track, setTrack] = useState<DetailedMapState[]>([]);
+    const track = useMapStore((state) => callsign ? state.history[callsign] : null);
+    const setHistory = useMapStore((state) => state.setHistory);
     const [visibleSegments, setVisibleSegments] = useState<number>(0);
+    const prevCallsign = useRef<string | null>(null);
+    const prevTrackLength = useRef<number>(0);
 
     // Update track if selected aircraft changes
     useEffect(() => {
         if (!callsign) {
-            setTrack([]);
             setVisibleSegments(0);
             return;
         }
         getHistoryStates(callsign)
-            .then(track =>{
-                setTrack(track);
+            .then(newTrack =>{
+                setHistory(callsign, newTrack)
                 setVisibleSegments(0);
             })
-            .catch(() => setTrack([]));
-    }, [callsign]);
+            .catch(() => setHistory(callsign, []));
+    }, [callsign, setHistory]);
 
     // Parse line segments from state history
     const segments = useMemo(() => {
-        if (!track || track.length < 2) return [];
+        if (!callsign || !track || track.length < 2) return [];
+
+        const sortedTrack = [...track].sort(
+            (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
+        );
+
         const segs: {
             positions: [number, number][];
             type: "gap" | "normal";
             startAlt: number | null;
             endAlt: number | null;
         }[] = []
-        for (let i = 0; i < track.length - 1; i++) {
-            const p1 = track[i];
-            const p2 = track[i + 1];
+        for (let i = 0; i < sortedTrack.length - 1; i++) {
+            const p1 = sortedTrack[i];
+            const p2 = sortedTrack[i + 1];
             const t1 = new Date(p1.time).getTime() / 1000
             const t2 = new Date(p2.time).getTime() / 1000
             const dt = t1 - t2;
@@ -66,24 +73,36 @@ export function AircraftTrackLayer({ callsign, pane }: { callsign: string | null
             }
         }
         return segs;
-    }, [track]);
-    
+    }, [track, callsign]);
+
 
     // Animate segment reveal
     useEffect(() => {
-        if (segments.length === 0) {
+        if (!segments || segments.length === 0) {
             setVisibleSegments(0);
+            prevTrackLength.current = 0;
             return;
         }
-        setVisibleSegments(0);
-        let i = 0;
-        const interval = setInterval(() => {
-            i++;
-            setVisibleSegments(i);
-            if (i >= segments.length) clearInterval(interval);
-        }, 10);
-        return () => clearInterval(interval);
-    }, [segments]);
+        
+        if (callsign !== prevCallsign.current) {
+            setVisibleSegments(0);
+            let i = 0;
+            const interval = setInterval(() => {
+                i++;
+                setVisibleSegments(i);
+                if (i >= segments.length) clearInterval(interval);
+            }, 10);
+        } else if (segments.length > prevTrackLength.current) {
+            setVisibleSegments(segments.length);
+        } else if (segments.length === prevTrackLength.current) {
+            // Do nothing
+        } else {
+            setVisibleSegments(segments.length);
+        }
+
+        prevTrackLength.current = segments.length;
+        prevCallsign.current = callsign ?? null;
+    }, [segments, callsign]);
 
     // Create polyline segments
     return (

@@ -3,122 +3,88 @@ import { getAirport } from "@/services/api/airport";
 import { getAirline } from "@/services/api/airline";
 import { getAircraft, getAircraftPhotos } from "@/services/api/aircraft";
 import { useMapStore } from "@/store/mapStore";
-import { useEffect, useState } from "react";
-import { type State, type Aircraft, type Airport, type Airline, type AircraftPhoto } from "@/types/api";
+import { useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MapDetailsAirport } from "./MapDetailsAirport";
 import { MapDetailsImages } from "./MapDetailsImages";
 import { MapDetailsHeader } from "./MapDetailsHeader";
-import { ValueCard } from "@/components/ui/card-value";
 import { MapDetailsPosition } from "./MapDetailsPosition";
 
 
 function useMapDetails(callsign: string | null) {
-    // Data states
-    const [stateData, setStateData] = useState<State | null>(null);
-    const [aircraftData, setAircraftData] = useState<Aircraft | null>(null);
-    const [airlineData, setAirlineData] = useState<Airline | null>(null);
-    const [photosData, setPhotosData] = useState<AircraftPhoto[] | null>(null);
-    const [airportData, setAirportData] = useState<{
-        arrival: Airport | null,
-        departure: Airport | null,
-    }>({ arrival: null, departure: null });
-
-    // Loading/error states
-    const [loading, setLoading] = useState({
-        state: false,
-        aircraft: false,
-        airline: false,
-        airport: false,
-        photos: false,
-    });
-    const [error, setError] = useState({
-        state: null as string | null,
-        aircraft: null as string | null,
-        airline: null as string | null,
-        airport: null as string | null,
-        photos: null as string | null,
-    });
+    const details = useMapStore((state) => callsign ? state.details[callsign] : null);
+    const setDetails = useMapStore((state) => state.setDetails);
+    const setDetailAircraft = useMapStore((state) => state.setDetailAircraft);
+    const setDetailAirline = useMapStore((state) => state.setDetailAirline);
+    const setDetailArrival = useMapStore((state) => state.setDetailArrival);
+    const setDetailDeparture = useMapStore((state) => state.setDetailDeparture);
+    const setDetailPhotos = useMapStore((state) => state.setDetailPhotos);
+    const setDetailState = useMapStore((state) => state.setDetailState);
 
     useEffect(() => {
-        // Reset
-        setStateData(null);
-        setAircraftData(null);
-        setAirlineData(null);
-        setPhotosData(null);
-        setAirportData({ arrival: null, departure: null });
-        setLoading({ state: true, aircraft: true, airline: true, airport: true, photos: true });
-        setError({ state: null, aircraft: null, airline: null, airport: null, photos: null });
         if (!callsign) return;
+        setDetails(callsign, {
+            aircraft: { status: "loading" },
+            airline: { status: "loading" },
+            airport: {
+                departure: { status: "loading" },
+                arrival: { status: "loading" }
+            },
+            photos: { status: "loading" },
+            state: { status: "loading" },
+        });
 
         const fetchData = async () => {
             try {
                 // Fetch latest state
                 const state = await getLatestState(callsign);
-                setStateData(state);
-                setLoading((v) => ({ ...v, state: false }));
+                setDetailState(callsign, { status: "success", data: state });
 
                 // Fetch aircraft data (parallel)
                 const aircraftPromise = state.aircraft.registration 
                     ? (async () => {
-                        setLoading((v) => ({ ...v, aircraft: true }));
                         try {
                             const data = await getAircraft(state.aircraft.registration!);
-                            setAircraftData(data);
+                            setDetailAircraft(callsign, { status: "success", data });
                         } catch {
-                            setAircraftData(null);
-                            setError((e) => ({ ...e, aircraft: "Aircraft not found" }));
-                        } finally {
-                            setLoading((v) => ({ ...v, aircraft: false}));
+                            setDetailAircraft(callsign, { status: "error", error: "Aircraft not found" });
                         }
                     })()
                     : (async () => {
-                        setError((e) => ({ ...e, aircraft: "No aircraft registration" }));
-                        setLoading((v) => ({ ...v, aircraft: false}));
+                        setDetailAircraft(callsign, { status: "error", error: "Aircraft registration unknown" });
                     })();
 
                 // Fetch airline data (parallel)
                 const airlinePromise = state.airline.icao 
                     ? (async () => {
-                        setLoading((v) => ({ ...v, airline: true }));
                         try {
                             const data = await getAirline(state.airline.icao!);
-                            setAirlineData(data);
+                            setDetailAirline(callsign, { status: "success", data });
                         } catch {
-                            setAirlineData(null);
-                            setError((e) => ({ ...e, airline: "Airline not found" }));
-                        } finally {
-                            setLoading((v) => ({ ...v, airline: false}));
+                            setDetailAirline(callsign, { status: "error", error: "Airline not found" });
                         }
                     })()
                     : (async () => {
-                        setError((e) => ({ ...e, airline: "No airline ICAO code" }));
-                        setLoading((v) => ({ ...v, airline: false}));
+                        setDetailAirline(callsign, { status: "error", error: "Airline ICAO code unknown" });
                     })();
 
                 // Fetch photos data (parallel)
                 const photosPromise = state.aircraft.registration 
                     ? (async () => {
-                        setLoading((v) => ({ ...v, photos: true }));
                         try {
                             const data = await getAircraftPhotos(state.aircraft.registration!);
-                            setPhotosData(data);
+                            setDetailPhotos(callsign, { status: "success", data});
                         } catch {
-                            setPhotosData(null);
-                            setError((e) => ({ ...e, photos: "Photos not found" }));
-                        } finally {
-                            setLoading((v) => ({ ...v, photos: false}));
+                            setDetailPhotos(callsign, { status: "error", error: "Photos not found" });
                         }
                     })()
                     : (async () => {
-                        setError((e) => ({ ...e, photos: "No aircraft registration" }));
-                        setLoading((v) => ({ ...v, photos: false}));
+                        setDetailPhotos(callsign, { status: "error", error: "Aircraft registration unknown" });
                     })();
 
                 // Fetch airport data (parallel)
                 const airportPromise = state.airport.departure_iata || state.airport.arrival_iata
                     ? (async () => {
-                        setLoading((v) => ({ ...v, airport: true }));
                         try {
                             const [dep, arr] = await Promise.all([
                                 state.airport.departure_iata 
@@ -128,52 +94,62 @@ function useMapDetails(callsign: string | null) {
                                     ? getAirport(state.airport.arrival_iata)
                                     : Promise.resolve(null),
                             ]);
-                            setAirportData({ departure: dep, arrival: arr });
+                            if (arr) {
+                                setDetailArrival(callsign, { status: "success", data: arr });
+                            } else {
+                                setDetailArrival(callsign, { status: "error", error: "Arrival airport not found" });
+                            }
+                            if (dep) {
+                                setDetailDeparture(callsign, { status: "success", data: dep});
+                            } else {
+                                setDetailDeparture(callsign, { status: "error", error: "Departure airport not found" });
+                            }
                         } catch {
-                            setAirportData({ departure: null, arrival: null });
-                            setError((e) => ({ ...e, airport: "Airport not found" }));
-                        } finally {
-                            setLoading((v) => ({ ...v, airport: false }));
+                            setDetailArrival(callsign, { status: "error", error: "Airport not found" })
+                            setDetailDeparture(callsign, { status: "error", error: "Airport not found" })
                         }
                     })()
                     : (async () => {
-                        setError((e) => ({ ...e, airport: "No airport IATA code" }));
-                        setLoading((v) => ({ ...v, airport: false }));
+                        setDetailArrival(callsign, { status: "error", error: "Arrival airport IATA code unknown" });
+                        setDetailDeparture(callsign, { status: "error", error: "Departure airport IATA code unknown" });
                     })();
                 
                 await Promise.all([aircraftPromise, airlinePromise, photosPromise, airportPromise]);
-            } catch (err) {
-                console.error(err);
-                setError((e) => ({ ...e, state: "State fetch failed" }));
-                setLoading((v) => ({ ...v, state: false }));
+            }
+            catch (err) {
+                const errorMessage = "Failed to fetch state";
+                setDetails(callsign, {
+                    aircraft: { status: "error", error: errorMessage },
+                    airline: { status: "error", error: errorMessage },
+                    airport: {
+                        departure: { status: "error", error: errorMessage },
+                        arrival: { status: "error", error: errorMessage }
+                    },
+                    photos: { status: "error", error: errorMessage },
+                    state: { status: "error", error: errorMessage },
+                })
             }
         };
 
         fetchData();
     }, [callsign]);
 
-    return {
-        stateData,
-        aircraftData,
-        airlineData,
-        photosData,
-        airportData,
-        loading,
-        error,
-    };
+    return details;
 }
 
 
 export function MapDetails() {
-    const selectedAircraft = useMapStore((state) => state.selectedAircraft);
-    const { stateData, photosData, airportData, loading, error } = useMapDetails(selectedAircraft);
+    const selectedAircraft = useMapStore((state) => state.selected);
+    const details = useMapDetails(selectedAircraft);
+
+    if (!details) return null;
 
     return (
         <ScrollArea className="flex-1 overflow-y-auto p-3">
-            <MapDetailsHeader stateData={stateData} loading={loading['state']} error={error['state']} className="mb-3" />
-            <MapDetailsImages photosData={photosData} error={error.photos} className="mb-3" />
-            <MapDetailsAirport data={{state: stateData, airport: airportData}} loading={{state: loading['state'], airport: loading['airport']}} error={{state: error['state'], airport: error['airport']}} className="mb-3" />
-            <MapDetailsPosition data={stateData} loading={loading['state']} error={error['state']} />
+            <MapDetailsHeader data={details.state} className="mb-3" />
+            <MapDetailsImages data={details.photos} className="mb-3" />
+            <MapDetailsAirport data={{state: details.state, airport: details.airport}} className="mb-3" />
+            <MapDetailsPosition data={details.state} />
         </ScrollArea>
     );
 }

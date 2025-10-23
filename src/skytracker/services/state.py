@@ -4,13 +4,13 @@ from typing import Literal
 from fastapi import HTTPException
 
 from skytracker.storage import Storage
-from skytracker.models.state import SimpleMapState, DetailedMapState, State, StateStatus
+from skytracker.models.state import MapState, State, StateStatus
 from skytracker.utils import logger, log_and_raise_http
 from skytracker.utils.analysis import decode
 
 
 async def get_nearby(storage: Storage, lat: float, lon: float,
-                     radius: float, limit: int) -> list[SimpleMapState]:
+                     radius: float, limit: int) -> list[MapState]:
     """Get list of aircraft states close to a specified location
 
     Args:
@@ -21,20 +21,22 @@ async def get_nearby(storage: Storage, lat: float, lon: float,
         limit (int): maximum number of states to get (0=all)
 
     Returns:
-        list[SimpleMapState]: list of aircraft near specified point
+        list[MapState]: list of aircraft near specified point
     """
     try:
         states = await storage['state'].get_nearby(lat, lon, radius, limit)
-        return [SimpleMapState(callsign=state.flight.icao,
-                               position=state.geography.position,
-                               heading=state.geography.heading,
-                               model=state.aircraft.iata,
-                               altitude=state.geography.baro_altitude) for state in states]
+        return [MapState(time=state.time,
+                         callsign=state.flight.icao,
+                         position=state.geography.position,
+                         heading=state.geography.heading,
+                         model=state.aircraft.iata,
+                         altitude=state.geography.baro_altitude,
+                         velocity=state.geography.speed_horizontal) for state in states]
     except ValueError as err:
         log_and_raise_http(f'{err}', 400, err)
 
 
-async def get_track(storage: Storage, callsign: str, duration: str, limit: int) -> list[DetailedMapState]:
+async def get_track(storage: Storage, callsign: str, duration: str, limit: int) -> list[MapState]:
     """Get the track history of a specific aircraft
 
     Args:
@@ -44,16 +46,19 @@ async def get_track(storage: Storage, callsign: str, duration: str, limit: int) 
         limit (int): maximum number of states to get (0=all)
 
     Returns:
-        list[DetailedMapState]: list of aircraft track states
+        list[MapState]: list of aircraft track states
     """
     try:
         states = await storage['state'].get_track(callsign, duration, limit)
-        return [DetailedMapState(time=state.time, callsign=state.flight.icao,
-                                 position=state.geography.position, heading=state.geography.heading,
-                                 altitude=state.geography.baro_altitude) for state in states]
+        return [MapState(time=state.time,
+                         callsign=state.flight.icao,
+                         position=state.geography.position,
+                         heading=state.geography.heading,
+                         model=state.aircraft.iata,
+                         altitude=state.geography.baro_altitude,
+                         velocity=state.geography.speed_horizontal) for state in states]
     except ValueError as err:
-        logger.error(f'Request failed ({err})')
-        raise HTTPException(status_code=400, detail=f'{err}') from err
+        log_and_raise_http(f'Request failed ({err})', 400, err)
 
 
 async def get_latest(storage: Storage, callsign: str) -> State:
@@ -76,7 +81,7 @@ async def get_latest(storage: Storage, callsign: str) -> State:
 
 
 async def get_area(storage: Storage, south: float, north: float,
-                  west: float, east: float, limit: int) -> list[SimpleMapState]:
+                  west: float, east: float, limit: int) -> list[MapState]:
     """Get the latest batch of aircraft states within a specific area
 
     Args:
@@ -88,7 +93,7 @@ async def get_area(storage: Storage, south: float, north: float,
         limit (int): maximum number of states to return (0=all)
 
     Returns:
-        list[SimpleMapState]: list of aircraft map states
+        list[MapState]: list of aircraft map states
     """
     try:
         return await storage['state'].get_latest_batch_map(limit, south, north, west, east)

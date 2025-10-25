@@ -43,14 +43,14 @@ export function MapDetailsImages({ data, className }: { data: Loadable<AircraftP
                             const domain = new URL(photo.detail_url).hostname;
                             return (
                                 <CarouselItem key={idx} className="pl-0">
-                                    <AspectRatio ratio={aspectRatio} className="relative">
-                                        <a href={photo.detail_url} target="_blank" rel="noopener noreferrer">
-                                            <img src={photo.image_url} alt={`Aircraft image ${idx + 1}`} className="h-full w-full object-cover" />
-                                        </a>
-                                        <div className="absolute bottom-0 left-0 w-full bg-linear-to-t from-black/60 text-white/90 text-xs px-3 py-1">
-                                            <span className="pl-3">© {domain}</span>
-                                        </div>
-                                    </AspectRatio>
+                                    <a href={photo.detail_url} target="_blank" rel="noopener noreferrer">
+                                        <AspectRatio ratio={aspectRatio} className="relative">
+                                                <img src={photo.image_url} alt={`Aircraft image ${idx + 1}`} className="h-full w-full object-cover" />
+                                                <div className="absolute bottom-0 left-0 w-full bg-linear-to-t from-black/60 text-white/90 text-xs px-3 py-1">
+                                                    <span className="pl-3">© {domain}</span>
+                                                </div>
+                                        </AspectRatio>
+                                    </a>
                                 </CarouselItem>
                             );
                         })

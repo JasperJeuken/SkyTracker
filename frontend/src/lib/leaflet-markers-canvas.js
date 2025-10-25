@@ -104,6 +104,7 @@ const markersCanvas = {
     this._initCanvas();
     this.getPane().appendChild(this._canvas);
 
+    map.on("move", this._updatePosition, this);
     map.on("moveend", this._reset, this);
     map.on("resize", this._reset, this);
 
@@ -120,12 +121,24 @@ const markersCanvas = {
 
     map.off("click", this._fire, this);
     map.off("mousemove", this._fire, this);
+    map.off("move", this._updatePosition, this);
     map.off("moveend", this._reset, this);
     map.off("resize", this._reset, this);
 
     if (map._zoomAnimated) {
       map.off("zoomanim", this._animateZoom, this);
     }
+  },
+
+  _updatePosition() {
+    if (!this._map) return;
+    const now = performance.now();
+    if (this._lastFrame && now - this._lastFrame < 15) return;
+    this._lastFrame = now;
+
+    const topLeft = this._map.containerPointToLayerPoint([0, 0]);
+    L.DomUtil.setPosition(this._canvas, topLeft);
+    this._redraw();
   },
 
   setOptions(options) {

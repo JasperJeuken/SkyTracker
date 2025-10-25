@@ -1,9 +1,10 @@
 import axios, { AxiosError } from "axios";
 
 
+axios.defaults.headers["X-API-Key"] = import.meta.env.VITE_API_KEY;
 export const apiClient = axios.create({
-    baseURL: import.meta.env.API_BASE_URL || "http://localhost:8000/api/v1",
-    timeout: 10000,
+    baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1",
+    timeout: 10000
 });
 
 

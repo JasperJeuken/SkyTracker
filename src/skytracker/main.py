@@ -5,7 +5,7 @@ import sys
 from asyncio.tasks import Task
 from typing import AsyncGenerator
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 
@@ -16,6 +16,7 @@ from skytracker.services.browser import WebBrowser
 from skytracker.services.api.api import collection_service
 from skytracker.utils import logger
 from skytracker.settings import settings
+from skytracker.auth import verify_api_key
 
 
 # Set asyncio to use Windows event loop policy
@@ -93,7 +94,8 @@ app = FastAPI(
     title='SkyTracker',
     description='Track flights in the sky',
     version='0.1',
-    lifespan=lifespan
+    lifespan=lifespan,
+    dependencies=[Depends(verify_api_key)]
 )
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)

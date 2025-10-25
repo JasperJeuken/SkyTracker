@@ -35,9 +35,9 @@ class Settings(BaseSettings):
     aviation_edge_api_key: str = Field('')
 
     # FastAPI
-    app_name: str = Field('SkyTracker')
     environment: str = Field('development')
     debug: bool = Field(True)
+    api_key: str = Field('')
 
     # Load environment variables
     model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8')

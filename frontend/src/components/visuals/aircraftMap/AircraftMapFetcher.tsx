@@ -9,7 +9,7 @@ export function AircraftMapFetcher({ setAircraftStates }: { setAircraftStates: (
     const workerRef = useRef<Worker | null>(null);
     const selected = useMapStore((state) => state.selected);
     const setLastUpdate = useMapStore((state) => state.setLastUpdate);
-    const appendHistoryPoint = useMapStore((state) => state.appendHistoryPoint);
+    const prependHistoryPoint = useMapStore((state) => state.prependHistoryPoint);
 
     useEffect(() => {
         if (!map) return;
@@ -25,7 +25,7 @@ export function AircraftMapFetcher({ setAircraftStates }: { setAircraftStates: (
                     south: bounds.getSouthWest().lat - 1,
                     west: bounds.getSouthWest().lng - 1,
                     north: bounds.getNorthEast().lat + 1,
-                    east: bounds.getNorthEast().lng - 1,
+                    east: bounds.getNorthEast().lng + 1,
                 }
             });
         };
@@ -39,7 +39,7 @@ export function AircraftMapFetcher({ setAircraftStates }: { setAircraftStates: (
                 if (selected) {
                     for (const state of aircraftStates) {
                         if (state.callsign === selected) {
-                            appendHistoryPoint(state.callsign, state);
+                            prependHistoryPoint(state.callsign, state);
                             break;
                         }
                     }

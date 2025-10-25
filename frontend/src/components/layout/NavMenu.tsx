@@ -26,7 +26,7 @@ export function NavMenu() {
             icon: TowerControl,
         },
     ];
-    const navLinkClass = "bg-gray-300/40 hover:bg-gray-100/40 dark:bg-gray-800/40 dark:hover:bg-gray-700/40 rounded-sm font-light px-3";
+    const navLinkClass = "bg-gray-300/40 hover:bg-gray-100/40 dark:bg-gray-800/40 dark:hover:bg-gray-700/40 rounded-sm font-medium depth-small px-3";
 
     return (
         <NavigationMenu>

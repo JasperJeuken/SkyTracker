@@ -21,8 +21,8 @@ export function MapDetailsImages({ data, className }: { data: Loadable<AircraftP
     }, [api, data]);
 
     return (
-        <div className={`relative ${className}`}>
-            <Carousel setApi={setApi} opts={{ loop: true }} className="w-full max-w-lg mx-auto shadow-lg rounded-2xl overflow-hidden">
+        <div className={`relative rounded-2xl overflow-hidden shadow-md ${className}`}>
+            <Carousel setApi={setApi} opts={{ loop: true }} className="w-full max-w-lg mx-auto">
                 <CarouselContent>
                     {data.status === "loading" &&
                         <CarouselItem key={0}>
@@ -31,24 +31,24 @@ export function MapDetailsImages({ data, className }: { data: Loadable<AircraftP
                             </AspectRatio>
                         </CarouselItem>
                     }
-                    { (data.status === "error" || (data.status === "success" && !data.data)) &&
+                    { (data.status === "error" || (data.status === "success" && data.data.length == 0)) &&
                         <CarouselItem key={0}>
                             <AspectRatio ratio={aspectRatio} className="flex items-center justify-center bg-muted">
                                 <ImageOff className="h-12 w-12 text-muted-foreground" />
                             </AspectRatio>
                         </CarouselItem>
                     }
-                    { data.status === "success" && data.data &&
+                    { data.status === "success" && data.data.length > 0 &&
                         data.data.map((photo, idx) => {
                             const domain = new URL(photo.detail_url).hostname;
                             return (
-                                <CarouselItem key={idx}>
+                                <CarouselItem key={idx} className="pl-0">
                                     <AspectRatio ratio={aspectRatio} className="relative">
                                         <a href={photo.detail_url} target="_blank" rel="noopener noreferrer">
                                             <img src={photo.image_url} alt={`Aircraft image ${idx + 1}`} className="h-full w-full object-cover" />
                                         </a>
                                         <div className="absolute bottom-0 left-0 w-full bg-linear-to-t from-black/60 text-white/90 text-xs px-3 py-1">
-                                            © {domain}
+                                            <span className="pl-3">© {domain}</span>
                                         </div>
                                     </AspectRatio>
                                 </CarouselItem>
@@ -57,7 +57,7 @@ export function MapDetailsImages({ data, className }: { data: Loadable<AircraftP
                     }
                 </CarouselContent>
             </Carousel>
-            <div className="absolute bottom-0 right-3 space-x-2">
+            <div className="absolute bottom-1 right-3 space-x-2">
                 {Array.from({ length: data.status === "success" ? data.data.length : 0 }).map((_, i) => (
                     <button key={i} onClick={() => api?.scrollTo(i)} className={`w-2 h-2 rounded-full transition-colors cursor-pointer ${i == current ? "bg-white" : "bg-gray-800"}`} />
                 ))}

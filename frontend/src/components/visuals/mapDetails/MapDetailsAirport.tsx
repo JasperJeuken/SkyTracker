@@ -19,10 +19,10 @@ export function MapDetailsAirport({
     const departureOnclick = getOnclick({ data: data['airport']['departure'], map});
     return (
         <TooltipProvider>
-            <div className={`relative flex w-full rounded-2xl shadow-md overflow-hidden text-skytracker-dark dark:text-skytracker-light font-light ${className}`}>
+            <div className={`relative flex w-full rounded-2xl overflow-hidden bg-skytracker-light dark:bg-skytracker-dark text-skytracker-dark dark:text-skytracker-light font-medium dark:font-light ${className}`}>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <div className={`flex-1 flex flex-col items-center justify-center p-2 bg-skytracker-light dark:bg-skytracker-dark border-r-1 border-skytracker-dark dark:border-skytracker-light ${data.airport.departure.status === "success" ? "cursor-pointer" : ""}`} onClick={departureOnclick}>
+                        <div className={`flex-1 flex flex-col items-center justify-center p-2 border-r-1 border-skytracker-dark dark:border-skytracker-light ${data.airport.departure.status === "success" ? "cursor-pointer" : ""}`} onClick={departureOnclick}>
                             <PlaneTakeoff className="w-7 h-7 mb-1" />
                             <div className="flex gap-1 items-center">
                                 {data.airport.departure.status === "success" && data.airport.departure.data.country_iso2 && (
@@ -45,12 +45,12 @@ export function MapDetailsAirport({
                         <AirportTooltip data={data.airport.departure} alt="Departure airport" />
                     </TooltipContent>
                 </Tooltip>
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-skytracker-dark dark:bg-skytracker-light rounded-full p-2 shadow-sm z-10">
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-skytracker-dark dark:bg-skytracker-light rounded-full p-2 shadow-sm z-10 depth-medium-reverse">
                     <Route className="w-6 h-6 text-skytracker-light dark:text-skytracker-dark" />
                 </div>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <div className={`flex-1 flex flex-col items-center justify-center p-2 bg-skytracker-light dark:bg-skytracker-dark border-skytracker-dark dark:border-skytracker-light ${data.airport.arrival.status === "success" ? "cursor-pointer" : ""}`} onClick={arrivalOnclick}>
+                        <div className={`flex-1 flex flex-col items-center justify-center p-2 border-skytracker-dark dark:border-skytracker-light ${data.airport.arrival.status === "success" ? "cursor-pointer" : ""}`} onClick={arrivalOnclick}>
                             <PlaneLanding className="w-7 h-7 mb-1" />
                             <div className="flex gap-1 items-center">
                                 {data.airport.arrival.status === "success" && data.airport.arrival.data.country_iso2 && (

@@ -145,11 +145,13 @@ export function MapDetails() {
     if (!details) return null;
 
     return (
-        <ScrollArea className="flex-1 overflow-y-auto p-3">
-            <MapDetailsHeader data={details.state} className="mb-3" />
-            <MapDetailsImages data={details.photos} className="mb-3" />
-            <MapDetailsAirport data={{state: details.state, airport: details.airport}} className="mb-3" />
-            <MapDetailsPosition data={details.state} />
+        <ScrollArea className="flex-1 overflow-y-auto">
+            <div className="p-4">
+                <MapDetailsHeader data={details.state} className="mb-3" />
+                <MapDetailsImages data={details.photos} className="mb-3" />
+                <MapDetailsAirport data={{state: details.state, airport: details.airport}} className="mb-3 depth-medium" />
+                <MapDetailsPosition data={details.state} />
+            </div>
         </ScrollArea>
     );
 }

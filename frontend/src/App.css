@@ -62,3 +62,95 @@
 .leaflet-popup-pane {
   z-index: 1000 !important;
 }
+
+.depth-small {
+  box-shadow: var(--depth-small);
+}
+
+.depth-medium {
+  box-shadow: var(--depth-medium);
+}
+
+.depth-large {
+  box-shadow: var(--depth-large);
+}
+
+.depth-small-reverse {
+  box-shadow: var(--depth-small-reverse);
+}
+
+.depth-medium-reverse {
+  box-shadow: var(--depth-medium-reverse);
+}
+
+.depth-large-reverse {
+  box-shadow: var(--depth-large-reverse);
+}
+
+.depth-small-pseudo:after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  box-shadow: var(--depth-small);
+}
+
+.depth-medium-pseudo:after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  box-shadow: var(--depth-medium);
+}
+
+
+.depth-large-pseudo:after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  box-shadow: var(--depth-large);
+}
+
+.depth-small-reverse-pseudo:after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  box-shadow: var(--depth-small-reverse);
+}
+
+.depth-medium-reverse-pseudo:after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  box-shadow: var(--depth-medium-reverse);
+}
+
+
+.depth-large-reverse-pseudo:after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  box-shadow: var(--depth-large-reverse);
+}

@@ -37,7 +37,7 @@ export function SmallCard({
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <div className={`flex items-center gap-1 h-10 min-w-15 p-2 rounded-sm shadow-md ${bgColor} ${className}`}>
+                            <div className={`flex items-center gap-1 h-10 min-w-15 p-2 rounded-sm ${bgColor} ${className}`}>
                                 {Icon && (
                                     <Icon className={`${textColor} py-0.5`} />
                                 )}

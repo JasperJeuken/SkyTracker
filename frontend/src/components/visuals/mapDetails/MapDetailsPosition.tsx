@@ -11,12 +11,12 @@ export function MapDetailsPosition({ data }: { data: Loadable<State> }) {
     return (
         <div className="flex flex-col gap-3">
             <div className="w-full flex gap-3">
-                <ValueCard value={lat} loading={data.status === "loading"} unit="deg" label="Latitude" icon={GitCommitVertical} className="!w-[50%]" />
-                <ValueCard value={lon} loading={data.status === "loading"} unit="deg" label="Longitude" icon={GitCommitHorizontal} className="!w-[50%]" />
+                <ValueCard value={lat} loading={data.status === "loading"} unit="deg" label="Latitude" icon={GitCommitVertical} className="!w-[50%] depth-medium-reverse" />
+                <ValueCard value={lon} loading={data.status === "loading"} unit="deg" label="Longitude" icon={GitCommitHorizontal} className="!w-[50%] depth-medium-reverse" />
             </div>
             <div className="w-full flex gap-3">
-                <ValueCard value={heading} loading={data.status === "loading"} unit="deg" label="Heading" icon={(props) => (<CircleArrowOutUpLeft {...props} style={{ transform: `rotate(${data.status === "success" ? (data.data.geography.heading ? data.data.geography.heading + 45 : 45) : 45}deg)` }} />)} className="!w-[50%]" />
-                <ValueCard value={altitude} loading={data.status === "loading"} unit="m" label="Barometric altitude" icon={ArrowUpFromLine} className="!w-[50%]" />
+                <ValueCard value={heading} loading={data.status === "loading"} unit="deg" label="Heading" icon={(props) => (<CircleArrowOutUpLeft {...props} style={{ transform: `rotate(${data.status === "success" ? (data.data.geography.heading ? data.data.geography.heading + 45 : 45) : 45}deg)` }} />)} className="!w-[50%] depth-medium-reverse" />
+                <ValueCard value={altitude} loading={data.status === "loading"} unit="m" label="Barometric altitude" icon={ArrowUpFromLine} className="!w-[50%] depth-medium-reverse" />
             </div>
         </div>
     )

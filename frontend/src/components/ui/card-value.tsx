@@ -45,7 +45,7 @@ export function ValueCard({
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <div className={`h-18 min-w-25 px-3 py-2 pb-3 rounded-xl shadow-lg ${bgColor} ${fullWidth ? "w-full" : "w-fit"} ${className}`}>
+                            <div className={`h-18 min-w-25 px-3 py-2 pb-3 rounded-xl ${bgColor} ${fullWidth ? "w-full" : "w-fit"} ${className}`}>
                                 {label &&(
                                     <div className="mb-[0.2rem]">
                                         <span className={`text-[0.7rem] font-medium ${unitColor}`}>{label}</span>

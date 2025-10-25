@@ -201,7 +201,7 @@ export function AircraftMarkerLayer({
             }
         };
         const handleZoom = () => {
-            if (map.getZoom() < 7) {
+            if (map.getZoom() < 9) {
                 stopAnimation();
             } else {
                 startAnimation();

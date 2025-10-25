@@ -22,10 +22,10 @@ export function AircraftMapFetcher({ setAircraftStates }: { setAircraftStates: (
             const bounds = map.getBounds();
             worker.postMessage({
                 bounds: {
-                    south: bounds.getSouthWest().lat,
-                    west: bounds.getSouthWest().lng,
-                    north: bounds.getNorthEast().lat,
-                    east: bounds.getNorthEast().lng,
+                    south: bounds.getSouthWest().lat - 1,
+                    west: bounds.getSouthWest().lng - 1,
+                    north: bounds.getNorthEast().lat + 1,
+                    east: bounds.getNorthEast().lng - 1,
                 }
             });
         };

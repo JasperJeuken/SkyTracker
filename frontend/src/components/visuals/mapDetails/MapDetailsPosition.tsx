@@ -9,11 +9,11 @@ export function MapDetailsPosition({ data }: { data: Loadable<State> }) {
     const selected = useMapStore((state) => state.selected);
     const lastState = useMapStore((state) => {
         if (!selected) return null;
-        const selectedHistory = state.history[selected];
+        const selectedHistory = state.history;
         if (!selectedHistory || selectedHistory.length == 0) return null;
         return selectedHistory[0];
     });
-    const animatedPosition = useMapStore((state) => state.selectedPosition);
+    const animatedPosition = useMapStore((state) => state.animatedPosition);
 
     // Get relevant properties
     const animatedLat = animatedPosition[0].toFixed(3);

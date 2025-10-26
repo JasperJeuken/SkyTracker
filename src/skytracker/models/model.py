@@ -28,13 +28,6 @@ class APIBaseModel(BaseModel):
                 return None
             return value
 
-        # Float pre-processing
-        if isinstance(value, float):
-            if any(part in info.field_name.lower() for part in ('latitude', 'longitude')) \
-                    and value == 0.0:
-                return None
-            return value
-
         return value
 
 

@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import { useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
 import MarkersCanvas from "@/lib/leaflet-markers-canvas";
-import { type MapState } from "@/types/api.js";
 import { useMapStore } from "@/store/mapStore";
 import { getAircraftSVG } from "@/components/visuals/aircraftMap/AircraftMarkers";
 
@@ -39,8 +38,6 @@ function positionOffset({ position, altitude, map }: { position: [number, number
 }
 
 export function AircraftMarkerLayer({
-    aircraft,
-    selectedAircraft,
     pane, color,
     selectedColor = color,
     strokeColor = color,
@@ -49,8 +46,6 @@ export function AircraftMarkerLayer({
     selectable = false,
     animateMarkers = true
 }: {
-    aircraft: MapState[], 
-    selectedAircraft: string | null, 
     pane: string, color: string,
     selectedColor?: string,
     strokeColor?: string, 
@@ -62,13 +57,16 @@ export function AircraftMarkerLayer({
     // Get map instance and create reference for marker canvas
     const setSelectedAircraft = useMapStore((state) => state.setSelected);
     const setSidebarOpen = useMapStore((state) => state.setSidebarOpen);
-    const setSelectedPosition = useMapStore((state) => state.setSelectedPosition);
-    const lastUpdate = useMapStore((state) => state.lastUpdate);
+    const setAnimatedPosition = useMapStore((state) => state.setAnimatedPosition);
+    const resetSelected = useMapStore((state) => state.resetSelected);
+    const lastUpdate = useMapStore((state) => state.lastMapUpdate);
+    const mapStates = useMapStore((state) => state.mapStates);
+    const selected = useMapStore((state) => state.selected);
+    const animationZoomLimit = useMapStore((state) => state.animationZoomLimit);
     const markerClickedRef = useRef(false);
     const layerRef = useRef<any>(null);
     const markersRef = useRef<Record<string, L.Marker>>({});
     const offsetRef = useRef<Record<string, [number, number]>>({});
-    const aircraftRef = useRef<MapState[]>(aircraft);
 
     // Get a map reference (attach click event if selectable)
     let map = null;
@@ -76,8 +74,9 @@ export function AircraftMarkerLayer({
         map = useMapEvents({
             click: () => {
                 if (!markerClickedRef.current) {
-                    setSelectedAircraft(null);
                     setSidebarOpen(false);
+                    setSelectedAircraft(null);
+                    resetSelected();
                 }
                 markerClickedRef.current = false;
             },
@@ -105,13 +104,12 @@ export function AircraftMarkerLayer({
         layer.clear();
         markersRef.current = {};
         offsetRef.current = {};
-        aircraftRef.current = aircraft;
-        if (!aircraft || aircraft.length === 0) return;
+        if (mapStates.length === 0) return;
 
         // Create marker for each aircraft (rotated with heading)
-        const markers = aircraft.map(a => {
+        const markers = mapStates.map(a => {
             
-            const currentColor = a.callsign == selectedAircraft ? selectedColor : color;
+            const currentColor = a.callsign == selected ? selectedColor : color;
             const icon = createAircraftIcon({ color: currentColor, strokeColor: strokeColor, model: a.model, angle: a.heading ?? 0, pane: pane })
 
             let [lat, lon] = [a.position[0], a.position[1]];
@@ -119,8 +117,8 @@ export function AircraftMarkerLayer({
             if (altitudeOffset) {
                 offset = positionOffset({ position: a.position, altitude: a.altitude, map });
                 offsetRef.current[a.callsign] = offset;
-            } else if (a.callsign == selectedAircraft) {
-                setSelectedPosition([lat, lon]);
+            } else if (a.callsign == selected) {
+                setAnimatedPosition([lat, lon]);
             }
             const marker = L.marker([lat + offset[0], lon + offset[1]], { icon: icon, title: a.callsign });
 
@@ -143,7 +141,7 @@ export function AircraftMarkerLayer({
             return marker;
         });
         layer.addMarkers(markers);
-    }, [aircraft, selectedAircraft]);
+    }, [mapStates, selected]);
 
     // Animation
     useEffect(() => {
@@ -160,7 +158,7 @@ export function AircraftMarkerLayer({
 
             const updateMarkers: L.Marker[] = [];
 
-            for (const a of aircraftRef.current) {
+            for (const a of mapStates) {
                 const marker = markersRef.current[a.callsign];
                 const offset = offsetRef.current[a.callsign] ?? [0., 0.];
                 if (!marker) continue;
@@ -174,10 +172,9 @@ export function AircraftMarkerLayer({
                 const lon2 = lon1 + Math.atan2(Math.sin(headingRad) * Math.sin(distance / R) * Math.cos(lat1), Math.cos(distance / R) - Math.sin(lat1) * Math.sin(lat2));
                 const newLat = (lat2 * 180) / Math.PI + offset[0];
                 const newLon = (lon2 * 180) / Math.PI + offset[1];
-                if (a.callsign == selectedAircraft && offset[0] == 0 && offset[1] == 0) {
-                    setSelectedPosition([newLat, newLon]);
+                if (a.callsign == selected && offset[0] == 0 && offset[1] == 0) {
+                    setAnimatedPosition([newLat, newLon]);
                 }
-
                 marker.setLatLng([newLat, newLon]);
                 updateMarkers.push(marker);
             }
@@ -201,7 +198,7 @@ export function AircraftMarkerLayer({
             }
         };
         const handleZoom = () => {
-            if (map.getZoom() < 9) {
+            if (map.getZoom() < animationZoomLimit) {
                 stopAnimation();
             } else {
                 startAnimation();
@@ -214,7 +211,7 @@ export function AircraftMarkerLayer({
             stopAnimation();
             map.off("zoomend", handleZoom);
         };
-    }, [map, animateMarkers, lastUpdate, selectedAircraft])
+    }, [map, animateMarkers, lastUpdate, selected])
 
     return null;
 }

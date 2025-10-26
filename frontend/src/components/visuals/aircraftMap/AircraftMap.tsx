@@ -3,7 +3,6 @@ import { useEffect, useState, useRef } from "react";
 import { MapContainer, TileLayer, useMap, Pane } from "react-leaflet";
 import L, { type LatLngExpression } from "leaflet";
 import { AircraftMarkerLayer } from "@/components/visuals/aircraftMap/AircraftMarkerLayer.js";
-import { type MapState } from "@/types/api.js";
 import { AircraftTrackLayer } from "@/components/visuals/aircraftMap/AircraftTrackLayer.js"
 import { useMapStore } from "@/store/mapStore.js";
 import { useTheme } from "next-themes";
@@ -77,8 +76,6 @@ function MapRefSetter() {
 export function AircraftMap() {
     // Get variables
     const mapStyle = useMapStore((state) => state.mapStyle);
-    const selectedAircraft = useMapStore((state) => state.selected);
-    const [aircraft, setAircraftStates] = useState<MapState[]>([]);
     const { resolvedTheme } = useTheme();
     const currentTheme = (resolvedTheme === undefined ? "dark" : resolvedTheme) as "light" | "dark";
     const tileLayerRef = useRef<L.TileLayer | null>(null);
@@ -103,7 +100,7 @@ export function AircraftMap() {
         <div className="absolute inset-0 z-0">
             <AircraftMapSettings />
             <MapContainer className="h-full w-full" center={initialView.center as LatLngExpression} zoom={initialView.zoom} minZoom={3.5} zoomControl={false}>
-                <AircraftMapFetcher setAircraftStates={setAircraftStates} />
+                <AircraftMapFetcher />
                 <MapViewSaver />
                 <MapRefSetter />
                 <TileLayer
@@ -113,13 +110,13 @@ export function AircraftMap() {
                     key={`${mapStyle}-${currentTheme}`}
                 />
                 <Pane name="aircraft-track" style={{ zIndex: 500 }}>
-                    <AircraftTrackLayer callsign={selectedAircraft} pane="aircraft-track" />
+                    <AircraftTrackLayer pane="aircraft-track" />
                 </Pane>
                 <Pane name="aircraft-shadows" style={{ zIndex: 700 }}>
-                    <AircraftMarkerLayer aircraft={aircraft} selectedAircraft={selectedAircraft} pane="aircraft-shadows" color="#2d2e3040" altitudeOffset />
+                    <AircraftMarkerLayer pane="aircraft-shadows" color="#2d2e3040" altitudeOffset />
                 </Pane>
                 <Pane name="aircraft-markers" style={{ zIndex: 900 }}>
-                    <AircraftMarkerLayer aircraft={aircraft} selectedAircraft={selectedAircraft} pane="aircraft-markers" color="#1E90FF" selectedColor="#0757a7" strokeColor="#081623ff" selectable popup />
+                    <AircraftMarkerLayer pane="aircraft-markers" color="#1E90FF" selectedColor="#0757a7" strokeColor="#081623ff" selectable popup />
                 </Pane>
             </MapContainer>
         </div>

@@ -8,12 +8,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 
 export function MapDetailsHeader({ data, className }: {data: Loadable<State>, className?: string}) {
     const selectedAircraft = useMapStore((state) => state.selected);
-    const currentPosition = useMapStore((state) => state.selectedPosition);
+    const animatedPosition = useMapStore((state) => state.animatedPosition);
     const map = useMapStore((state) => state.mapRef);
 
     const recenter = () => {
         if (!map || data.status != "success") return;
-        map.setView([currentPosition[0], currentPosition[1]], 10, { animate: true, duration: 0 });
+        map.setView([animatedPosition[0], animatedPosition[1]], 10, { animate: true, duration: 0 });
     }
 
     return (

@@ -25,7 +25,7 @@ export function MapDetailsAircraft({ data }: { data: {state: Loadable<State>, ai
 
     const dateEvents = [
         { date: new Date("1970-01-01") },
-        { date: new Date("1990-01-01") },
+        { date: new Date("1971-01-01") },
         { date: new Date("1991-01-01") },
         { date: new Date("2025-01-01") },
     ]

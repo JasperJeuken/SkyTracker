@@ -1,7 +1,7 @@
 import type { Loadable, State } from "@/types/api";
 import { SmallCard } from "@/components/ui/card-small";
 import { useMapStore } from "@/store/mapStore";
-import { Hash, Locate, Plane } from "lucide-react";
+import { Hash, Locate, Plane, Radio } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -25,6 +25,7 @@ export function MapDetailsHeader({ data, className }: {data: Loadable<State>, cl
                     <SmallCard text={selectedAircraft ?? ""} tooltip="Callsign" className="h-10 !px-4 font-bold text-lg depth-small" variant="accent"/>
                     {data.data.flight.number && <SmallCard text={data.data.flight.number ?? ""} tooltip="Flight number" className="h-10 depth-small" icon={Hash} />}
                     {data.data.aircraft.icao && <SmallCard text={data.data.aircraft.icao ?? ""} tooltip="Aircraft type" className="h-10 depth-small" icon={Plane} />}
+                    {data.data.transponder.squawk && <SmallCard text={data.data.transponder.squawk} tooltip="Squawk code" className="h-10 depth-small" icon={Radio} />}
                     
                     <Tooltip>
                         <TooltipTrigger asChild>

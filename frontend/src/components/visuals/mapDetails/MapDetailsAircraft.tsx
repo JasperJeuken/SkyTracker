@@ -1,5 +1,6 @@
 import { ValueCard } from "@/components/ui/card-value";
 import { Separator } from "@/components/ui/separator";
+import { Timeline } from "@/components/ui/timeline";
 import { type Aircraft, type Loadable, type State } from "@/types/api";
 import { Tag, BookOpen, User, PenLine, Truck, Factory, Plane, Fan, SquareStack, PlaneTakeoff } from "lucide-react";
 
@@ -22,6 +23,13 @@ export function MapDetailsAircraft({ data }: { data: {state: Loadable<State>, ai
     const dateRegistration = dateRegistrationData ? new Date(dateRegistrationData).toLocaleDateString() : "N/A";
     const dateFirstFlight = dateFirstFlightData ? new Date(dateFirstFlightData).toLocaleDateString() : "N/A";
 
+    const dateEvents = [
+        { date: new Date("1970-01-01") },
+        { date: new Date("1990-01-01") },
+        { date: new Date("1991-01-01") },
+        { date: new Date("2025-01-01") },
+    ]
+
     return (
         <>
             <div className="flex flex-col gap-3">
@@ -29,6 +37,7 @@ export function MapDetailsAircraft({ data }: { data: {state: Loadable<State>, ai
                     <ValueCard value={icao24 ?? "N/A"} loading={data.state.status === "loading"} label="ICAO24" icon={Tag} className="!w-[50%] depth-medium-reverse" tooltip longLabel="ICAO 24-bit address" description="Unique 24-bit identifier (hexadecimal) for an aircraft, issued by ICAO." />
                     <ValueCard value={registration ?? "N/A"} loading={data.state.status === "loading"} label="Registration" icon={BookOpen} className="!w-[50%] depth-medium-reverse" tooltip description="Unique code for an aircraft, issued by a civil aviation authority." />
                 </div>
+                <Timeline events={dateEvents} />
                 {data.aircraft.status === "success" && (<>
                     <div className="w-full flex gap-3">
                         <ValueCard fullWidth value={owner ?? "N/A"} label="Owner" icon={User} className="depth-medium-reverse" tooltip longLabel="Aircraft owner" description="Owner of the aircraft." />

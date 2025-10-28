@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from enum import IntEnum
 
 from skytracker.models.state import State
+from skytracker.settings import Settings
 
 
 class APIResponse(ABC):
@@ -19,6 +20,13 @@ class APIResponse(ABC):
 
 class API(ABC):
     """Abstract class for external API"""
+
+    def __init__(self, settings: Settings) -> None:
+        """Initialize API using settings
+
+        Args:
+            settings (Settings): settings
+        """
 
     @abstractmethod
     def get_states(self) -> list[State]:

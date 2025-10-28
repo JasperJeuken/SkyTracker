@@ -237,9 +237,16 @@ class AircraftLifecycle(BaseModel):
         if date is None:
             return date
         if isinstance(date, str):
-            return datetime.strptime(date.strip(), '%Y-%m-%d %H:%M:%S')
+            if len(date) == 0:
+                return None
+            parsed_date = datetime.strptime(date.strip(), '%Y-%m-%d %H:%M:%S')
+            if parsed_date.year == 1970 and parsed_date.month == 1 and parsed_date.day == 1:
+                return None
+            return parsed_date
         if not date.time():
             date.hour, date.minute, date.second, date.microsecond = 0, 0, 0, 0
+        if isinstance(date, datetime) and date.year == 1970 and date.month == 1 and date.day == 1:
+            return None
         return datetime(date.year, date.month, date.day,
                         date.hour, date.minute, date.second, date.microsecond, tzinfo=timezone.utc)
     
@@ -255,7 +262,7 @@ class AircraftLifecycle(BaseModel):
             str: serialized datetime
         """
         if date is None:
-            return '1970-01-01 00:00:00'
+            return ''
         return date.strftime('%Y-%m-%d %H:%M:%S')
 
 

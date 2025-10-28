@@ -132,6 +132,7 @@ const markersCanvas = {
 
   _updatePosition() {
     if (!this._map) return;
+    if (this._map.getZoom() < 9) return;
     const now = performance.now();
     if (this._lastFrame && now - this._lastFrame < 15) return;
     this._lastFrame = now;

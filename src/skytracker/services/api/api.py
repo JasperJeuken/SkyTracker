@@ -1,11 +1,13 @@
 """External API service"""
 import time
 import asyncio
+from typing import Type
 
 from skytracker.storage import Storage
 from skytracker.models.state import State, StateGeography
 from skytracker.services.api import OpenskyNetworkAPI, AviationEdgeAPI
-from skytracker.utils import logger, log_and_raise
+from skytracker.models.api import API
+from skytracker.utils import logger
 from skytracker.settings import settings
 
 
@@ -19,9 +21,16 @@ async def collection_service(storage: Storage, repeat: int = 90) -> None:
     logger.debug('Starting collection service...')
     
     # Start APIs
-    api_opensky_network = OpenskyNetworkAPI(settings.opensky_network_client_id,
-                                            settings.opensky_network_client_secret)
-    api_aviation_edge = AviationEdgeAPI(settings.aviation_edge_api_key)
+    api_types: list[Type[API]] = [OpenskyNetworkAPI, AviationEdgeAPI]
+    apis: list[API] = []
+    for api_type in api_types:
+        try:
+            api = api_type(settings)
+        except Exception as exc:
+            logger.error(f'Startup error ({api_type.__name__}): "{exc}"')
+            api = None
+        finally:
+            apis.append(api)
     
     # Start collection loop
     running = True
@@ -29,20 +38,22 @@ async def collection_service(storage: Storage, repeat: int = 90) -> None:
         start_time = time.time()
 
         # Collect states from all APIs
-        try:
-            states_opensky_network = api_opensky_network.get_states()
-        except Exception as exc:
-            logger.error(f'OpenSky Network collection error: "{exc}"')
-            states_opensky_network = []
-        try:
-            states_aviation_edge = api_aviation_edge.get_states()
-        except Exception as exc:
-            logger.error(f'Aviation Edge collection error: "{exc}"')
-            states_aviation_edge = []
+        all_states = []
+        for api in apis:
+            if api is None:
+                all_states.append([])
+                continue
+            try:
+                states = api.get_states()
+            except Exception as exc:
+                logger.error(f'Collection error ({type(api).__name__}): "{exc}"')
+                states = []
+            finally:
+                all_states.append(states)
         
         # Combine states and write to database
         try:
-            states = merge_states(states_opensky_network, states_aviation_edge)
+            states = merge_states(*all_states)
             await storage['state'].insert_states(states)
             logger.info(f'Inserted {len(states)} aircraft states into database.')
         except Exception as exc:

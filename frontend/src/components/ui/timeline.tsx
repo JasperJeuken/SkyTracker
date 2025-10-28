@@ -1,13 +1,16 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { Calendar } from "lucide-react";
+import { useLayoutEffect, useRef, useState, type ElementType } from "react";
+import { type TooltipProps, ValueTooltip } from "./tooltip-value";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
-type TimelineEvent = {
+export type TimelineEvent = {
     date: Date,
-    icon?: ReactNode
+    icon?: ElementType,
+    tooltip?: TooltipProps
 };
 
-export function Timeline({ events, mergeThreshold=5 }: { events: TimelineEvent[], mergeThreshold?: number }) {
+export function Timeline({ events, mergeThreshold=20, labels=true, className="" }: { events: TimelineEvent[], mergeThreshold?: number, labels?: boolean, className?: string }) {
+    // tooltip on icons
     if (!events || events.length === 0) return null;
     const containerRef = useRef<HTMLDivElement | null>(null);
     const [width, setWidth] = useState<number>(0);
@@ -46,11 +49,7 @@ export function Timeline({ events, mergeThreshold=5 }: { events: TimelineEvent[]
         }
     });
 
-    const markerDiameter = 16;
-    const iconMaxWidth = 20;
-    const verticalPadding = 8;
-    const reservedPx = Math.ceil(markerDiameter / 2 + iconMaxWidth / 2 + verticalPadding);
-
+    const reservedPx = 50;
     const clamp = (pos: number) => {
         if (!width || width <= 0) return pos;
         const x = (pos / 100) * width;
@@ -59,36 +58,69 @@ export function Timeline({ events, mergeThreshold=5 }: { events: TimelineEvent[]
     }
     const firstPos = clamp(mergedGroups[0].pos);
     const lastPos = clamp(mergedGroups[mergedGroups.length - 1].pos);
+    const iconHeight = 1.3;
+    const iconPadding = 1;
+    const lineHeight = 0.2;
+    const markerRadius = 0.5;
+    const labelPadding = 0.2;
+    const labelHeight = 0.9;
+    const hasIcons = !events.every(evt => evt.icon == undefined);
+    const height = (hasIcons ? iconHeight + iconPadding : 0) + markerRadius + (labels ? labelHeight + labelPadding : 0);
 
     return (
-        <div className="w-full" aria-hidden>
-            <div ref={containerRef} className="relative w-full py-6" style={{ boxSizing: "border-box" }}>
+        <div className={`w-full ${className}`} aria-hidden>
+            <div ref={containerRef} className="relative w-full" style={{ boxSizing: "border-box", height: `${height}rem` }}>
+
+                {/* Icons */}
+                {hasIcons && mergedGroups.map((group, idx) => {
+                    const pos = clamp(group.pos);
+                    return (
+                        <div key={idx} className="absolute flex flex-col items-center top-0" style={{ left: `${pos}%`, transform: "translateX(-50%)" }}>
+                            <div className="flex gap-1 items-center justifiy-center">
+                                {group.events.map((evt, j) => {
+                                    if (!evt.icon) return null;
+                                    return (
+                                        <div key={j} className="text-gray-700" style={{ lineHeight: 1, height: `${iconHeight}rem`, width: `${iconHeight}rem` }}>
+                                            <TooltipProvider>
+                                                <Tooltip disableHoverableContent>
+                                                    <TooltipTrigger asChild>
+                                                        {evt.icon && <evt.icon className="h-full w-full" />}
+                                                    </TooltipTrigger>
+                                                    {evt.tooltip && (<TooltipContent className="max-w-xs text-sm p-3 pointer-events-none" side="bottom">
+                                                        <ValueTooltip label={evt.tooltip.label} description={evt.tooltip.description} alternatives={evt.tooltip.alternatives} />
+                                                    </TooltipContent>)}
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    )
+                })}
 
                 {/* Timeline line */}
-                <div className="absolute top-1/2 -translate-y-1/2 pointer-events-none" style={{ left: `${firstPos}%`, right: `${100 - lastPos}%` }}>
-                    <div className="h-1 bg-gray-300 rounded w-full" />
+                <div className="absolute pointer-events-none" style={{ left: `${firstPos}%`, right: `${100 - lastPos}%`, transform: "translateY(-50%)", top: `${hasIcons ? iconHeight + iconPadding : 0}rem` }}>
+                    <div className="bg-gray-300 rounded w-full" style={{ height: `${lineHeight}rem` }} />
                 </div>
 
                 {/* Markers */}
                 {mergedGroups.map((group, idx) => {
                     const pos = clamp(group.pos);
                     return (
-                        <div key={idx} className="absolute flex flex-col items-center" style={{ left: `${pos}%`, transform: "translateX(-50%) translateY(-50%)", top: "50%" }}>
-                            {/* Icons */}
-                            <div className="flex gap-1 mb-2 items-center justify-center">
-                                {group.events.map((evt, j) => (
-                                    <div key={j} className="text-gray-700" style={{ lineHeight: 1 }}>
-                                        {evt.icon || <Calendar size={16} />}
-                                    </div>
-                                ))}
-                            </div>
+                        <div key={idx} className={`absolute flex flex-col items-center`} style={{ left: `${pos}%`, transform: "translateX(-50%) translateY(-50%)", top: `${hasIcons ? iconHeight + iconPadding : 0}rem`, width: `${markerRadius * 2}rem`, height: `${markerRadius * 2}rem` }}>
+                            <div className="w-full h-full bg-blue-500 rounded-full border-2 border-white shadow" />
+                        </div>
+                    )
+                })}
 
-                            {/* Circle marker */}
-                            <div className="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow" />
-
-                            {/* Date labels */}
-                            <div className="text-xs mt-2 text-gray-600 whitespace-nowrap">
-                                {group.events.map((evt) => evt.date.toLocaleDateString()).join(" | ")}
+                {/* Labels */}
+                {labels && mergedGroups.map((group, idx) => {
+                    const pos = clamp(group.pos);
+                    return (
+                        <div key={idx} className="absolute flex flex-col items-center bottom-0" style={{ left: `${pos}%`, transform: "translateX(-50%)", height: `${labelHeight + labelPadding}rem`, paddingTop: `${labelPadding}rem` }}>
+                            <div className="text-sm font-normal text-gray-700 whitespace-nowrap items-center h-full justify-center align-bottom">
+                                {[... new Set(group.events.map((evt) => ("'" + evt.date.getFullYear().toString().substring(2))))].join(" | ")}
                             </div>
                         </div>
                     )

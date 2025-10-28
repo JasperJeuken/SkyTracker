@@ -97,7 +97,7 @@ class AircraftTableManager(TableManager[Aircraft]):
         Returns:
             list[Aircraft]: aircraft database
         """
-        api = AviationEdgeAPI(settings.aviation_edge_api_key)
+        api = AviationEdgeAPI(settings)
         aircraft = api.get_aircraft_database()
         logger.debug(f'Retrieved {len(aircraft)} aircraft.')
         return aircraft

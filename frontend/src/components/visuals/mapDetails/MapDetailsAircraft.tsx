@@ -1,6 +1,6 @@
 import { ValueCard } from "@/components/ui/card-value";
 import { Separator } from "@/components/ui/separator";
-import { Timeline } from "@/components/ui/timeline";
+import { Timeline, type TimelineEvent } from "@/components/ui/timeline";
 import { type Aircraft, type Loadable, type State } from "@/types/api";
 import { Tag, BookOpen, User, PenLine, Truck, Factory, Plane, Fan, SquareStack, PlaneTakeoff } from "lucide-react";
 
@@ -23,12 +23,11 @@ export function MapDetailsAircraft({ data }: { data: {state: Loadable<State>, ai
     const dateRegistration = dateRegistrationData ? new Date(dateRegistrationData).toLocaleDateString() : "N/A";
     const dateFirstFlight = dateFirstFlightData ? new Date(dateFirstFlightData).toLocaleDateString() : "N/A";
 
-    const dateEvents = [
-        { date: new Date("1970-01-01") },
-        { date: new Date("1971-01-01") },
-        { date: new Date("1991-01-01") },
-        { date: new Date("2025-01-01") },
-    ]
+    const dateEvents: TimelineEvent[] = []
+    if (dateDeliveryData) dateEvents.push({ date: new Date(dateDeliveryData), icon: Truck, tooltip: { label: "Delivery date", description: "Date the manufacturer delivered the aircraft to the operator.", alternatives: [new Date(dateDeliveryData).toLocaleDateString()] } });
+    if (dateRolloutData) dateEvents.push({ date: new Date(dateRolloutData), icon: Factory, tooltip: { label: "Rollout date", description: "Date the aircraft was first completed by the manufacturer.", alternatives: [new Date(dateRolloutData).toLocaleDateString()] } });
+    if (dateRegistrationData) dateEvents.push({ date: new Date(dateRegistrationData), icon: PenLine, tooltip: { label: "Registration date", description: "Date the aircraft was registered, usually corresponds to a change of ownership.", alternatives: [new Date(dateRegistrationData).toLocaleDateString()] } });
+    if (dateFirstFlightData) dateEvents.push({ date: new Date(dateFirstFlightData), icon: PlaneTakeoff, tooltip: { label: "Date of first flight", description: "Date the aircraft flew for the first time.", alternatives: [new Date(dateFirstFlightData).toLocaleDateString()] } });
 
     return (
         <>
@@ -37,7 +36,6 @@ export function MapDetailsAircraft({ data }: { data: {state: Loadable<State>, ai
                     <ValueCard value={icao24 ?? "N/A"} loading={data.state.status === "loading"} label="ICAO24" icon={Tag} className="!w-[50%] depth-medium-reverse" tooltip longLabel="ICAO 24-bit address" description="Unique 24-bit identifier (hexadecimal) for an aircraft, issued by ICAO." />
                     <ValueCard value={registration ?? "N/A"} loading={data.state.status === "loading"} label="Registration" icon={BookOpen} className="!w-[50%] depth-medium-reverse" tooltip description="Unique code for an aircraft, issued by a civil aviation authority." />
                 </div>
-                <Timeline events={dateEvents} />
                 {data.aircraft.status === "success" && (<>
                     <div className="w-full flex gap-3">
                         <ValueCard fullWidth value={owner ?? "N/A"} label="Owner" icon={User} className="depth-medium-reverse" tooltip longLabel="Aircraft owner" description="Owner of the aircraft." />
@@ -49,7 +47,8 @@ export function MapDetailsAircraft({ data }: { data: {state: Loadable<State>, ai
                     <div className="w-full flex gap-3">
                         <ValueCard fullWidth value={family ?? "N/A"} label="Family" icon={SquareStack} className="depth-medium-reverse" tooltip longLabel="Aircraft family" description="Name of aircraft family from manufacturer." />
                     </div>
-                    <Separator />
+                    <Timeline events={dateEvents} className="my-2" />
+                    {/* <Separator />
                     <div className="w-full flex gap-3">
                         <ValueCard value={dateDelivery} label="Delivery" icon={Truck} className="!w-[50%] depth-medium-reverse" tooltip longLabel="Date of delivery" description="Date the manufacturer delivered the aircraft to the operator." />
                         <ValueCard value={dateRegistration} label="Registration" icon={PenLine} className="!w-[50%] depth-medium-reverse" tooltip longLabel="Date of registration" description="Date on which the aircraft was registered, usually corresponding to a change of ownership. " />
@@ -57,7 +56,7 @@ export function MapDetailsAircraft({ data }: { data: {state: Loadable<State>, ai
                     <div className="w-full flex gap-3">
                         <ValueCard value={dateRollout} label="Rollout" icon={Factory} className="!w-[50%] depth-medium-reverse" tooltip longLabel="Date of rollout" description="Date on which the aircraft was first completed by the manufacturer." />
                         <ValueCard value={dateFirstFlight} label="First flight" icon={PlaneTakeoff} className="!w-[50%] depth-medium-reverse" tooltip longLabel="Date of first flight" description="Date on which the aircraft flew for the first time." />
-                    </div>
+                    </div> */}
                 </>)}
             </div>
         </>

@@ -1,19 +1,7 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "./skeleton";
-import { Separator } from "@/components/ui/separator";
+import { ValueTooltip } from "./tooltip-value";
 
-
-export function ValueTooltip({ label, description, alternatives }: { label: string, description?: string, alternatives?: string[] }) {
-    return <div className="flex flex-col">
-        <span className={`${description ? "text-lg" : "text-base"} font-medium`}>{label}</span>
-        {description && <span className="text-base font-light">{description}</span>}
-        {alternatives && alternatives.length > 0 && <Separator className="my-3" />}
-        {alternatives && alternatives.length > 0 && <span className="text-small font-light mb-1">Alternative units:</span>}
-        {alternatives && alternatives.length > 0 && alternatives.map((alt) => (
-            <span className="font-mono text-base">{alt}</span>
-        ))}
-    </div>
-}
 
 
 export function ValueCard({ 

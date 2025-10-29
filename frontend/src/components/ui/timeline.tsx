@@ -80,7 +80,7 @@ export function Timeline({ events, mergeThreshold=20, labels=true, className="" 
                                 {group.events.map((evt, j) => {
                                     if (!evt.icon) return null;
                                     return (
-                                        <div key={j} className="text-gray-700" style={{ lineHeight: 1, height: `${iconHeight}rem`, width: `${iconHeight}rem` }}>
+                                        <div key={j} className="text-gray-700 dark:text-gray-300" style={{ lineHeight: 1, height: `${iconHeight}rem`, width: `${iconHeight}rem` }}>
                                             <TooltipProvider>
                                                 <Tooltip disableHoverableContent>
                                                     <TooltipTrigger asChild>
@@ -101,7 +101,7 @@ export function Timeline({ events, mergeThreshold=20, labels=true, className="" 
 
                 {/* Timeline line */}
                 <div className="absolute pointer-events-none" style={{ left: `${firstPos}%`, right: `${100 - lastPos}%`, transform: "translateY(-50%)", top: `${hasIcons ? iconHeight + iconPadding : 0}rem` }}>
-                    <div className="bg-gray-300 rounded w-full" style={{ height: `${lineHeight}rem` }} />
+                    <div className="bg-gray-300 dark:bg-gray-800 rounded w-full" style={{ height: `${lineHeight}rem` }} />
                 </div>
 
                 {/* Markers */}
@@ -109,7 +109,7 @@ export function Timeline({ events, mergeThreshold=20, labels=true, className="" 
                     const pos = clamp(group.pos);
                     return (
                         <div key={idx} className={`absolute flex flex-col items-center`} style={{ left: `${pos}%`, transform: "translateX(-50%) translateY(-50%)", top: `${hasIcons ? iconHeight + iconPadding : 0}rem`, width: `${markerRadius * 2}rem`, height: `${markerRadius * 2}rem` }}>
-                            <div className="w-full h-full bg-blue-500 rounded-full border-2 border-white shadow" />
+                            <div className="w-full h-full bg-blue-500 dark:bg-gray-500 rounded-full border-2 border-white dark:border-gray-800 shadow" />
                         </div>
                     )
                 })}
@@ -119,7 +119,7 @@ export function Timeline({ events, mergeThreshold=20, labels=true, className="" 
                     const pos = clamp(group.pos);
                     return (
                         <div key={idx} className="absolute flex flex-col items-center bottom-0" style={{ left: `${pos}%`, transform: "translateX(-50%)", height: `${labelHeight + labelPadding}rem`, paddingTop: `${labelPadding}rem` }}>
-                            <div className="text-sm font-normal text-gray-700 whitespace-nowrap items-center h-full justify-center align-bottom">
+                            <div className="text-sm font-normal text-gray-700 dark:text-gray-300 whitespace-nowrap items-center h-full justify-center align-bottom">
                                 {[... new Set(group.events.map((evt) => ("'" + evt.date.getFullYear().toString().substring(2))))].join(" | ")}
                             </div>
                         </div>

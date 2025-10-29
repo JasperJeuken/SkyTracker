@@ -72,7 +72,7 @@ export function ValueCard({
                             </div>
                         </TooltipTrigger>
                         {tooltip && 
-                            <TooltipContent className="max-w-xs text-sm p-3 pointer-events-none" side="bottom">
+                            <TooltipContent className="max-w-xs text-sm p-3 mx-2 pointer-events-none" side="bottom">
                                 <ValueTooltip label={longLabel} description={description} alternatives={alternatives} />
                             </TooltipContent>
                         }

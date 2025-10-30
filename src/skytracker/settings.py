@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     environment: str = Field('development')
     debug: bool = Field(True)
     api_key: str = Field('')
+    cors_domains: str = Field('')
 
     # Load environment variables
     model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8')

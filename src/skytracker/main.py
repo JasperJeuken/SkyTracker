@@ -29,7 +29,7 @@ origins = [
     'http://127.0.0.1:5173',
     'http://localhost:4173',
     'http://127.0.0.1:4173'
-]
+] + settings.cors_domains.split(',') if len(settings.cors_domains) > 0 else []
 
 
 @asynccontextmanager

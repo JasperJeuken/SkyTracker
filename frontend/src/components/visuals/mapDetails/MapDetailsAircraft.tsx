@@ -1,5 +1,4 @@
 import { ValueCard } from "@/components/ui/card-value";
-import { Separator } from "@/components/ui/separator";
 import { Timeline, type TimelineEvent } from "@/components/ui/timeline";
 import { type Aircraft, type Loadable, type State } from "@/types/api";
 import { Tag, BookOpen, User, PenLine, Truck, Factory, Plane, Fan, SquareStack, PlaneTakeoff } from "lucide-react";
@@ -18,10 +17,10 @@ export function MapDetailsAircraft({ data }: { data: {state: Loadable<State>, ai
     const dateRolloutData = data.aircraft.status === "success" ? data.aircraft.data.lifecycle.date_rollout : null;
     const dateRegistrationData = data.aircraft.status === "success" ? data.aircraft.data.lifecycle.date_registration : null;
     const dateFirstFlightData = data.aircraft.status === "success" ? data.aircraft.data.lifecycle.date_first_flight : null;
-    const dateDelivery = dateDeliveryData ? new Date(dateDeliveryData).toLocaleDateString() : "N/A";
-    const dateRollout = dateRolloutData ? new Date(dateRolloutData).toLocaleDateString() : "N/A";
-    const dateRegistration = dateRegistrationData ? new Date(dateRegistrationData).toLocaleDateString() : "N/A";
-    const dateFirstFlight = dateFirstFlightData ? new Date(dateFirstFlightData).toLocaleDateString() : "N/A";
+    // const dateDelivery = dateDeliveryData ? new Date(dateDeliveryData).toLocaleDateString() : "N/A";
+    // const dateRollout = dateRolloutData ? new Date(dateRolloutData).toLocaleDateString() : "N/A";
+    // const dateRegistration = dateRegistrationData ? new Date(dateRegistrationData).toLocaleDateString() : "N/A";
+    // const dateFirstFlight = dateFirstFlightData ? new Date(dateFirstFlightData).toLocaleDateString() : "N/A";
 
     const dateEvents: TimelineEvent[] = []
     if (dateDeliveryData) dateEvents.push({ date: new Date(dateDeliveryData), icon: Truck, tooltip: { label: "Delivery date", description: "Date the manufacturer delivered the aircraft to the operator.", alternatives: [new Date(dateDeliveryData).toLocaleDateString()] } });

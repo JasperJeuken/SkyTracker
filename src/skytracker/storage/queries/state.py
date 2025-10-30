@@ -2,6 +2,7 @@
 from datetime import datetime, timezone
 
 import numpy as np
+from pydantic import ValidationError
 
 from skytracker.storage.table_query import TableQuery
 from skytracker.models.state import (State, StateAircraft, StateAirline, StateAirport, StateFlight,
@@ -257,7 +258,13 @@ class LatestBatchMapQuery(TableQuery[MapState]):
         logger.debug(f'Querying server with "{query}"...')
         rows = await db.sql_query(query)
         logger.info(f'Retrieved {len(rows)} matching states from server')
-        states = [self.parse_table_row(row) for row in rows]
+        states = []
+        for row in rows:
+            try:
+                map_state = self.parse_table_row(row)
+                states.append(map_state)
+            except ValidationError:
+                pass
 
         # Map states to longitude range
         if self.bbox is not None:

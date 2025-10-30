@@ -32,6 +32,9 @@ origins = [
 ] + settings.cors_domains.split(',') if len(settings.cors_domains) > 0 else []
 
 
+
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     """Lifespan asynchronous context manager

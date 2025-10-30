@@ -4,7 +4,7 @@ from typing import Any
 from skytracker.storage.database_manager import DatabaseManager
 from skytracker.storage.table_manager import TableManager
 from skytracker.storage.cache import Cache
-from skytracker.models.state import State, SimpleMapState
+from skytracker.models.state import State, MapState
 from skytracker.models import flatten_model
 from skytracker.storage.queries.state import (NearbyQuery, LatestBatchQuery, TrackQuery,
                                               LatestBatchMapQuery)
@@ -157,7 +157,7 @@ class StateTableManager(TableManager[State]):
     async def get_latest_batch_map(self, limit: int = 0,
                                lat_min: float | None = None, lat_max: float | None = None,
                                lon_min: float | None = None, lon_max: float | None = None) \
-                               -> list[SimpleMapState]:
+                               -> list[MapState]:
         """Get the latest batch of states in the table as simple map states
 
         Args:
@@ -168,7 +168,7 @@ class StateTableManager(TableManager[State]):
             lon_max (float, optional): maximum longitude
 
         Returns:
-            list[SimpleMapState]: list of simple map states in last batch
+            list[MapState]: list of simple map states in last batch
         """
         query = LatestBatchMapQuery(limit, lat_min, lat_max, lon_min, lon_max)
         return await self._run_query(query, self.TABLE_NAME)

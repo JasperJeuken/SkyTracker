@@ -77,7 +77,7 @@ class AirportTableManager(TableManager[Airport]):
         Returns:
             list[Airport]: airport database
         """
-        api = AviationEdgeAPI(settings.aviation_edge_api_key)
+        api = AviationEdgeAPI(settings)
         airports = api.get_airport_database()
         logger.debug(f'Retrieved {len(airports)} airports.')
         return airports

@@ -15,6 +15,7 @@ from skytracker.models.airport import Airport
 from skytracker.models.airline import Airline
 from skytracker.models.aircraft import Aircraft
 from skytracker.utils import log_and_raise, logger
+from skytracker.settings import Settings
 
 
 ModelType = TypeVar('ModelType', bound=BaseModel)
@@ -26,13 +27,13 @@ class AviationEdgeAPI(API):
     RATE_LIMIT: int = 10
     """int: rate limit in seconds"""
 
-    def __init__(self, api_key: str) -> None:
+    def __init__(self, settings: Settings) -> None:
         """Initialize API by storing API key
 
         Args:
-            api_key (str): Aviation Edge API key
+            settings (Settings): settings with Aviation Edge API credentials
         """
-        self._api_key: str = api_key
+        self._api_key: str = settings.aviation_edge_api_key
         self._last_request: datetime = datetime.fromtimestamp(0)
         self._base_url: str = 'https://aviation-edge.com/v2/public'
     

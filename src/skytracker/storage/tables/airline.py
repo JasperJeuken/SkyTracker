@@ -78,7 +78,7 @@ class AirlineTableManager(TableManager[Airline]):
         Returns:
             list[Airline]: airline database
         """
-        api = AviationEdgeAPI(settings.aviation_edge_api_key)
+        api = AviationEdgeAPI(settings)
         airlines = api.get_airline_database()
         logger.debug(f'Retrieved {len(airlines)} airlines.')
         return airlines

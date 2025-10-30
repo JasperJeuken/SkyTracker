@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 from typing import List, Annotated, Any, Literal, get_args
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_validator, field_validator
 
 from skytracker.models.api import APIResponse, APIType
 from skytracker.models.state import (State, StateStatus, StateAircraft, StateAirline, StateAirport,
@@ -86,6 +86,21 @@ class OpenSkyNetworkResponse(BaseModel, APIResponse):
     """int: response timestamp (Unix)"""
     states: Annotated[List[OpenSkyNetworkState], Field(description='Aircraft states')]
     """List[OpenSkyNetworkState]: aircraft states"""
+
+    @field_validator('states', mode='before')
+    @classmethod
+    def parse_states(cls, states: Any) -> Any:
+        """Handle None states
+
+        Args:
+            states (Any): states list
+
+        Returns:
+            Any: parsed states list
+        """
+        if states is None:
+            return []
+        return states
 
     def to_states(self) -> list[State]:
         """Convert Aviation Edge API response to list of aircraft states

@@ -1,32 +1,35 @@
-import type { State } from "@/types/api";
+import type { Loadable, State } from "@/types/api";
 import { SmallCard } from "@/components/ui/card-small";
 import { useMapStore } from "@/store/mapStore";
-import { Hash, Locate, Plane } from "lucide-react";
+import { Hash, Locate, Plane, Radio } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-export function MapDetailsHeader({ stateData, loading, error, className }: {stateData: State | null, loading: boolean, error: string | null, className?: string}) {
-    const selectedAircraft = useMapStore((state) => state.selectedAircraft);
+
+export function MapDetailsHeader({ data, className }: {data: Loadable<State>, className?: string}) {
+    const selectedAircraft = useMapStore((state) => state.selected);
+    const animatedPosition = useMapStore((state) => state.animatedPosition);
     const map = useMapStore((state) => state.mapRef);
 
     const recenter = () => {
-        if (!map || !stateData || !stateData.geography.position) return;
-        map.setView([stateData!.geography.position[0], stateData!.geography.position[1]], 10, { animate: true, duration: 1 });
+        if (!map || data.status != "success") return;
+        map.setView([animatedPosition[0], animatedPosition[1]], 10, { animate: true, duration: 0 });
     }
 
     return (
         <div className={`flex items-center gap-1.5 ${className} w-full relative`}>
-            {loading && !error && <Skeleton className="h-10 w-20"/>}
-            {!loading && (error || !stateData) && <SmallCard text="Failed to load data..." className="h-10 !px-4" />}
-            {!loading && stateData && (
+            {data.status === "loading" && <Skeleton className="h-10 w-20"/>}
+            {data.status === "error" && <SmallCard text="Failed to load data..." className="h-10 !px-4" />}
+            {data.status === "success" && (
                 <>
-                    <SmallCard text={selectedAircraft ?? ""} tooltip="Callsign" className="h-10 !px-4 font-bold text-lg" variant="accent"/>
-                    {stateData?.flight.number && <SmallCard text={stateData?.flight.number ?? ""} tooltip="Flight number" className="h-10" icon={Hash} />}
-                    {stateData?.aircraft.icao && <SmallCard text={stateData?.aircraft.icao ?? ""} tooltip="Aircraft type" className="h-10" icon={Plane} />}
+                    <SmallCard text={selectedAircraft ?? ""} tooltip="Callsign" className="h-10 !px-4 font-bold text-lg depth-small" variant="accent"/>
+                    {data.data.flight.number && <SmallCard text={data.data.flight.number ?? ""} tooltip="Flight number" className="h-10 depth-small" icon={Hash} />}
+                    {data.data.aircraft.icao && <SmallCard text={data.data.aircraft.icao ?? ""} tooltip="Aircraft type" className="h-10 depth-small" icon={Plane} />}
+                    {data.data.transponder.squawk && <SmallCard text={data.data.transponder.squawk} tooltip="Squawk code" className="h-10 depth-small" icon={Radio} />}
                     
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <button onClick={recenter} className="absolute right-0 h-10 w-10 p-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 hover:dark:bg-gray-700 cursor-pointer flex items-center justify-center">
+                            <button onClick={recenter} className="absolute right-0 h-10 w-10 p-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 hover:dark:bg-gray-700 cursor-pointer flex items-center justify-center depth-small hover:depth-large">
                                 <Locate className="h-5 w-5" />
                             </button>
                         </TooltipTrigger>
@@ -37,5 +40,5 @@ export function MapDetailsHeader({ stateData, loading, error, className }: {stat
                 </>
             )}
         </div>
-    )   
+    )
 }

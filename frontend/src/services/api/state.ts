@@ -1,4 +1,4 @@
-import { type State, type SimpleMapState, type DetailedMapState } from "@/types/api";
+import { type State, type MapState } from "@/types/api";
 import { apiClient } from "./client";
 
 
@@ -38,13 +38,13 @@ export async function searchState(params: StateSearchParams = {}): Promise<State
     return data;
 }
 
-export async function getNearbyStates(lat: number, lon: number, params: StateNearbyParams): Promise<SimpleMapState[]> {
-    const { data } = await apiClient.get<SimpleMapState[]>(`/state/nearby?lat=${lat}&lon=${lon}`, { params });
+export async function getNearbyStates(lat: number, lon: number, params: StateNearbyParams): Promise<MapState[]> {
+    const { data } = await apiClient.get<MapState[]>(`/state/nearby?lat=${lat}&lon=${lon}`, { params });
     return data
 }
 
-export async function getAreaStates(params: StateAreaParams = {}): Promise<SimpleMapState[]> {
-    const { data } = await apiClient.get<SimpleMapState[]>("/state/area", { params });
+export async function getAreaStates(params: StateAreaParams = {}): Promise<MapState[]> {
+    const { data } = await apiClient.get<MapState[]>("/state/area", { params });
     return data
 }
 
@@ -53,7 +53,7 @@ export async function getLatestState(callsign: string): Promise<State> {
     return data;
 }
 
-export async function getHistoryStates(callsign: string, params: StateHistoryParams = { }): Promise<DetailedMapState[]> {
-    const { data } = await apiClient.get<DetailedMapState[]>(`/state/${callsign}/history`, { params });
+export async function getHistoryStates(callsign: string, params: StateHistoryParams = { }): Promise<MapState[]> {
+    const { data } = await apiClient.get<MapState[]>(`/state/${callsign}/history`, { params });
     return data;
 }

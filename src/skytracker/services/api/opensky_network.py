@@ -9,6 +9,7 @@ from skytracker.models.state import State
 from skytracker.models.api import API
 from skytracker.models.api.opensky_network import OpenSkyNetworkResponse
 from skytracker.utils import logger, log_and_raise
+from skytracker.settings import Settings
 
 
 class OpenskyNetworkAPI(API):
@@ -17,16 +18,15 @@ class OpenskyNetworkAPI(API):
     RATE_LIMIT: int = 10
     """int: rate limit in seconds"""
 
-    def __init__(self, client_id: str, client_secret: str) -> None:
+    def __init__(self, settings: Settings) -> None:
         """Initialize API by getting access token
         
         Args:
-            client_id (str): OpenSky Network API client ID
-            client_secret (str): OpenSky Network API client secret
+            settings (Settings): settings with OpenSky Network API credentials
         """
         self._credentials: dict[Literal['client_id', 'client_secret'], str] = {
-            'client_id': client_id,
-            'client_secret': client_secret
+            'client_id': settings.opensky_network_client_id,
+            'client_secret': settings.opensky_network_client_secret
         }
         self._access_token: str = self._get_access_token()
         self._last_access_token: datetime = datetime.now()

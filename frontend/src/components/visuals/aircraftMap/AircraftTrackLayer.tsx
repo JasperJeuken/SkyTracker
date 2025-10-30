@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMapStore } from "@/store/mapStore";
+import { useEffect, useRef, useState } from "react";
 import { Polyline } from "react-leaflet";
-import { type DetailedMapState } from "@/types/api";
-import { getHistoryStates } from "@/services/api/state";
 
 
 function altitudeToColor(altitude: number | null): string {
@@ -14,87 +13,134 @@ function altitudeToColor(altitude: number | null): string {
 }
 
 
-export function AircraftTrackLayer({ callsign, pane }: { callsign: string | null, pane: string }) {
-    const [track, setTrack] = useState<DetailedMapState[]>([]);
-    const [visibleSegments, setVisibleSegments] = useState<number>(0);
+type TrackSegment = {
+    startPos: [number, number],
+    endPos: [number, number],
+    startAlt: number | null,
+    endAlt: number | null,
+    startTime: string,
+    endTime: string,
+    type: "normal" | "gap" | "current",
+};
 
-    // Update track if selected aircraft changes
+
+function createPolyline(segment: TrackSegment, pane: string) {
+    const key = Math.random().toString(16).slice(2);
+    if (segment.type === "gap") {
+        return <Polyline key={key} positions={[segment.startPos, segment.endPos]} pathOptions={{ color: "grey", weight: 2, dashArray: "6, 8" }} pane={pane} />;
+    } else if (segment.type === "normal") {
+        return <Polyline key={key} positions={[segment.startPos, segment.endPos]} pathOptions={{ color: altitudeToColor(segment.endAlt), weight: 3 }} pane={pane} />;
+    } 
+    return <Polyline key={key} positions={[segment.startPos, segment.endPos]} pathOptions={{ color: altitudeToColor(segment.endAlt), weight: 3, dashArray: "6, 8" }} pane={pane} />;
+}
+
+
+export function AircraftTrackLayer({ pane }: { pane: string }) {
+    // Store data
+    const history = useMapStore((state) => state.history)
+    const animatedPosition = useMapStore((state) => state.animatedPosition);
+    const selected = useMapStore((state) => state.selected);
+    const mapRef = useMapStore((state) => state.mapRef);
+    const animationZoomLimit = useMapStore((state) => state.animationZoomLimit);
+
+    // Rendering
+    const [segments, setSegments] = useState<TrackSegment[]>([]);
+    const [visibleSegments, setVisibleSegments] = useState<TrackSegment[]>([]);
+    const [currentSegment, setCurrentSegment] = useState<TrackSegment | null>(null);
+    const prevTrackLength = useRef<number>(0);
+    const prevSelected = useRef<string | null>(null);
+
+    // Update segments
     useEffect(() => {
-        if (!callsign) {
-            setTrack([]);
-            setVisibleSegments(0);
-            return;
+        const newSegments: TrackSegment[] = [];
+        for (let i = 0; i < history.length - 1; i++) {
+            const state1 = history[i];
+            const state2 = history[i + 1];
+            
+            const dt = (new Date(state1.time).valueOf() - new Date(state2.time).valueOf()) / 1000;
+            const type = dt < 200 ? "normal" : "gap";
+            newSegments.push({
+                startPos: state2.position,
+                endPos: state1.position,
+                startAlt: state2.altitude,
+                endAlt: state1.altitude,
+                startTime: state2.time,
+                endTime: state1.time,
+                type,
+            });
         }
-        getHistoryStates(callsign)
-            .then(track =>{
-                setTrack(track);
-                setVisibleSegments(0);
-            })
-            .catch(() => setTrack([]));
-    }, [callsign]);
-
-    // Parse line segments from state history
-    const segments = useMemo(() => {
-        if (!track || track.length < 2) return [];
-        const segs: {
-            positions: [number, number][];
-            type: "gap" | "normal";
-            startAlt: number | null;
-            endAlt: number | null;
-        }[] = []
-        for (let i = 0; i < track.length - 1; i++) {
-            const p1 = track[i];
-            const p2 = track[i + 1];
-            const t1 = new Date(p1.time).getTime() / 1000
-            const t2 = new Date(p2.time).getTime() / 1000
-            const dt = t1 - t2;
-
-            if (dt > 180) {
-                segs.push({
-                    positions: [p1.position, p2.position],
-                    type: "gap",
-                    startAlt: null,
-                    endAlt: null,
-                });
-            } else {
-                segs.push({
-                    positions: [p1.position, p2.position],
-                    type: "normal",
-                    startAlt: p1.altitude,
-                    endAlt: p2.altitude
-                });
-            }
-        }
-        return segs;
-    }, [track]);
-    
+        setSegments(newSegments)
+    }, [history]);
 
     // Animate segment reveal
     useEffect(() => {
-        if (segments.length === 0) {
-            setVisibleSegments(0);
+        if (!selected || segments.length == 0) {
+            setVisibleSegments([]);
+            prevSelected.current = null;
+            prevTrackLength.current = 0;
             return;
         }
-        setVisibleSegments(0);
-        let i = 0;
-        const interval = setInterval(() => {
-            i++;
-            setVisibleSegments(i);
-            if (i >= segments.length) clearInterval(interval);
-        }, 10);
-        return () => clearInterval(interval);
-    }, [segments]);
+        let isCancelled = false;
+        
+        const addSegments = (count: number) => {
+            let i = 0;
+            const interval = setInterval(() => {
+                if (isCancelled) {
+                    clearInterval(interval);
+                    return;
+                }
+                const segment = segments[i];
+                if (!segment) return;
+                setVisibleSegments((prev) => [...prev, segment]);
+                i++;
+                if (i >= count) clearInterval(interval);
+            }, 10);
+        };
 
-    // Create polyline segments
+        const diff = segments.length - prevTrackLength.current;
+        if (selected != prevSelected.current || diff > 1) {
+            setVisibleSegments([]);
+            addSegments(segments.length);
+        } else {
+            if (diff > 0) addSegments(diff);
+        }
+
+        prevTrackLength.current = segments.length;
+        prevSelected.current = selected;
+
+        return () => {
+            isCancelled = true;
+        }
+    }, [segments, selected]);
+
+    // Animate last segment to current position
+    useEffect(() => {
+        if (!mapRef || !selected || segments.length == 0) {
+            setCurrentSegment(null);
+            return;
+        }
+        if (mapRef.getZoom() < animationZoomLimit) {
+            setCurrentSegment(null);
+            return;
+        }
+        
+        const lastState = segments[0];
+        const currentSegment: TrackSegment = {
+            startPos: lastState.endPos,
+            endPos: animatedPosition,
+            startAlt: lastState.endAlt,
+            endAlt: lastState.endAlt,
+            startTime: lastState.endTime,
+            endTime: new Date().toISOString(),
+            type: "current",
+        }
+        setCurrentSegment(currentSegment);
+    }, [animatedPosition, segments, selected, mapRef]);
+
     return (
         <>
-            {segments.slice(0, visibleSegments).map((seg, idx) => (
-                seg.type === "gap" ? (
-                    <Polyline key={idx} positions={seg.positions} pathOptions={{ color: "grey", weight: 2, dashArray: "6, 8" }} pane={pane}/>
-                ) : (
-                    <Polyline key={idx} positions={seg.positions} pathOptions={{ color: altitudeToColor(seg.endAlt), weight: 3 }} pane={pane} />
-                )
-            ))}
+            {visibleSegments.map((seg) => createPolyline(seg, pane))}
+            {currentSegment && createPolyline(currentSegment, pane)}
         </>
     );
 }

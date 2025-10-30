@@ -11,13 +11,14 @@ Tool for tracking and visualizing aircraft around the world. This mono-repositor
 #### Quick links
 - [Backend](#backend)
 - [Frontend](#frontend)
+- [Gallery](#gallery)
 
-![Application screenshot](docs/source/_static/screenshot.jpg)
+![Application screenshot](docs/source/_static/screenshot_dark.jpg)  
 *Screenshot of interactive aircraft map*
 
 # Backend
 The backend of the application is written in Python. Functionality includes:
-- Aircraft ADS-B data collection from the [OpenSky Network](https://opensky-network.org/)
+- Aircraft ADS-B data collection from multiple sources ([OpenSky Network](https://opensky-network.org/), [Aviation Edge](https://aviation-edge.com/), ...)
 - Data storage in [ClickHouse](https://clickhouse.com/) server (local or cloud-based)
 - Various database queries with cache optimization
 - Web API endpoints using [FastAPI](https://fastapi.tiangolo.com/)
@@ -29,46 +30,80 @@ Abstracted database management allows for expansion and future analyses. See the
 Using the application requires setting up a [ClickHouse](https://clickhouse.com/) database, and acquiring [OpenSky Network API](https://openskynetwork.github.io/opensky-api/index.html)
 credentials. Please follow the steps outlined on the [`Getting started`](https://skytracker.readthedocs.io/en/latest/getting_started.html) page of the documentation for installation and usage.
 
-#### Example: aircraft states in bounding box
+### Available endpoints
+
+There are several endpoints available in the `v1` API. For more details, view the [documentation](https://skytracker.readthedocs.io/en/latest/).
+
+| **Category** | **Endpoint**                            | **Description**                           |
+|--------------|-----------------------------------------|-------------------------------------------|
+| Aircraft     | `api/v1/aircraft/{registration}`        | Get details of a specific aircraft        |
+|              | `api/v1/aircraft/{registration}/photos` | Get photos of a specific aircraft         |
+|              | `api/v1/aircraft?`                      | Search for an aircraft                    |
+| Airport      | `api/v1/airport/{iata}`                 | Get details of a specific airport         |
+|              | `api/v1/airport?`                       | Search for an airport                     |
+| Airline      | `api/v1/airline/{icao}`                 | Get details of a specific airline         |
+|              | `api/v1/airline?`                       | Search for an airline                     |
+| State        | `api/v1/state/nearby`                   | Get aircraft states near a specific point |
+|              | `api/v1/state/area`                     | Get aircraft states within a bounding box |
+|              | `api/v1/state/{callsign}/latest`        | Get latest state of a specific aircraft   |
+|              | `api/v1/state/{callsign}/history`       | Get state history of a specific aircraft  |
+|              | `api/v1/state?`                         | Search for a state                        |
+
+### Example: aircraft states in bounding box
 ```http
-GET http://<host>/api/v1/maps?lat_min=50&lat_max=60&lon_min=5&lon_max=20
+GET https://<host>/api/v1/state/area?south=50&north=60&west=5&east=20
 ```
 ```json
 [
     {
-        "icao24": "abcdef",
-        "latitude": 52.6,
-        "longitude": 6.3,
+        "time": "2025-01-01T00:00:00.000Z",
+        "callsign": "ABC123",
+        "model": "A380",
+        "position": [52.3, 12.6],
         "heading": 59,
+        "altitude": 9820.9,
+        "velocity": 192.1,
     },
     ...
 ]
 ```
 
-#### Example: aircraft details (from [ICAO 24-bit address](https://en.wikipedia.org/wiki/Aviation_transponder_interrogation_modes#ICAO_24-bit_address))
+#### Example: aircraft details (from registration)
 ```http
-GET http://<host>/api/v1/aircraft/abcdef
+GET https://<host>/api/v1/aircraft/ab-cde
 ```
 ```json
 {
-    "icao24": "abcdef",
-    "known_callsigns": ["AB-1234", "CD-5678"],
-    "origin_country": "FR",
-    "last_state": 1735686000,
-    "last_position": 1735686000,
-    "last_contact": 1735686000,
-    "latitude": 52.6,
-    "longitude": 6.3,
-    "baro_altitude": 2143,
-    "geo_altitude": 2135,
-    "velocity": 121.3,
-    "heading": 59,
-    "vertical_rate": -5.2,
-    "on_ground": false,
-    "spi": false,
-    "squawk": 1234,
-    "position_source": "ADSB",
-    "category": "HEAVY"
+    "identity": {
+        "icao24": "ABC123",
+        "registration": "AB-CDE",
+        "test_registration": "FG-HIJ",
+        "owner": "Company Ltd",
+        "airline_iata": "AA",
+        "airline_icao": "AAL",
+    },
+    "model": {
+        "type_iata": "A320-200",
+        "type_iata_code_short": "A32",
+        "type_iata_code_long": "A322",
+        "engine_count": 2,
+        "engine_type": "JET",
+        "model_code": "A320-200",
+        "line_number": 123,
+        "serial_number": 12345678,
+        "family": "A320",
+        "sub_family": "Airbus A318/A319/A320",
+        "series": "A32",
+        "classification": "UNKNOWN",
+    },
+    "lifecycle": {
+        "date_rollout": "1987-02-01",
+        "date_first_flight": "2010-03-02",
+        "date_registration": "2012-04-03",
+        "date_delivery": "2012-05-04",
+        "age": 13.5,
+    },
+    "status": "ACTIVE",
 }
 ```
 
@@ -102,6 +137,17 @@ With [NodeJS](https://nodejs.org/en) installed, use the following commands to in
     npm run preview
     ```
 
+# Gallery
 
-# Current state
-The application is still a work in progress. Currently, aircraft state collection is automated. Basic database interaction is implemented, allowing for interaction with a local or cloud-based ClickHouse server. Basic API endpoints are implemented, which are used to create an interactive aircraft map visualization.
+![Screenshot comparing light/dark mode](docs/source/_static/screenshot_theme.jpg)  
+*Support for light/dark mode*
+
+![Screenshot showing satellite view](docs/source/_static/screenshot_satellite.jpg)  
+*Support for satellite view*
+
+![Screenshot showing worldwide coverage](docs/source/_static/screenshot_world.jpg)  
+*Worldwide coverage*
+
+![Screenshot showing velocity information display](docs/source/_static/screenshot_velocity.jpg)
+![Screenshot showing airport information display](docs/source/_static/screenshot_airport.jpg)  
+*Detailed information displays*

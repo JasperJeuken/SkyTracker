@@ -97,16 +97,20 @@ def log_and_raise(exc_type: type[Exception], message: str, cause: Exception | No
     raise exc_type(message) from cause
 
 
-def log_and_raise_http(message: str, status_code: int, cause: Exception | None = None) -> None:
+def log_and_raise_http(message: str, status_code: int, cause: Exception | None = None,
+                       headers: dict[str, str] = None) -> None:
     """Log an exception message and raise a HTTPException
 
     Args:
         message (str): message to raise exception with
         status_code (int): HTML status code to raise exception with
         cause (Exception | None, optional): exception which caused this exception. Defaults to None.
+        headers (dict[str, str], optional): headers for HTTP exception. Defaults to None
     
     Raises:
         HTTPException: raised exception with status code and message, from cause (if specified)
     """
     logger.error(message)
-    raise HTTPException(status_code=status_code, detail=message) from cause
+    headers = {} if headers is None else headers
+    print(headers)
+    raise HTTPException(status_code=status_code, detail=message, headers=headers) from cause
